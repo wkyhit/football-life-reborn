@@ -8,7 +8,9 @@ Phases 1 through 3 provide the deterministic simulator, frozen full
 Classic catalog, and Classic visual/share-card compatibility baseline.
 Phase 4 adds an Enhanced presentation over the same engine and career
 state. `/` opens Enhanced by default, while `?ui=classic` preserves the
-frozen compatibility experience.
+frozen compatibility experience. Phase 5 adds an Enhanced-only local
+career archive, validated import/export, copy-first migration,
+decision-boundary parallel lives, branch comparison, and a causal ledger.
 
 ## Phase 1 scope
 
@@ -69,6 +71,12 @@ The active save uses `football-life-reborn:career:v1`. Invalid data is
 copied to a content-addressed
 `football-life-reborn:career:quarantine:<hash>` key before a new career can
 replace the active slot.
+
+Enhanced mode also keeps up to 20 named local careers. It never evicts an
+archive entry automatically, and exported JSON is the durable recovery
+path for explicit deletion or moving a career between browser profiles.
+See [`docs/career-archive.md`](docs/career-archive.md) for the archive,
+transfer, migration, branching, and recovery contracts.
 
 ## UI modes and deployment
 
