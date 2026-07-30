@@ -38,6 +38,7 @@ import { CareerScreen } from "../ui/classic/CareerScreen";
 import {
   createCareerPresentation,
 } from "../ui/classic/careerPresentation";
+import { ClassicShell } from "../ui/classic/ClassicShell";
 import { IdentityScreen } from "../ui/classic/IdentityScreen";
 import { LandingScreen } from "../ui/classic/LandingScreen";
 import { NationalityScreen } from "../ui/classic/NationalityScreen";
@@ -45,7 +46,33 @@ import { PositionScreen } from "../ui/classic/PositionScreen";
 import { RecoveryScreen } from "../ui/classic/RecoveryScreen";
 import { SummaryScreen } from "../ui/classic/SummaryScreen";
 import { createSummaryPresentation } from "../ui/classic/summaryPresentation";
+import {
+  resolveUiMode,
+  type UiMode,
+} from "../ui/mode";
+import { useReducedMotion } from "../ui/shared/useReducedMotion";
 import { seedFromSearch } from "./seed";
+
+const EnhancedCareerScreen = lazy(async () => {
+  const module = await import(
+    "../ui/enhanced/career/EnhancedCareerScreen"
+  );
+  return { default: module.EnhancedCareerScreen };
+});
+
+const EnhancedOnboarding = lazy(async () => {
+  const module = await import(
+    "../ui/enhanced/EnhancedOnboarding"
+  );
+  return { default: module.EnhancedOnboarding };
+});
+
+const EnhancedShell = lazy(async () => {
+  const module = await import(
+    "../ui/enhanced/EnhancedShell"
+  );
+  return { default: module.EnhancedShell };
+});
 
 const ShareCardOverlay = lazy(async () => {
   const module = await import(
@@ -117,6 +144,37 @@ function renderSetupScreen({
 }
 
 export function App() {
+  const [uiMode] = useState(() =>
+    resolveUiMode(
+      window.location.search,
+      window.localStorage,
+    ),
+  );
+
+  if (uiMode === "enhanced") {
+    return (
+      <Suspense fallback={null}>
+        <EnhancedShell>
+          <CareerController uiMode="enhanced" />
+        </EnhancedShell>
+      </Suspense>
+    );
+  }
+
+  return (
+    <ClassicShell>
+      <CareerController uiMode="classic" />
+    </ClassicShell>
+  );
+}
+
+type CareerControllerProps = {
+  readonly uiMode: UiMode;
+};
+
+function CareerController({
+  uiMode,
+}: CareerControllerProps) {
   const setupRepository = useMemo(
     () => createCareerRepository(window.localStorage),
     [],
@@ -132,6 +190,11 @@ export function App() {
       seedFromSearch(window.location.search),
     ),
   );
+  const [enhancedEntryPending, setEnhancedEntryPending] =
+    useState(() => uiMode === "enhanced");
+  const [resumeAvailable, setResumeAvailable] = useState(
+    () => hasResumableState(initial),
+  );
   const [setupState, dispatch] = useReducer(
     careerReducer,
     initial.setupState,
@@ -143,13 +206,23 @@ export function App() {
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (recovery !== null || classicCareer !== null) {
+    if (
+      recovery !== null ||
+      classicCareer !== null ||
+      enhancedEntryPending
+    ) {
       return;
     }
 
     const result = setupRepository.save(setupState);
     setSaveError(result.ok ? null : result.reason);
-  }, [classicCareer, recovery, setupRepository, setupState]);
+  }, [
+    classicCareer,
+    enhancedEntryPending,
+    recovery,
+    setupRepository,
+    setupState,
+  ]);
 
   if (recovery !== null) {
     return (
@@ -184,8 +257,70 @@ export function App() {
           本地保存失败：{saveError}
         </p>
       ) : null}
-      {classicCareer ? (
-        <ClassicCareerExperience
+      {uiMode === "enhanced" &&
+      (enhancedEntryPending || classicCareer === null) ? (
+        <Suspense fallback={null}>
+          <EnhancedOnboarding
+            dispatch={dispatch}
+            hasResume={resumeAvailable}
+            isEntryPrompt={enhancedEntryPending}
+            newCareerSeed={seedFromSearch(
+              window.location.search,
+            )}
+            onBegin={(selectedMode) => {
+              setMode(selectedMode);
+              discardClassicSession();
+              setClassicCareer(null);
+              setResumeAvailable(false);
+              setEnhancedEntryPending(false);
+              dispatch({
+                seed: seedFromSearch(window.location.search),
+                type: "reset_career",
+              });
+              dispatch({ type: "begin_setup" });
+            }}
+            onRandom={(selectedMode, player) => {
+              setMode(selectedMode);
+              discardClassicSession();
+              setClassicCareer(null);
+              setResumeAvailable(false);
+              setEnhancedEntryPending(false);
+              dispatch({
+                seed: seedFromSearch(window.location.search),
+                type: "reset_career",
+              });
+              dispatch({ type: "begin_setup" });
+              dispatch({
+                nationality: player.nationality,
+                type: "select_nationality",
+              });
+              dispatch({ type: "continue_setup" });
+              dispatch({
+                foot: player.foot,
+                name: player.name,
+                number: player.number,
+                type: "update_identity",
+              });
+              dispatch({ type: "continue_setup" });
+              dispatch({
+                position: player.position,
+                type: "select_position",
+              });
+            }}
+            onResume={() => {
+              setResumeAvailable(false);
+              setEnhancedEntryPending(false);
+            }}
+            onStart={() => {
+              setClassicCareer(
+                startClassicFromSetup(setupState, mode),
+              );
+            }}
+            state={setupState}
+          />
+        </Suspense>
+      ) : classicCareer ? (
+        <CareerExperience
           initialCareer={classicCareer}
           onSaveError={setSaveError}
           onRestart={() => {
@@ -197,6 +332,7 @@ export function App() {
             });
           }}
           repository={classicRepository}
+          uiMode={uiMode}
         />
       ) : (
         renderSetupScreen({
@@ -217,21 +353,47 @@ export function App() {
   );
 }
 
-type ClassicCareerExperienceProps = {
+type CareerExperienceProps = {
   readonly initialCareer: ClassicCareerState;
   readonly onSaveError: (reason: string | null) => void;
   readonly onRestart: () => void;
   readonly repository: ClassicSessionRepository;
+  readonly uiMode: UiMode;
 };
 
-function ClassicCareerExperience({
+function CareerExperience({
   initialCareer,
   onSaveError,
   onRestart,
   repository,
-}: ClassicCareerExperienceProps) {
-  const reveal = useSeasonReveal(initialCareer);
+  uiMode,
+}: CareerExperienceProps) {
+  const reducedMotion = useReducedMotion();
+  const reveal = useSeasonReveal(initialCareer, {
+    reducedMotion,
+  });
+  const [
+    enhancedAnnouncement,
+    setEnhancedAnnouncement,
+  ] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+
+  useEffect(() => {
+    if (!reducedMotion) {
+      setEnhancedAnnouncement(null);
+      return;
+    }
+
+    if (reveal.isRevealing) {
+      setEnhancedAnnouncement(
+        `赛季更新完成，已记录 ${reveal.committedCareer.seasons.length} 个赛季`,
+      );
+    }
+  }, [
+    reducedMotion,
+    reveal.committedCareer.seasons.length,
+    reveal.isRevealing,
+  ]);
 
   useEffect(() => {
     const result = repository.save(reveal.committedCareer);
@@ -275,29 +437,47 @@ function ClassicCareerExperience({
     visibleSeasonCount: reveal.visibleSeasonCount,
   });
 
-  return (
-    <CareerScreen
-      view={view}
-      onChoose={(decisionId, optionId) => {
-        const decision = reveal.committedCareer.currentDecision;
+  const onChoose = (decisionId: string, optionId: string) => {
+    const decision = reveal.committedCareer.currentDecision;
 
-        if (
-          decision === null ||
-          decision.id !== decisionId
-        ) {
-          return;
-        }
+    if (
+      decision === null ||
+      decision.id !== decisionId
+    ) {
+      return;
+    }
 
-        reveal.commitCareer(
-          applyClassicChoice(reveal.committedCareer, {
-            decisionId,
-            decisionType: decision.type,
-            optionId,
-          }),
-        );
-      }}
-    />
-  );
+    const nextCareer = applyClassicChoice(
+      reveal.committedCareer,
+      {
+        decisionId,
+        decisionType: decision.type,
+        optionId,
+      },
+    );
+    reveal.commitCareer(nextCareer);
+    setEnhancedAnnouncement(
+      reducedMotion &&
+        nextCareer.seasons.length >
+          reveal.committedCareer.seasons.length
+        ? `赛季更新完成，已记录 ${nextCareer.seasons.length} 个赛季`
+        : null,
+    );
+  };
+
+  if (uiMode === "enhanced") {
+    return (
+      <Suspense fallback={null}>
+        <EnhancedCareerScreen
+          onChoose={onChoose}
+          statusMessage={enhancedAnnouncement}
+          view={view}
+        />
+      </Suspense>
+    );
+  }
+
+  return <CareerScreen onChoose={onChoose} view={view} />;
 }
 
 type RecoveryIssue =
@@ -315,6 +495,13 @@ type InitialAppState = {
   readonly recovery: RecoveryIssue | null;
   readonly setupState: CareerState;
 };
+
+function hasResumableState(initial: InitialAppState): boolean {
+  return (
+    initial.classicCareer !== null ||
+    initial.setupState.phase !== "landing"
+  );
+}
 
 function loadInitialState(
   setupRepository: CareerRepository,

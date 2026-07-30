@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { ClassicCareerState } from "../../domain/classicEngine";
 
 type RevealOptions = {
+  readonly reducedMotion?: boolean;
   readonly stepMs?: number;
 };
 
@@ -22,6 +23,7 @@ export function useSeasonReveal(
   initialCareer: ClassicCareerState,
   options: RevealOptions = {},
 ): SeasonRevealController {
+  const reducedMotion = options.reducedMotion ?? false;
   const stepMs = options.stepMs ?? DEFAULT_REVEAL_STEP_MS;
   const [state, setState] = useState<SeasonRevealState>(() => ({
     committedCareer: initialCareer,
@@ -29,25 +31,49 @@ export function useSeasonReveal(
     visibleSeasonCount: initialCareer.seasons.length,
   }));
 
-  const commitCareer = useCallback((career: ClassicCareerState) => {
-    setState((current) => {
-      const previouslyCommittedCount =
-        current.committedCareer.seasons.length;
-      const hasNewSeasons =
-        career.seasons.length > previouslyCommittedCount;
+  const commitCareer = useCallback(
+    (career: ClassicCareerState) => {
+      setState((current) => {
+        const previouslyCommittedCount =
+          current.committedCareer.seasons.length;
+        const hasNewSeasons =
+          career.seasons.length > previouslyCommittedCount;
+        const revealNewSeasons =
+          hasNewSeasons && !reducedMotion;
 
-      return {
-        committedCareer: career,
-        isRevealing: hasNewSeasons,
-        visibleSeasonCount: hasNewSeasons
-          ? previouslyCommittedCount
-          : career.seasons.length,
-      };
-    });
-  }, []);
+        return {
+          committedCareer: career,
+          isRevealing: revealNewSeasons,
+          visibleSeasonCount: revealNewSeasons
+            ? previouslyCommittedCount
+            : career.seasons.length,
+        };
+      });
+    },
+    [reducedMotion],
+  );
 
   useEffect(() => {
-    if (!state.isRevealing) {
+    if (!reducedMotion) {
+      return;
+    }
+
+    setState((current) => {
+      if (!current.isRevealing) {
+        return current;
+      }
+
+      return {
+        ...current,
+        isRevealing: false,
+        visibleSeasonCount:
+          current.committedCareer.seasons.length,
+      };
+    });
+  }, [reducedMotion]);
+
+  useEffect(() => {
+    if (!state.isRevealing || reducedMotion) {
       return;
     }
 
@@ -69,7 +95,12 @@ export function useSeasonReveal(
     }, stepMs);
 
     return () => window.clearTimeout(timer);
-  }, [state.isRevealing, state.visibleSeasonCount, stepMs]);
+  }, [
+    reducedMotion,
+    state.isRevealing,
+    state.visibleSeasonCount,
+    stepMs,
+  ]);
 
   return {
     ...state,

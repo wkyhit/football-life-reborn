@@ -20,6 +20,7 @@ export function SummaryScreen({
       className="flex h-dvh flex-col overflow-hidden bg-zinc-950 text-zinc-100"
       data-classic-summary-shell=""
       id="main-content"
+      tabIndex={-1}
     >
       <div
         className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-6"

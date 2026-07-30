@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import type { SummaryPresentation } from "../../ui/classic/summaryPresentation";
+import { Dialog } from "../../ui/shared/Dialog";
 import { shareCardFilename } from "./shareCardContract";
 
 type ShareCardOverlayProps = {
@@ -29,6 +30,7 @@ export function ShareCardOverlay({
   );
   const [renderError, setRenderError] = useState(false);
   const liveUrl = useRef<string | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,12 +81,12 @@ export function ShareCardOverlay({
   );
 
   return (
-    <div
-      aria-labelledby="share-card-title"
-      aria-modal="true"
+    <Dialog
       className="fixed inset-0 z-50 flex flex-col bg-black/85 backdrop-blur-sm"
       data-classic-share-overlay=""
-      role="dialog"
+      initialFocusRef={nameInputRef}
+      labelledBy="share-card-title"
+      onClose={onClose}
     >
       <div className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-6">
         <h2 className="sr-only" id="share-card-title">
@@ -105,13 +107,14 @@ export function ShareCardOverlay({
               setDisplayName(event.currentTarget.value)
             }
             placeholder="给自己起个名字"
+            ref={nameInputRef}
             value={displayName}
           />
         </div>
 
         <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
           {previewUrl === null ? (
-            <div className="mx-auto flex aspect-[1080/1720] w-full max-w-sm items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-[13px] font-bold text-zinc-500">
+            <div className="mx-auto flex aspect-[1080/1720] w-full max-w-sm items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-[13px] font-bold text-zinc-400">
               {renderError ? "生成失败，请重试" : "正在生成…"}
             </div>
           ) : (
@@ -157,6 +160,6 @@ export function ShareCardOverlay({
           </button>
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 }

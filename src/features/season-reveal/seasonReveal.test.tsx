@@ -71,4 +71,64 @@ describe("useSeasonReveal", () => {
       committedSnapshot,
     );
   });
+
+  it("finishes immediately when reduced motion is enabled or changes", () => {
+    vi.useFakeTimers();
+    const initial = startClassicCareer({
+      identity: {
+        lastName: "李",
+        nationalityFifaCode: "CHN",
+        position: "ST",
+        preferredNumber: 10,
+      },
+      mode: "normal",
+      seed: "phase-4:reduced-motion",
+    });
+    const decision = initial.currentDecision;
+
+    if (decision === null) {
+      throw new Error("Expected the initial academy decision");
+    }
+
+    const committed = applyClassicChoice(initial, {
+      decisionId: decision.id,
+      decisionType: decision.type,
+      optionId: decision.options[0]!.id,
+    });
+    const { rerender, result } = renderHook(
+      ({ reducedMotion }) =>
+        useSeasonReveal(initial, {
+          reducedMotion,
+          stepMs: 650,
+        }),
+      {
+        initialProps: { reducedMotion: false },
+      },
+    );
+
+    act(() => {
+      result.current.commitCareer(committed);
+    });
+    expect(result.current.isRevealing).toBe(true);
+
+    rerender({ reducedMotion: true });
+    expect(result.current.visibleSeasonCount).toBe(
+      committed.seasons.length,
+    );
+    expect(result.current.isRevealing).toBe(false);
+
+    const immediate = renderHook(() =>
+      useSeasonReveal(initial, {
+        reducedMotion: true,
+        stepMs: 650,
+      }),
+    );
+    act(() => {
+      immediate.result.current.commitCareer(committed);
+    });
+    expect(immediate.result.current.visibleSeasonCount).toBe(
+      committed.seasons.length,
+    );
+    expect(immediate.result.current.isRevealing).toBe(false);
+  });
 });

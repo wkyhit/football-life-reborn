@@ -4,11 +4,11 @@ A private research project that clean-room reimplements the observable behavior 
 
 ## Status
 
-Phase 1 provides the playable Chinese-striker vertical slice. Phase 2
-adds the frozen full Classic catalog and a headless simulation engine for
-all approved countries, clubs, positions, pacing modes, events, national
-teams, honours, and retirement paths. The visible application remains on
-the Phase 1 interface until the separately scoped Phase 3 visual work.
+Phases 1 through 3 provide the deterministic simulator, frozen full
+Classic catalog, and Classic visual/share-card compatibility baseline.
+Phase 4 adds an Enhanced presentation over the same engine and career
+state. `/` opens Enhanced by default, while `?ui=classic` preserves the
+frozen compatibility experience.
 
 ## Phase 1 scope
 
@@ -69,6 +69,20 @@ The active save uses `football-life-reborn:career:v1`. Invalid data is
 copied to a content-addressed
 `football-life-reborn:career:quarantine:<hash>` key before a new career can
 replace the active slot.
+
+## UI modes and deployment
+
+- `/` opens the responsive Enhanced presentation by default.
+- `?ui=enhanced` explicitly selects Enhanced.
+- `?ui=classic` always forces the Classic compatibility view.
+- The Enhanced mode adds visible resume, country discovery, random player
+  setup, semantic landmarks, keyboard/focus support, zoom support, and
+  reduced-motion behavior without forking simulation state.
+- Vercel Git integration deploys every non-`main` branch push to Preview
+  and every `main` push to Production. The application remains a static,
+  local-first build; career data stays in browser storage.
+- Production is available at
+  [football-life-reborn.vercel.app](https://football-life-reborn.vercel.app/).
 
 ## Verification
 

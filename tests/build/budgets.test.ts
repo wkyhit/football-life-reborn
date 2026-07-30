@@ -1,10 +1,16 @@
+import { createHash } from "node:crypto";
 import {
   existsSync,
   readFileSync,
   readdirSync,
   statSync,
 } from "node:fs";
-import { extname, join } from "node:path";
+import {
+  extname,
+  join,
+  relative,
+  sep,
+} from "node:path";
 import { gzipSync } from "node:zlib";
 
 import { describe, expect, it } from "vitest";
@@ -19,6 +25,19 @@ const MANIFEST_PATH = join(
 );
 const INITIAL_JS_BUDGET_BYTES = 150_000;
 const INITIAL_CSS_BUDGET_BYTES = 15_000;
+const ENHANCED_SHELL_BUDGET_BYTES = 512;
+const ENHANCED_ONBOARDING_BUDGET_BYTES = 6_000;
+const ENHANCED_CAREER_BUDGET_BYTES = 4_000;
+const ENHANCED_ROUTE_BUDGET_BYTES = 9_000;
+const CLASSIC_VISUAL_DIRECTORY = join(
+  process.cwd(),
+  "tests",
+  "visual",
+  "classic",
+);
+const CLASSIC_VISUAL_FILE_COUNT = 50;
+const CLASSIC_VISUAL_SHA256 =
+  "df8d472b5c2da352a63060690b724d5dfd4f0d7335590c1532c5bc103d129049";
 
 type ManifestEntry = {
   readonly css?: readonly string[];
@@ -30,24 +49,34 @@ type ManifestEntry = {
 };
 type ViteManifest = Readonly<Record<string, ManifestEntry>>;
 
-describe("Phase 3 production artifact budgets", () => {
+describe("Production artifact budgets", () => {
   it("declares one static Vercel build and emits a Vite manifest", () => {
-    expect(
-      JSON.parse(
-        readFileSync(join(process.cwd(), "vercel.json"), "utf8"),
-      ),
-    ).toEqual({
+    const vercelConfig = JSON.parse(
+      readFileSync(join(process.cwd(), "vercel.json"), "utf8"),
+    ) as {
+      readonly headers?: readonly unknown[];
+    };
+
+    expect(vercelConfig).toMatchObject({
       $schema: "https://openapi.vercel.sh/vercel.json",
       buildCommand: "npm run build",
       framework: "vite",
       outputDirectory: "dist",
     });
+    expect(vercelConfig.headers).toHaveLength(1);
     expect(existsSync(MANIFEST_PATH)).toBe(true);
     expect(
       walkFiles(DIST_DIRECTORY).every((path) =>
-        [".css", ".html", ".js", ".json", ".png"].includes(
-          extname(path),
-        ),
+        [
+          "",
+          ".css",
+          ".html",
+          ".js",
+          ".json",
+          ".png",
+          ".svg",
+          ".webmanifest",
+        ].includes(extname(path)),
       ),
     ).toBe(true);
   });
@@ -99,6 +128,126 @@ describe("Phase 3 production artifact budgets", () => {
     expect(rendererCode).toContain("生涯编号");
     expect(html).not.toContain(overlay.file);
     expect(html).not.toContain(renderer.file);
+  });
+
+  it("keeps the Enhanced shell out of the Classic initial chunk", () => {
+    const manifest = readManifest();
+    const entry = requireManifestEntry(manifest, "index.html");
+    const enhancedShell = requireManifestEntry(
+      manifest,
+      "src/ui/enhanced/EnhancedShell.tsx",
+    );
+    const initialCode = readDistText(entry.file);
+    const enhancedCode = readDistText(enhancedShell.file);
+    const html = readDistText("index.html");
+
+    expect(entry.dynamicImports).toContain(
+      "src/ui/enhanced/EnhancedShell.tsx",
+    );
+    expect(enhancedShell.isDynamicEntry).toBe(true);
+    expect(initialCode).not.toContain("data-enhanced-shell");
+    expect(enhancedCode).toContain("data-enhanced-shell");
+    expect(html).not.toContain(enhancedShell.file);
+  });
+
+  it("keeps Enhanced feature screens out of the Classic initial chunk", () => {
+    const manifest = readManifest();
+    const entry = requireManifestEntry(manifest, "index.html");
+    const onboarding = requireManifestEntry(
+      manifest,
+      "src/ui/enhanced/EnhancedOnboarding.tsx",
+    );
+    const career = requireManifestEntry(
+      manifest,
+      "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
+    );
+    const initialCode = readDistText(entry.file);
+    const onboardingCode = readDistText(onboarding.file);
+    const careerCode = readDistText(career.file);
+    const html = readDistText("index.html");
+
+    expect(entry.dynamicImports).toContain(
+      "src/ui/enhanced/EnhancedOnboarding.tsx",
+    );
+    expect(entry.dynamicImports).toContain(
+      "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
+    );
+    expect(onboarding.isDynamicEntry).toBe(true);
+    expect(career.isDynamicEntry).toBe(true);
+    expect(initialCode).not.toContain(
+      "data-enhanced-setup-shell",
+    );
+    expect(initialCode).not.toContain(
+      "data-enhanced-career-shell",
+    );
+    expect(onboardingCode).toContain(
+      "data-enhanced-setup-shell",
+    );
+    expect(careerCode).toContain(
+      "data-enhanced-career-shell",
+    );
+    expect(html).not.toContain(onboarding.file);
+    expect(html).not.toContain(career.file);
+  });
+
+  it("keeps the complete Enhanced route within explicit chunk budgets", () => {
+    const manifest = readManifest();
+    const chunks = [
+      {
+        budget: ENHANCED_SHELL_BUDGET_BYTES,
+        entry: requireManifestEntry(
+          manifest,
+          "src/ui/enhanced/EnhancedShell.tsx",
+        ),
+      },
+      {
+        budget: ENHANCED_ONBOARDING_BUDGET_BYTES,
+        entry: requireManifestEntry(
+          manifest,
+          "src/ui/enhanced/EnhancedOnboarding.tsx",
+        ),
+      },
+      {
+        budget: ENHANCED_CAREER_BUDGET_BYTES,
+        entry: requireManifestEntry(
+          manifest,
+          "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
+        ),
+      },
+    ];
+    const sizes = chunks.map(({ budget, entry }) => {
+      const size = gzipSize(entry.file);
+      expect(size).toBeLessThanOrEqual(budget);
+      return size;
+    });
+
+    expect(
+      sizes.reduce((total, size) => total + size, 0),
+    ).toBeLessThanOrEqual(ENHANCED_ROUTE_BUDGET_BYTES);
+  });
+
+  it("keeps the frozen Phase 3 Classic visual gate byte-identical", () => {
+    const files = walkFiles(CLASSIC_VISUAL_DIRECTORY)
+      .filter((path) =>
+        [".png", ".ts"].includes(extname(path)),
+      )
+      .sort();
+    const digest = createHash("sha256");
+
+    for (const path of files) {
+      digest.update(
+        relative(CLASSIC_VISUAL_DIRECTORY, path)
+          .split(sep)
+          .join("/"),
+      );
+      digest.update("\0");
+      digest.update(readFileSync(path));
+    }
+
+    expect(files).toHaveLength(CLASSIC_VISUAL_FILE_COUNT);
+    expect(digest.digest("hex")).toBe(
+      CLASSIC_VISUAL_SHA256,
+    );
   });
 
   it("copies the exact local crest set into the static output", () => {
