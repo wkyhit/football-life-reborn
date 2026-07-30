@@ -7,6 +7,7 @@ import {
 } from "../domain/classicEngine";
 import { createDecisionCheckpoints } from "../domain/checkpoint";
 import { deterministicHash } from "../domain/deterministicHash";
+import { createCareerLedger } from "../domain/ledger";
 import {
   ARCHIVE_INDEX_STORAGE_KEY,
   archivePayloadStorageKey,
@@ -54,6 +55,7 @@ describe("career transfer", () => {
         checkpoints: createDecisionCheckpoints(
           source.career,
         ),
+        ledger: createCareerLedger(source.career),
       },
       checksum: expect.stringMatching(/^fnv1a64:[0-9a-f]{16}$/),
       format: CAREER_TRANSFER_FORMAT,
@@ -78,6 +80,9 @@ describe("career transfer", () => {
     );
     expect(parsed.archive.checkpoints).toEqual(
       createDecisionCheckpoints(source.career),
+    );
+    expect(parsed.archive.ledger).toEqual(
+      createCareerLedger(source.career),
     );
 
     const targetStorage = new MemoryStorage();
@@ -116,6 +121,9 @@ describe("career transfer", () => {
     );
     expect(loaded.checkpoints).toEqual(
       createDecisionCheckpoints(source.career),
+    );
+    expect(loaded.ledger).toEqual(
+      createCareerLedger(source.career),
     );
   });
 
@@ -325,6 +333,26 @@ describe("career transfer", () => {
 
     expect(
       parseCareerTransfer(JSON.stringify(checkpointDocument)),
+    ).toMatchObject({
+      reason: "replay_mismatch",
+      status: "invalid",
+    });
+
+    const ledgerDocument = JSON.parse(
+      serializeCareerTransfer({
+        career: source.career,
+        entry: source.entry,
+      }),
+    );
+    ledgerDocument.archive.ledger[0].age += 1;
+    ledgerDocument.checksum = deterministicHash({
+      archive: ledgerDocument.archive,
+      format: ledgerDocument.format,
+      formatVersion: ledgerDocument.formatVersion,
+    });
+
+    expect(
+      parseCareerTransfer(JSON.stringify(ledgerDocument)),
     ).toMatchObject({
       reason: "replay_mismatch",
       status: "invalid",

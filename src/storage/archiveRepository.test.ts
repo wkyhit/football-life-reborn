@@ -7,6 +7,7 @@ import {
   type ClassicCareerState,
 } from "../domain/classicEngine";
 import { createDecisionCheckpoints } from "../domain/checkpoint";
+import { createCareerLedger } from "../domain/ledger";
 import {
   ARCHIVE_CAPACITY,
   ARCHIVE_INDEX_STORAGE_KEY,
@@ -111,6 +112,7 @@ describe("archive repository", () => {
     expect(payloadBeforeRename).not.toBeNull();
     expect(payloadBeforeRename).toContain('"choiceLog"');
     expect(payloadBeforeRename).toContain('"checkpoints"');
+    expect(payloadBeforeRename).toContain('"ledger"');
     expect(payloadBeforeRename).toContain('"seasons"');
 
     expect(repository.rename("career-a", "冠军之路")).toMatchObject({
@@ -147,6 +149,9 @@ describe("archive repository", () => {
     );
     expect(loaded.checkpoints).toEqual(
       createDecisionCheckpoints(progressed),
+    );
+    expect(loaded.ledger).toEqual(
+      createCareerLedger(progressed),
     );
     expect(repository.list()).toMatchObject({
       entries: [
@@ -483,6 +488,39 @@ describe("archive repository", () => {
     ).toEqual({
       detail:
         "Archive checkpoints do not match career: career-tampered-checkpoint",
+      raw: tamperedRaw,
+      status: "corrupt",
+    });
+  });
+
+  it("rejects a payload whose persisted causal ledger no longer matches replay", () => {
+    const storage = new MemoryStorage();
+    const repository = createArchiveRepository(storage, {
+      createId: () => "career-tampered-ledger",
+      now: () => "2026-07-30T16:30:00.000Z",
+    });
+    const career = chooseFirstOption(
+      createCareer("phase-5:tampered-ledger"),
+    );
+
+    expect(
+      repository.create({
+        career,
+        displayName: "账本被篡改",
+      }),
+    ).toMatchObject({ ok: true });
+
+    const payloadKey = archivePayloadStorageKey(
+      "career-tampered-ledger",
+    );
+    const payload = JSON.parse(storage.getItem(payloadKey)!);
+    payload.ledger[0].age += 1;
+    const tamperedRaw = JSON.stringify(payload);
+    storage.setItem(payloadKey, tamperedRaw);
+
+    expect(repository.load("career-tampered-ledger")).toEqual({
+      detail:
+        "Archive ledger does not match career: career-tampered-ledger",
       raw: tamperedRaw,
       status: "corrupt",
     });

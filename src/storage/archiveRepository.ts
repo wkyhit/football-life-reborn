@@ -7,6 +7,10 @@ import {
   type DecisionCheckpoint,
 } from "../domain/checkpoint";
 import { stableStringify } from "../domain/deterministicHash";
+import {
+  createCareerLedger,
+  type CareerLedgerEntry,
+} from "../domain/ledger";
 import type { PacingMode } from "../domain/pacing";
 import type {
   CareerTotals,
@@ -66,6 +70,7 @@ type ArchivePayloadEnvelopeV1 = {
   readonly career: ClassicCareerState;
   readonly checkpoints: readonly DecisionCheckpoint[];
   readonly id: string;
+  readonly ledger: readonly CareerLedgerEntry[];
   readonly schemaVersion: typeof ARCHIVE_SCHEMA_VERSION;
 };
 
@@ -125,6 +130,7 @@ export type ArchiveLoadResult =
       readonly career: ClassicCareerState;
       readonly checkpoints: readonly DecisionCheckpoint[];
       readonly entry: CareerArchiveEntry;
+      readonly ledger: readonly CareerLedgerEntry[];
       readonly status: "ready";
     }
   | { readonly status: "missing" }
@@ -434,7 +440,8 @@ export function createArchiveRepository(
         parsed.schemaVersion !== ARCHIVE_SCHEMA_VERSION ||
         parsed.id !== id ||
         !isRecord(parsed.career) ||
-        !Array.isArray(parsed.checkpoints)
+        !Array.isArray(parsed.checkpoints) ||
+        !Array.isArray(parsed.ledger)
       ) {
         return {
           detail: `Archive payload does not match schema version 1: ${id}`,
@@ -468,10 +475,34 @@ export function createArchiveRepository(
         };
       }
 
+      let ledger: readonly CareerLedgerEntry[];
+
+      try {
+        ledger = createCareerLedger(career);
+      } catch {
+        return {
+          detail: `Archive career cannot produce a ledger: ${id}`,
+          raw,
+          status: "corrupt",
+        };
+      }
+
+      if (
+        stableStringify(ledger) !==
+        stableStringify(parsed.ledger)
+      ) {
+        return {
+          detail: `Archive ledger does not match career: ${id}`,
+          raw,
+          status: "corrupt",
+        };
+      }
+
       return {
         career,
         checkpoints,
         entry,
+        ledger,
         status: "ready",
       };
     },
@@ -755,6 +786,7 @@ function serializePayload(
     career,
     checkpoints: createDecisionCheckpoints(career),
     id,
+    ledger: createCareerLedger(career),
     schemaVersion: ARCHIVE_SCHEMA_VERSION,
   };
 

@@ -12,6 +12,10 @@ import {
   fnv1a64,
   stableStringify,
 } from "../domain/deterministicHash";
+import {
+  createCareerLedger,
+  type CareerLedgerEntry,
+} from "../domain/ledger";
 import type {
   ArchiveRepository,
   ArchiveStorageLike,
@@ -30,6 +34,7 @@ export type CareerTransferArchive = {
   readonly createdAt: string;
   readonly displayName: string;
   readonly id: string;
+  readonly ledger: readonly CareerLedgerEntry[];
   readonly updatedAt: string;
 };
 
@@ -121,6 +126,7 @@ export function serializeCareerTransfer(input: {
       createdAt: input.entry.createdAt,
       displayName: input.entry.displayName,
       id: input.entry.id,
+      ledger: deriveTransferLedger(input.career),
       updatedAt: input.entry.updatedAt,
     },
     format: CAREER_TRANSFER_FORMAT,
@@ -236,10 +242,26 @@ export function parseCareerTransfer(
     return { reason: "replay_mismatch", status: "invalid" };
   }
 
+  let ledger: readonly CareerLedgerEntry[];
+
+  try {
+    ledger = createCareerLedger(replayed);
+  } catch {
+    return { reason: "replay_mismatch", status: "invalid" };
+  }
+
+  if (
+    stableStringify(ledger) !==
+    stableStringify(parsed.archive.ledger)
+  ) {
+    return { reason: "replay_mismatch", status: "invalid" };
+  }
+
   return {
     archive: {
       ...parsed.archive,
       checkpoints,
+      ledger,
     },
     status: "ready",
   };
@@ -336,6 +358,7 @@ function isTransferArchive(
       "createdAt",
       "displayName",
       "id",
+      "ledger",
       "updatedAt",
     ]) ||
     !isRecord(value.career) ||
@@ -343,6 +366,7 @@ function isTransferArchive(
     typeof value.createdAt !== "string" ||
     typeof value.displayName !== "string" ||
     typeof value.id !== "string" ||
+    !Array.isArray(value.ledger) ||
     typeof value.updatedAt !== "string" ||
     !isIsoTimestamp(value.createdAt) ||
     !isIsoTimestamp(value.updatedAt) ||
@@ -390,6 +414,16 @@ function deriveTransferCheckpoints(
 ): readonly DecisionCheckpoint[] {
   try {
     return createDecisionCheckpoints(career);
+  } catch {
+    return [];
+  }
+}
+
+function deriveTransferLedger(
+  career: ClassicCareerState,
+): readonly CareerLedgerEntry[] {
+  try {
+    return createCareerLedger(career);
   } catch {
     return [];
   }
