@@ -362,7 +362,7 @@ function differenceBucket(difference: number): number {
   return 6;
 }
 
-function overallScoringMultiplier(overall: number): number {
+export function overallScoringMultiplier(overall: number): number {
   const bounded = clamp(overall, 40, 99);
 
   if (bounded <= 65) {
