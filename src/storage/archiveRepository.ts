@@ -2,6 +2,11 @@ import type {
   ClassicCareerState,
   ClassicIdentity,
 } from "../domain/classicEngine";
+import {
+  createDecisionCheckpoints,
+  type DecisionCheckpoint,
+} from "../domain/checkpoint";
+import { stableStringify } from "../domain/deterministicHash";
 import type { PacingMode } from "../domain/pacing";
 import type {
   CareerTotals,
@@ -59,6 +64,7 @@ type ArchiveIndexEnvelopeV1 = {
 
 type ArchivePayloadEnvelopeV1 = {
   readonly career: ClassicCareerState;
+  readonly checkpoints: readonly DecisionCheckpoint[];
   readonly id: string;
   readonly schemaVersion: typeof ARCHIVE_SCHEMA_VERSION;
 };
@@ -117,6 +123,7 @@ export type ArchiveListResult =
 export type ArchiveLoadResult =
   | {
       readonly career: ClassicCareerState;
+      readonly checkpoints: readonly DecisionCheckpoint[];
       readonly entry: CareerArchiveEntry;
       readonly status: "ready";
     }
@@ -426,7 +433,8 @@ export function createArchiveRepository(
         !isRecord(parsed) ||
         parsed.schemaVersion !== ARCHIVE_SCHEMA_VERSION ||
         parsed.id !== id ||
-        !isRecord(parsed.career)
+        !isRecord(parsed.career) ||
+        !Array.isArray(parsed.checkpoints)
       ) {
         return {
           detail: `Archive payload does not match schema version 1: ${id}`,
@@ -435,9 +443,34 @@ export function createArchiveRepository(
         };
       }
 
+      const career =
+        parsed.career as unknown as ClassicCareerState;
+      let checkpoints: readonly DecisionCheckpoint[];
+
+      try {
+        checkpoints = createDecisionCheckpoints(career);
+      } catch {
+        return {
+          detail: `Archive career cannot be replayed: ${id}`,
+          raw,
+          status: "corrupt",
+        };
+      }
+
+      if (
+        stableStringify(checkpoints) !==
+        stableStringify(parsed.checkpoints)
+      ) {
+        return {
+          detail: `Archive checkpoints do not match career: ${id}`,
+          raw,
+          status: "corrupt",
+        };
+      }
+
       return {
-        career:
-          parsed.career as unknown as ClassicCareerState,
+        career,
+        checkpoints,
         entry,
         status: "ready",
       };
@@ -720,6 +753,7 @@ function serializePayload(
 ): string {
   const envelope: ArchivePayloadEnvelopeV1 = {
     career,
+    checkpoints: createDecisionCheckpoints(career),
     id,
     schemaVersion: ARCHIVE_SCHEMA_VERSION,
   };

@@ -5,6 +5,8 @@ import {
   startClassicCareer,
   type ClassicCareerState,
 } from "../domain/classicEngine";
+import { createDecisionCheckpoints } from "../domain/checkpoint";
+import { deterministicHash } from "../domain/deterministicHash";
 import {
   ARCHIVE_INDEX_STORAGE_KEY,
   archivePayloadStorageKey,
@@ -48,6 +50,11 @@ describe("career transfer", () => {
     const document = JSON.parse(raw);
 
     expect(document).toMatchObject({
+      archive: {
+        checkpoints: createDecisionCheckpoints(
+          source.career,
+        ),
+      },
       checksum: expect.stringMatching(/^fnv1a64:[0-9a-f]{16}$/),
       format: CAREER_TRANSFER_FORMAT,
       formatVersion: CAREER_TRANSFER_VERSION,
@@ -68,6 +75,9 @@ describe("career transfer", () => {
     });
     expect(JSON.stringify(parsed.archive.career)).toBe(
       JSON.stringify(source.career),
+    );
+    expect(parsed.archive.checkpoints).toEqual(
+      createDecisionCheckpoints(source.career),
     );
 
     const targetStorage = new MemoryStorage();
@@ -103,6 +113,9 @@ describe("career transfer", () => {
 
     expect(JSON.stringify(loaded.career)).toBe(
       JSON.stringify(source.career),
+    );
+    expect(loaded.checkpoints).toEqual(
+      createDecisionCheckpoints(source.career),
     );
   });
 
@@ -292,6 +305,27 @@ describe("career transfer", () => {
     });
 
     expect(parseCareerTransfer(forgedRaw)).toMatchObject({
+      reason: "replay_mismatch",
+      status: "invalid",
+    });
+
+    const checkpointDocument = JSON.parse(
+      serializeCareerTransfer({
+        career: source.career,
+        entry: source.entry,
+      }),
+    );
+    checkpointDocument.archive.checkpoints[0].stateHash =
+      "fnv1a64:0000000000000000";
+    checkpointDocument.checksum = deterministicHash({
+      archive: checkpointDocument.archive,
+      format: checkpointDocument.format,
+      formatVersion: checkpointDocument.formatVersion,
+    });
+
+    expect(
+      parseCareerTransfer(JSON.stringify(checkpointDocument)),
+    ).toMatchObject({
       reason: "replay_mismatch",
       status: "invalid",
     });

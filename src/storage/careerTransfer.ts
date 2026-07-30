@@ -3,6 +3,15 @@ import {
   type ClassicCareerState,
 } from "../domain/classicEngine";
 import { CLASSIC_CONTENT_VERSION } from "../domain/catalog/classicCatalog";
+import {
+  createDecisionCheckpoints,
+  type DecisionCheckpoint,
+} from "../domain/checkpoint";
+import {
+  deterministicHash,
+  fnv1a64,
+  stableStringify,
+} from "../domain/deterministicHash";
 import type {
   ArchiveRepository,
   ArchiveStorageLike,
@@ -17,6 +26,7 @@ export const CAREER_TRANSFER_QUARANTINE_PREFIX =
 
 export type CareerTransferArchive = {
   readonly career: ClassicCareerState;
+  readonly checkpoints: readonly DecisionCheckpoint[];
   readonly createdAt: string;
   readonly displayName: string;
   readonly id: string;
@@ -107,6 +117,7 @@ export function serializeCareerTransfer(input: {
   const unsigned: CareerTransferUnsignedV1 = {
     archive: {
       career: input.career,
+      checkpoints: deriveTransferCheckpoints(input.career),
       createdAt: input.entry.createdAt,
       displayName: input.entry.displayName,
       id: input.entry.id,
@@ -210,8 +221,26 @@ export function parseCareerTransfer(
     return { reason: "replay_mismatch", status: "invalid" };
   }
 
+  let checkpoints: readonly DecisionCheckpoint[];
+
+  try {
+    checkpoints = createDecisionCheckpoints(replayed);
+  } catch {
+    return { reason: "replay_mismatch", status: "invalid" };
+  }
+
+  if (
+    stableStringify(checkpoints) !==
+    stableStringify(parsed.archive.checkpoints)
+  ) {
+    return { reason: "replay_mismatch", status: "invalid" };
+  }
+
   return {
-    archive: parsed.archive,
+    archive: {
+      ...parsed.archive,
+      checkpoints,
+    },
     status: "ready",
   };
 }
@@ -303,12 +332,14 @@ function isTransferArchive(
     !isRecord(value) ||
     !hasExactKeys(value, [
       "career",
+      "checkpoints",
       "createdAt",
       "displayName",
       "id",
       "updatedAt",
     ]) ||
     !isRecord(value.career) ||
+    !Array.isArray(value.checkpoints) ||
     typeof value.createdAt !== "string" ||
     typeof value.displayName !== "string" ||
     typeof value.id !== "string" ||
@@ -351,55 +382,17 @@ function hasExactKeys(
 }
 
 function checksum(value: unknown): string {
-  return `fnv1a64:${fnv1a64(stableStringify(value))}`;
+  return deterministicHash(value);
 }
 
-function fnv1a64(value: string): string {
-  const bytes = new TextEncoder().encode(value);
-  let hash = 0xcbf29ce484222325n;
-
-  for (const byte of bytes) {
-    hash ^= BigInt(byte);
-    hash = BigInt.asUintN(
-      64,
-      hash * 0x100000001b3n,
-    );
+function deriveTransferCheckpoints(
+  career: ClassicCareerState,
+): readonly DecisionCheckpoint[] {
+  try {
+    return createDecisionCheckpoints(career);
+  } catch {
+    return [];
   }
-
-  return hash.toString(16).padStart(16, "0");
-}
-
-function stableStringify(value: unknown): string {
-  if (
-    value === null ||
-    typeof value === "boolean" ||
-    typeof value === "number" ||
-    typeof value === "string"
-  ) {
-    return JSON.stringify(value);
-  }
-
-  if (Array.isArray(value)) {
-    return `[${value
-      .map((item) => stableStringify(item))
-      .join(",")}]`;
-  }
-
-  if (isRecord(value)) {
-    const fields = Object.keys(value)
-      .filter((key) => value[key] !== undefined)
-      .sort()
-      .map(
-        (key) =>
-          `${JSON.stringify(key)}:${stableStringify(value[key])}`,
-      );
-
-    return `{${fields.join(",")}}`;
-  }
-
-  throw new TypeError(
-    `Cannot checksum value of type ${typeof value}`,
-  );
 }
 
 function quarantine(

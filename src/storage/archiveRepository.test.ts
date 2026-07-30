@@ -6,6 +6,7 @@ import {
   startClassicCareer,
   type ClassicCareerState,
 } from "../domain/classicEngine";
+import { createDecisionCheckpoints } from "../domain/checkpoint";
 import {
   ARCHIVE_CAPACITY,
   ARCHIVE_INDEX_STORAGE_KEY,
@@ -109,6 +110,7 @@ describe("archive repository", () => {
     expect(indexRaw).not.toContain('"seasons"');
     expect(payloadBeforeRename).not.toBeNull();
     expect(payloadBeforeRename).toContain('"choiceLog"');
+    expect(payloadBeforeRename).toContain('"checkpoints"');
     expect(payloadBeforeRename).toContain('"seasons"');
 
     expect(repository.rename("career-a", "冠军之路")).toMatchObject({
@@ -142,6 +144,9 @@ describe("archive repository", () => {
 
     expect(JSON.stringify(loaded.career)).toBe(
       JSON.stringify(progressed),
+    );
+    expect(loaded.checkpoints).toEqual(
+      createDecisionCheckpoints(progressed),
     );
     expect(repository.list()).toMatchObject({
       entries: [
@@ -445,6 +450,42 @@ describe("archive repository", () => {
         ),
       ),
     ).toBeNull();
+  });
+
+  it("rejects a payload whose persisted checkpoints no longer match its career", () => {
+    const storage = new MemoryStorage();
+    const repository = createArchiveRepository(storage, {
+      createId: () => "career-tampered-checkpoint",
+      now: () => "2026-07-30T16:00:00.000Z",
+    });
+    const career = chooseFirstOption(
+      createCareer("phase-5:tampered-checkpoint"),
+    );
+
+    expect(
+      repository.create({
+        career,
+        displayName: "校验点被篡改",
+      }),
+    ).toMatchObject({ ok: true });
+
+    const payloadKey = archivePayloadStorageKey(
+      "career-tampered-checkpoint",
+    );
+    const payload = JSON.parse(storage.getItem(payloadKey)!);
+    payload.checkpoints[0].stateHash =
+      "fnv1a64:0000000000000000";
+    const tamperedRaw = JSON.stringify(payload);
+    storage.setItem(payloadKey, tamperedRaw);
+
+    expect(
+      repository.load("career-tampered-checkpoint"),
+    ).toEqual({
+      detail:
+        "Archive checkpoints do not match career: career-tampered-checkpoint",
+      raw: tamperedRaw,
+      status: "corrupt",
+    });
   });
 });
 
