@@ -21,6 +21,16 @@
   --color-china-ink: oklch(0.97 0.04 88);
   --color-field: oklch(0.18 0.035 162.48);
   --color-field-line: oklch(0.42 0.07 162.48 / 0.38);
+  --color-enhanced-canvas: oklch(0.125 0.008 164);
+  --color-enhanced-surface: oklch(0.17 0.012 164);
+  --color-enhanced-raised: oklch(0.22 0.014 164);
+  --color-enhanced-strong: oklch(0.96 0.012 164);
+  --color-enhanced-supporting: oklch(0.7 0.02 164);
+  --color-enhanced-line: oklch(0.34 0.018 164 / 0.55);
+  --color-enhanced-pitch: oklch(0.73 0.16 160);
+  --color-enhanced-pitch-ink: oklch(0.13 0.02 160);
+  --color-enhanced-trophy: oklch(0.78 0.15 76);
+  --color-enhanced-alert: oklch(0.62 0.2 28);
   --font-sans: var(--classic-font);
 }
 

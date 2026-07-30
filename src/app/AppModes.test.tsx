@@ -79,4 +79,53 @@ describe("UI mode shells", () => {
       screen.getByRole("button", { name: "中国" }),
     ).toHaveAttribute("aria-pressed", "true");
   });
+
+  it("routes an Enhanced career through its timeline and decision rail", async () => {
+    window.history.replaceState({}, "", "/?ui=enhanced");
+    render(<App />);
+
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole("button", {
+        name: "开始生涯",
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "中国" }));
+    await user.click(
+      screen.getByRole("button", { name: "下一步" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "下一步" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "中锋" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "开始踢球" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        document.querySelector("[data-enhanced-career-shell]"),
+      ).not.toBeNull();
+    });
+    expect(
+      document.querySelector("[data-enhanced-timeline]"),
+    ).not.toBeNull();
+    expect(
+      document.querySelector("[data-enhanced-decision-rail]"),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "青训报价" }),
+    ).toBeInTheDocument();
+    const offers = screen.getAllByRole("button", {
+      name: /^加盟 /,
+    });
+    expect(offers).toHaveLength(3);
+
+    await user.click(offers[0]!);
+    expect(
+      await screen.findByText("赛季进行中"),
+    ).toBeInTheDocument();
+  });
 });

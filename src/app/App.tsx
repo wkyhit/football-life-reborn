@@ -46,8 +46,18 @@ import { PositionScreen } from "../ui/classic/PositionScreen";
 import { RecoveryScreen } from "../ui/classic/RecoveryScreen";
 import { SummaryScreen } from "../ui/classic/SummaryScreen";
 import { createSummaryPresentation } from "../ui/classic/summaryPresentation";
-import { resolveUiMode } from "../ui/mode";
+import {
+  resolveUiMode,
+  type UiMode,
+} from "../ui/mode";
 import { seedFromSearch } from "./seed";
+
+const EnhancedCareerScreen = lazy(async () => {
+  const module = await import(
+    "../ui/enhanced/career/EnhancedCareerScreen"
+  );
+  return { default: module.EnhancedCareerScreen };
+});
 
 const EnhancedShell = lazy(async () => {
   const module = await import(
@@ -137,7 +147,7 @@ export function App() {
     return (
       <Suspense fallback={null}>
         <EnhancedShell>
-          <CareerController />
+          <CareerController uiMode="enhanced" />
         </EnhancedShell>
       </Suspense>
     );
@@ -145,12 +155,18 @@ export function App() {
 
   return (
     <ClassicShell>
-      <CareerController />
+      <CareerController uiMode="classic" />
     </ClassicShell>
   );
 }
 
-function CareerController() {
+type CareerControllerProps = {
+  readonly uiMode: UiMode;
+};
+
+function CareerController({
+  uiMode,
+}: CareerControllerProps) {
   const setupRepository = useMemo(
     () => createCareerRepository(window.localStorage),
     [],
@@ -219,7 +235,7 @@ function CareerController() {
         </p>
       ) : null}
       {classicCareer ? (
-        <ClassicCareerExperience
+        <CareerExperience
           initialCareer={classicCareer}
           onSaveError={setSaveError}
           onRestart={() => {
@@ -231,6 +247,7 @@ function CareerController() {
             });
           }}
           repository={classicRepository}
+          uiMode={uiMode}
         />
       ) : (
         renderSetupScreen({
@@ -251,19 +268,21 @@ function CareerController() {
   );
 }
 
-type ClassicCareerExperienceProps = {
+type CareerExperienceProps = {
   readonly initialCareer: ClassicCareerState;
   readonly onSaveError: (reason: string | null) => void;
   readonly onRestart: () => void;
   readonly repository: ClassicSessionRepository;
+  readonly uiMode: UiMode;
 };
 
-function ClassicCareerExperience({
+function CareerExperience({
   initialCareer,
   onSaveError,
   onRestart,
   repository,
-}: ClassicCareerExperienceProps) {
+  uiMode,
+}: CareerExperienceProps) {
   const reveal = useSeasonReveal(initialCareer);
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -309,29 +328,37 @@ function ClassicCareerExperience({
     visibleSeasonCount: reveal.visibleSeasonCount,
   });
 
-  return (
-    <CareerScreen
-      view={view}
-      onChoose={(decisionId, optionId) => {
-        const decision = reveal.committedCareer.currentDecision;
+  const onChoose = (decisionId: string, optionId: string) => {
+    const decision = reveal.committedCareer.currentDecision;
 
-        if (
-          decision === null ||
-          decision.id !== decisionId
-        ) {
-          return;
-        }
+    if (
+      decision === null ||
+      decision.id !== decisionId
+    ) {
+      return;
+    }
 
-        reveal.commitCareer(
-          applyClassicChoice(reveal.committedCareer, {
-            decisionId,
-            decisionType: decision.type,
-            optionId,
-          }),
-        );
-      }}
-    />
-  );
+    reveal.commitCareer(
+      applyClassicChoice(reveal.committedCareer, {
+        decisionId,
+        decisionType: decision.type,
+        optionId,
+      }),
+    );
+  };
+
+  if (uiMode === "enhanced") {
+    return (
+      <Suspense fallback={null}>
+        <EnhancedCareerScreen
+          onChoose={onChoose}
+          view={view}
+        />
+      </Suspense>
+    );
+  }
+
+  return <CareerScreen onChoose={onChoose} view={view} />;
 }
 
 type RecoveryIssue =

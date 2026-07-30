@@ -30,7 +30,7 @@ export default defineConfig({
   reporter: [["list"]],
   retries: 0,
   snapshotPathTemplate:
-    "{testDir}/classic/reference/{projectName}/{arg}{ext}",
+    "{testDir}/{testFileDir}/reference/{projectName}/{arg}{ext}",
   testDir: "./tests/visual",
   use: {
     baseURL: "http://127.0.0.1:4173",

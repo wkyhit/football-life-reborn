@@ -12,6 +12,7 @@ import type {
   CareerTimelineRowPresentation,
 } from "../../src/ui/classic/careerPresentation";
 import type { SummaryPresentation } from "../../src/ui/classic/summaryPresentation";
+import { EnhancedCareerScreen } from "../../src/ui/enhanced/career/EnhancedCareerScreen";
 
 const TONGLIANG: CareerClubPresentation = {
   abbreviation: "CQT",
@@ -102,6 +103,9 @@ type VisualFixture =
 const fixtureName = new URLSearchParams(window.location.search).get(
   "fixture",
 );
+const uiMode = new URLSearchParams(window.location.search).get(
+  "ui",
+);
 const fixture = createFixture(fixtureName);
 const root = document.querySelector("#root");
 
@@ -111,7 +115,12 @@ if (root === null) {
 
 createRoot(root).render(
   <StrictMode>
-    {fixture.kind === "career" ? (
+    {fixture.kind === "career" && uiMode === "enhanced" ? (
+      <EnhancedCareerScreen
+        onChoose={() => undefined}
+        view={fixture.view}
+      />
+    ) : fixture.kind === "career" ? (
       <CareerScreen
         onChoose={() => undefined}
         view={fixture.view}
