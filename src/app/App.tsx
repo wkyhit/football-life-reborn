@@ -59,6 +59,13 @@ const EnhancedCareerScreen = lazy(async () => {
   return { default: module.EnhancedCareerScreen };
 });
 
+const EnhancedOnboarding = lazy(async () => {
+  const module = await import(
+    "../ui/enhanced/EnhancedOnboarding"
+  );
+  return { default: module.EnhancedOnboarding };
+});
+
 const EnhancedShell = lazy(async () => {
   const module = await import(
     "../ui/enhanced/EnhancedShell"
@@ -182,6 +189,11 @@ function CareerController({
       seedFromSearch(window.location.search),
     ),
   );
+  const [enhancedEntryPending, setEnhancedEntryPending] =
+    useState(() => uiMode === "enhanced");
+  const [resumeAvailable, setResumeAvailable] = useState(
+    () => hasResumableState(initial),
+  );
   const [setupState, dispatch] = useReducer(
     careerReducer,
     initial.setupState,
@@ -193,13 +205,23 @@ function CareerController({
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (recovery !== null || classicCareer !== null) {
+    if (
+      recovery !== null ||
+      classicCareer !== null ||
+      enhancedEntryPending
+    ) {
       return;
     }
 
     const result = setupRepository.save(setupState);
     setSaveError(result.ok ? null : result.reason);
-  }, [classicCareer, recovery, setupRepository, setupState]);
+  }, [
+    classicCareer,
+    enhancedEntryPending,
+    recovery,
+    setupRepository,
+    setupState,
+  ]);
 
   if (recovery !== null) {
     return (
@@ -234,7 +256,69 @@ function CareerController({
           本地保存失败：{saveError}
         </p>
       ) : null}
-      {classicCareer ? (
+      {uiMode === "enhanced" &&
+      (enhancedEntryPending || classicCareer === null) ? (
+        <Suspense fallback={null}>
+          <EnhancedOnboarding
+            dispatch={dispatch}
+            hasResume={resumeAvailable}
+            isEntryPrompt={enhancedEntryPending}
+            newCareerSeed={seedFromSearch(
+              window.location.search,
+            )}
+            onBegin={(selectedMode) => {
+              setMode(selectedMode);
+              discardClassicSession();
+              setClassicCareer(null);
+              setResumeAvailable(false);
+              setEnhancedEntryPending(false);
+              dispatch({
+                seed: seedFromSearch(window.location.search),
+                type: "reset_career",
+              });
+              dispatch({ type: "begin_setup" });
+            }}
+            onRandom={(selectedMode, player) => {
+              setMode(selectedMode);
+              discardClassicSession();
+              setClassicCareer(null);
+              setResumeAvailable(false);
+              setEnhancedEntryPending(false);
+              dispatch({
+                seed: seedFromSearch(window.location.search),
+                type: "reset_career",
+              });
+              dispatch({ type: "begin_setup" });
+              dispatch({
+                nationality: player.nationality,
+                type: "select_nationality",
+              });
+              dispatch({ type: "continue_setup" });
+              dispatch({
+                foot: player.foot,
+                name: player.name,
+                number: player.number,
+                type: "update_identity",
+              });
+              dispatch({ type: "continue_setup" });
+              dispatch({
+                position: player.position,
+                type: "select_position",
+              });
+            }}
+            onResume={() => {
+              setResumeAvailable(false);
+              setEnhancedEntryPending(false);
+            }}
+            onStart={() => {
+              setClassicCareer(
+                startClassicFromSetup(setupState, mode),
+              );
+            }}
+            state={setupState}
+          />
+        </Suspense>
+      ) : classicCareer ? (
         <CareerExperience
           initialCareer={classicCareer}
           onSaveError={setSaveError}
@@ -376,6 +460,13 @@ type InitialAppState = {
   readonly recovery: RecoveryIssue | null;
   readonly setupState: CareerState;
 };
+
+function hasResumableState(initial: InitialAppState): boolean {
+  return (
+    initial.classicCareer !== null ||
+    initial.setupState.phase !== "landing"
+  );
+}
 
 function loadInitialState(
   setupRepository: CareerRepository,

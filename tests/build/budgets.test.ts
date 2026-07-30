@@ -121,6 +121,46 @@ describe("Production artifact budgets", () => {
     expect(html).not.toContain(enhancedShell.file);
   });
 
+  it("keeps Enhanced feature screens out of the Classic initial chunk", () => {
+    const manifest = readManifest();
+    const entry = requireManifestEntry(manifest, "index.html");
+    const onboarding = requireManifestEntry(
+      manifest,
+      "src/ui/enhanced/EnhancedOnboarding.tsx",
+    );
+    const career = requireManifestEntry(
+      manifest,
+      "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
+    );
+    const initialCode = readDistText(entry.file);
+    const onboardingCode = readDistText(onboarding.file);
+    const careerCode = readDistText(career.file);
+    const html = readDistText("index.html");
+
+    expect(entry.dynamicImports).toContain(
+      "src/ui/enhanced/EnhancedOnboarding.tsx",
+    );
+    expect(entry.dynamicImports).toContain(
+      "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
+    );
+    expect(onboarding.isDynamicEntry).toBe(true);
+    expect(career.isDynamicEntry).toBe(true);
+    expect(initialCode).not.toContain(
+      "data-enhanced-setup-shell",
+    );
+    expect(initialCode).not.toContain(
+      "data-enhanced-career-shell",
+    );
+    expect(onboardingCode).toContain(
+      "data-enhanced-setup-shell",
+    );
+    expect(careerCode).toContain(
+      "data-enhanced-career-shell",
+    );
+    expect(html).not.toContain(onboarding.file);
+    expect(html).not.toContain(career.file);
+  });
+
   it("copies the exact local crest set into the static output", () => {
     const expected = CLASSIC_CREST_IDS.map(
       (id) => `${id}.png`,
