@@ -14,8 +14,10 @@ import type {
   ClassicSquadRole,
   RoleGroup,
 } from "./role";
+import { PACING_CONFIGS } from "./pacing";
+import type { PacingMode } from "./pacing";
 
-export type PacingMode = "long" | "normal" | "express";
+export type { PacingMode } from "./pacing";
 
 export type TransferCandidate = {
   readonly competitionId: string;
@@ -276,14 +278,13 @@ export function shouldTriggerContractNonRenewal(input: {
     return false;
   }
 
-  const thresholds =
-    input.mode === "long"
-      ? { lowRole: 3, substitute: 2 }
-      : { lowRole: 2, substitute: 1 };
+  const config = PACING_CONFIGS[input.mode];
 
   return (
-    input.lowRoleStreak >= thresholds.lowRole ||
-    input.substituteStreak >= thresholds.substitute
+    input.lowRoleStreak >=
+      config.lowRotationPeriodsBeforeNonRenewal ||
+    input.substituteStreak >=
+      config.substitutePeriodsBeforeNonRenewal
   );
 }
 

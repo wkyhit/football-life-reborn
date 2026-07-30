@@ -228,7 +228,7 @@ export function resolveNationalTournamentSeason(input: {
   readonly nationalTournament?: NationalTrophy;
   readonly nationalTournamentParticipation?: "force" | "skip";
   readonly nationalTrophyOverride?: {
-    readonly result: "force" | "prevent";
+    readonly result: "force" | "skip";
     readonly trophy: NationalTrophy;
   };
   readonly overall: number;
@@ -495,7 +495,7 @@ function resolveTournamentOutcome(input: {
   readonly exitDistribution: readonly number[];
   readonly override:
     | {
-        readonly result: "force" | "prevent";
+        readonly result: "force" | "skip";
         readonly trophy: NationalTrophy;
       }
     | undefined;
