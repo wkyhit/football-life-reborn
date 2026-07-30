@@ -15,6 +15,12 @@ import {
   ACTIVE_CAREER_STORAGE_KEY,
   createCareerRepository,
 } from "../storage/careerRepository";
+import {
+  ACTIVE_ARCHIVE_ID_STORAGE_KEY,
+} from "../storage/activeArchive";
+import {
+  ARCHIVE_INDEX_STORAGE_KEY,
+} from "../storage/archiveRepository";
 import { ACTIVE_CLASSIC_SESSION_STORAGE_KEY } from "../storage/classicSessionRepository";
 import { createRandomPlayerSetup } from "../ui/enhanced/randomPlayer";
 import { App } from "./App";
@@ -286,5 +292,74 @@ describe("UI mode shells", () => {
       expect(raw).not.toBeNull();
       expect(JSON.parse(raw!).state.player).toEqual(expected);
     });
+  });
+
+  it("automatically archives an Enhanced career and restores it from the library after reload", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?ui=enhanced&seed=phase-5%3Aapp-archive",
+    );
+    const firstRender = render(<App />);
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "开始新生涯",
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "中国" }));
+    await user.click(
+      screen.getByRole("button", { name: "下一步" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "下一步" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: /^中锋/ }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "开始踢球" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        localStorage.getItem(ACTIVE_ARCHIVE_ID_STORAGE_KEY),
+      ).not.toBeNull();
+      expect(
+        localStorage.getItem(ARCHIVE_INDEX_STORAGE_KEY),
+      ).toContain("李的生涯");
+    });
+
+    await user.click(
+      screen.getByRole("button", { name: "生涯档案" }),
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: "生涯档案",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("李的生涯")).toBeInTheDocument();
+
+    firstRender.unmount();
+    render(<App />);
+    await user.click(
+      await screen.findByRole("button", {
+        name: "生涯档案",
+      }),
+    );
+    expect(
+      await screen.findByText("李的生涯"),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", {
+        name: "继续 李的生涯",
+      }),
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: "青训报价",
+      }),
+    ).toBeInTheDocument();
   });
 });
