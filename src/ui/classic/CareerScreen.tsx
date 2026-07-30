@@ -1,7 +1,7 @@
-import type { PlayerDraft } from "../../app/setupReducer";
+import type { PlayerProfile } from "../../domain/model";
 
 type CareerScreenProps = {
-  player: PlayerDraft;
+  player: PlayerProfile;
 };
 
 const timelineAges = Array.from({ length: 13 }, (_, index) => 16 + index * 2);

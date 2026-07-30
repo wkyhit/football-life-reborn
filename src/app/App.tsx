@@ -1,10 +1,10 @@
-import { useReducer } from "react";
+import { useReducer, type Dispatch } from "react";
 
 import {
-  createInitialSetupState,
-  setupReducer,
-  type SetupState,
-} from "./setupReducer";
+  careerReducer,
+  createInitialCareerState,
+} from "../domain/careerReducer";
+import type { CareerAction, CareerState } from "../domain/model";
 import { CareerScreen } from "../ui/classic/CareerScreen";
 import { IdentityScreen } from "../ui/classic/IdentityScreen";
 import { LandingScreen } from "../ui/classic/LandingScreen";
@@ -12,19 +12,23 @@ import { NationalityScreen } from "../ui/classic/NationalityScreen";
 import { PositionScreen } from "../ui/classic/PositionScreen";
 
 function renderScreen(
-  state: SetupState,
-  dispatch: React.Dispatch<Parameters<typeof setupReducer>[1]>,
+  state: CareerState,
+  dispatch: Dispatch<CareerAction>,
 ) {
-  switch (state.screen) {
+  switch (state.phase) {
     case "landing":
-      return <LandingScreen onBegin={() => dispatch({ type: "begin" })} />;
+      return (
+        <LandingScreen onBegin={() => dispatch({ type: "begin_setup" })} />
+      );
     case "nationality":
       return (
         <NationalityScreen
           nationality={state.player.nationality}
           onBack={() => dispatch({ type: "back" })}
-          onContinue={() => dispatch({ type: "continue" })}
-          onSelect={() => dispatch({ type: "select_nationality" })}
+          onContinue={() => dispatch({ type: "continue_setup" })}
+          onSelect={() =>
+            dispatch({ nationality: "CHN", type: "select_nationality" })
+          }
         />
       );
     case "identity":
@@ -32,7 +36,7 @@ function renderScreen(
         <IdentityScreen
           player={state.player}
           onBack={() => dispatch({ type: "back" })}
-          onContinue={() => dispatch({ type: "continue" })}
+          onContinue={() => dispatch({ type: "continue_setup" })}
           onFootChange={(foot) =>
             dispatch({ type: "update_identity", foot })
           }
@@ -49,20 +53,24 @@ function renderScreen(
         <PositionScreen
           position={state.player.position}
           onBack={() => dispatch({ type: "back" })}
-          onSelect={() => dispatch({ type: "select_position" })}
+          onSelect={() =>
+            dispatch({ position: "ST", type: "select_position" })
+          }
           onStart={() => dispatch({ type: "start_career" })}
         />
       );
-    case "career":
+    case "decision":
+    case "period_result":
+    case "retired":
       return <CareerScreen player={state.player} />;
   }
 }
 
 export function App() {
   const [state, dispatch] = useReducer(
-    setupReducer,
+    careerReducer,
     undefined,
-    createInitialSetupState,
+    () => createInitialCareerState("phase-1-default"),
   );
 
   return (

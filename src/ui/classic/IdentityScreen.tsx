@@ -1,8 +1,8 @@
+import { isValidShirtNumber } from "../../domain/careerReducer";
 import type {
-  PlayerDraft,
+  PlayerProfile,
   PreferredFoot,
-} from "../../app/setupReducer";
-import { isValidShirtNumber } from "../../app/setupReducer";
+} from "../../domain/model";
 import {
   fieldClass,
   primaryButtonClass,
@@ -11,7 +11,7 @@ import {
 import { SetupShell } from "./SetupShell";
 
 type IdentityScreenProps = {
-  player: PlayerDraft;
+  player: PlayerProfile;
   onBack: () => void;
   onContinue: () => void;
   onFootChange: (foot: PreferredFoot) => void;
