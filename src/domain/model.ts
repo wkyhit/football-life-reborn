@@ -114,6 +114,7 @@ export type CareerAction =
     }
   | { type: "start_career" }
   | { type: "continue_career" }
+  | { seed: string; type: "reset_career" }
   | {
       decisionId: string;
       optionId: string;

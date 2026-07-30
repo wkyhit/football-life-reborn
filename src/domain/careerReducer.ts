@@ -124,6 +124,8 @@ export function careerReducer(
       return startCareer(state);
     case "continue_career":
       return continueCareer(state);
+    case "reset_career":
+      return createInitialCareerState(action.seed);
     case "choose_decision":
       return resolveDecision(state, action.decisionId, action.optionId);
     case "back": {

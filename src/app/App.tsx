@@ -1,15 +1,28 @@
-import { useReducer, type Dispatch } from "react";
+import {
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+  type Dispatch,
+} from "react";
 
 import {
   careerReducer,
   createInitialCareerState,
 } from "../domain/careerReducer";
 import type { CareerAction, CareerState } from "../domain/model";
+import {
+  createCareerRepository,
+  type CareerLoadResult,
+  type CareerRepository,
+} from "../storage/careerRepository";
 import { CareerScreen } from "../ui/classic/CareerScreen";
 import { IdentityScreen } from "../ui/classic/IdentityScreen";
 import { LandingScreen } from "../ui/classic/LandingScreen";
 import { NationalityScreen } from "../ui/classic/NationalityScreen";
 import { PositionScreen } from "../ui/classic/PositionScreen";
+import { RecoveryScreen } from "../ui/classic/RecoveryScreen";
+import { seedFromSearch } from "./seed";
 
 function renderScreen(
   state: CareerState,
@@ -78,17 +91,47 @@ function renderScreen(
   }
 }
 
-export function seedFromSearch(search: string): string {
-  const seed = new URLSearchParams(search).get("seed")?.trim();
-  return seed ? seed.slice(0, 128) : "phase-1-default";
-}
-
 export function App() {
+  const repository = useMemo(
+    () => createCareerRepository(window.localStorage),
+    [],
+  );
+  const [initial] = useState(() =>
+    loadInitialState(
+      repository,
+      seedFromSearch(window.location.search),
+    ),
+  );
   const [state, dispatch] = useReducer(
     careerReducer,
-    undefined,
-    () => createInitialCareerState(seedFromSearch(window.location.search)),
+    initial.state,
   );
+  const [recovery, setRecovery] = useState(initial.recovery);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (recovery !== null) {
+      return;
+    }
+
+    const result = repository.save(state);
+    setSaveError(result.ok ? null : result.reason);
+  }, [recovery, repository, state]);
+
+  if (recovery !== null) {
+    return (
+      <RecoveryScreen
+        recovery={recovery}
+        onStartNew={() => {
+          setRecovery(null);
+          dispatch({
+            seed: seedFromSearch(window.location.search),
+            type: "reset_career",
+          });
+        }}
+      />
+    );
+  }
 
   return (
     <>
@@ -98,7 +141,44 @@ export function App() {
       >
         跳到主要内容
       </a>
+      {saveError ? (
+        <p
+          className="fixed inset-x-4 top-4 z-40 mx-auto max-w-lg rounded-[12px] border border-china bg-canvas px-4 py-3 text-sm text-primary shadow-xl"
+          role="alert"
+        >
+          本地保存失败：{saveError}
+        </p>
+      ) : null}
       {renderScreen(state, dispatch)}
     </>
   );
+}
+
+type RecoveryIssue = Exclude<
+  CareerLoadResult,
+  { status: "empty" } | { status: "ready" }
+>;
+
+type InitialAppState = {
+  recovery: RecoveryIssue | null;
+  state: CareerState;
+};
+
+function loadInitialState(
+  repository: CareerRepository,
+  seed: string,
+): InitialAppState {
+  const loaded = repository.load();
+
+  if (loaded.status === "ready") {
+    return {
+      recovery: null,
+      state: loaded.state,
+    };
+  }
+
+  return {
+    recovery: loaded.status === "empty" ? null : loaded,
+    state: createInitialCareerState(seed),
+  };
 }
