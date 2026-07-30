@@ -31,6 +31,8 @@ import {
 import { evaluateChallengeProgress } from "../features/challenges/progress";
 import { createReplayUrl } from "../features/replay/codec";
 import { createReplayPayload } from "../features/replay/replay";
+import { ReplayRouteScreen } from "../features/replay/ReplayRouteScreen";
+import { resolveReplayRoute } from "../features/replay/route";
 import { useSeasonReveal } from "../features/season-reveal/seasonReveal";
 import {
   createArchiveRepository,
@@ -169,12 +171,27 @@ function renderSetupScreen({
 }
 
 export function App() {
-  const [uiMode] = useState(() =>
-    resolveUiMode(
-      window.location.search,
-      window.localStorage,
-    ),
+  const [replayRoute] = useState(() =>
+    resolveReplayRoute(window.location.hash),
   );
+  const [uiMode] = useState(() =>
+    replayRoute.status === "absent"
+      ? resolveUiMode(
+          window.location.search,
+          window.localStorage,
+        )
+      : "enhanced",
+  );
+
+  if (replayRoute.status !== "absent") {
+    return (
+      <Suspense fallback={null}>
+        <EnhancedShell>
+          <ReplayRouteScreen route={replayRoute} />
+        </EnhancedShell>
+      </Suspense>
+    );
+  }
 
   if (uiMode === "enhanced") {
     return (

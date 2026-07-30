@@ -14,6 +14,7 @@ type ChallengeSummarySurface = ChallengeSurface & {
 
 type SummaryScreenProps = {
   readonly challenge?: ChallengeSummarySurface;
+  readonly contextLabel?: string;
   readonly onCopyReplay?: () => void;
   readonly onRestart: () => void;
   readonly onShare: () => void;
@@ -23,6 +24,7 @@ type SummaryScreenProps = {
 
 export function SummaryScreen({
   challenge,
+  contextLabel,
   onCopyReplay,
   onRestart,
   onShare,
@@ -41,6 +43,14 @@ export function SummaryScreen({
         data-classic-summary-scroll=""
       >
         <article className="animate-rise overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900 p-4">
+          {contextLabel ? (
+            <p
+              className="mb-3 text-[10px] font-extrabold tracking-[0.14em] text-emerald-300"
+              data-summary-context=""
+            >
+              {contextLabel}
+            </p>
+          ) : null}
           <SummaryHeader view={view} />
           <SummaryMetrics view={view} />
           {challenge ? (
