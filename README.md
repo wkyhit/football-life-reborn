@@ -4,10 +4,11 @@ A private research project that clean-room reimplements the observable behavior 
 
 ## Status
 
-Phase 1 now provides a playable deterministic vertical slice on its
-issue branch. It covers one Chinese striker career from age 16 through
-retirement. Later roadmap phases remain intentionally out of scope until
-their preceding pull requests are accepted.
+Phase 1 provides the playable Chinese-striker vertical slice. Phase 2
+adds the frozen full Classic catalog and a headless simulation engine for
+all approved countries, clubs, positions, pacing modes, events, national
+teams, honours, and retirement paths. The visible application remains on
+the Phase 1 interface until the separately scoped Phase 3 visual work.
 
 ## Phase 1 scope
 
@@ -25,6 +26,22 @@ their preceding pull requests are accepted.
 The same `seed + choiceLog + contentVersion` must always produce the same
 career. Simulation code does not use wall-clock time, render count, or
 ambient randomness.
+
+## Phase 2 deterministic contract
+
+The full Classic engine is bound to content version
+`2026-07-30-classic-v1`. Its catalog contains 61 countries, 192 clubs,
+11 competitions, 8 domestic cups, and 6 confederation mappings. A replay
+accepts the original identity, seed, literal ordered choice log, and
+content version; it rejects unknown versions and any choice whose
+decision ID, type, or option does not match the reconstructed state.
+
+Thirty-six reviewed careers under `tests/golden/` freeze representative
+external behavior. A separate 10,000-seed suite exercises all countries,
+positions, and pacing modes while checking exact replay and global state
+invariants. See
+[`docs/classic-versioning.md`](docs/classic-versioning.md) for the
+content-version and fixture-change policy.
 
 ## Local development
 
@@ -61,12 +78,14 @@ Install the Playwright-managed Chromium revision once:
 npx playwright install chromium
 ```
 
-Run the complete Phase 1 gate:
+Run the complete Classic behavior gate:
 
 ```bash
 npm run lint
 npm run typecheck
 npm test
+npm run test:golden
+npm run test:property
 npm run test:e2e
 npm run build
 ```
