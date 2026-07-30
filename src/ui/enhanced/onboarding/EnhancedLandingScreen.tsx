@@ -22,6 +22,7 @@ export function EnhancedLandingScreen({
       className="min-h-dvh bg-enhanced-canvas px-4 py-[max(24px,env(safe-area-inset-top))] text-enhanced-strong sm:px-6 lg:flex lg:h-dvh lg:items-stretch lg:overflow-hidden lg:px-10 lg:py-10"
       data-enhanced-setup-shell="landing"
       id="main-content"
+      tabIndex={-1}
     >
       <section className="mx-auto flex w-full max-w-6xl flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-12">
         <div className="flex flex-col justify-between border-b border-enhanced-line pb-8 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-12">
@@ -48,7 +49,7 @@ export function EnhancedLandingScreen({
                 <dd className="text-xl font-extrabold tabular-nums">
                   {value}
                 </dd>
-                <dt className="mt-0.5 text-[10px] font-bold text-zinc-500">
+                <dt className="mt-0.5 text-[10px] font-bold text-enhanced-supporting">
                   {label}
                 </dt>
               </div>
@@ -59,12 +60,14 @@ export function EnhancedLandingScreen({
         <div className="flex flex-col justify-center py-8 lg:py-0">
           {hasResume ? (
             <button
-              aria-label="继续上次生涯"
               className="mb-6 min-h-14 rounded-[10px] border border-emerald-400/40 bg-emerald-400/[0.07] px-4 text-left"
               onClick={onResume}
               type="button"
             >
-              <span className="block text-[10px] font-bold tracking-[0.12em] text-emerald-400">
+              <span
+                aria-hidden="true"
+                className="block text-[10px] font-bold tracking-[0.12em] text-emerald-400"
+              >
                 LOCAL SAVE
               </span>
               <span className="mt-1 flex items-center justify-between gap-3 text-[15px] font-bold">
@@ -75,7 +78,7 @@ export function EnhancedLandingScreen({
           ) : null}
 
           <fieldset>
-            <legend className="text-[11px] font-bold text-zinc-500">
+            <legend className="text-[11px] font-bold text-enhanced-supporting">
               生涯节奏
             </legend>
             <div className="mt-2 grid grid-cols-3 gap-2">
@@ -103,9 +106,18 @@ export function EnhancedLandingScreen({
                   >
                     <span className="block text-sm font-bold">
                       {label}
+                      {selected ? (
+                        <span
+                          aria-hidden="true"
+                          className="ml-1.5"
+                        >
+                          ✓
+                        </span>
+                      ) : null}
                     </span>
                     <span className="mt-0.5 block text-[10px]">
                       {detail}
+                      {selected ? " · 已选择" : ""}
                     </span>
                   </button>
                 );
@@ -130,7 +142,7 @@ export function EnhancedLandingScreen({
             </button>
           </div>
 
-          <p className="mt-4 text-center text-[11px] leading-relaxed text-zinc-600">
+          <p className="mt-4 text-center text-[11px] leading-relaxed text-enhanced-supporting">
             数据只保存在本机。随机球员同样由当前 seed 确定。
           </p>
         </div>

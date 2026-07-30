@@ -61,6 +61,7 @@ export function EnhancedNationalityScreen({
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
       data-enhanced-setup-shell="nationality"
       id="main-content"
+      tabIndex={-1}
     >
       <header className="shrink-0 border-b border-enhanced-line px-4 pb-4 pt-[max(20px,env(safe-area-inset-top))] sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-5xl items-end justify-between gap-4">
@@ -75,7 +76,7 @@ export function EnhancedNationalityScreen({
               国家队门槛不同，但 61 个选择都能走完整生涯
             </p>
           </div>
-          <span className="shrink-0 text-xs font-bold text-zinc-500">
+          <span className="shrink-0 text-xs font-bold text-enhanced-supporting">
             1 / 3
           </span>
         </div>
@@ -84,7 +85,7 @@ export function EnhancedNationalityScreen({
       <section className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 py-4 sm:px-6 lg:px-8">
         <input
           aria-label="搜索国家"
-          className="h-12 shrink-0 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-4 text-[15px] text-enhanced-strong outline-none placeholder:text-zinc-600 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25"
+          className="h-12 shrink-0 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-4 text-[15px] text-enhanced-strong outline-none placeholder:text-enhanced-supporting focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25"
           onChange={(event) => setQuery(event.target.value)}
           placeholder="搜索中文、英文或 FIFA code"
           type="search"
@@ -118,6 +119,9 @@ export function EnhancedNationalityScreen({
                 type="button"
               >
                 {option.label} {count}
+                {selected ? (
+                  <span aria-hidden="true"> · 当前</span>
+                ) : null}
               </button>
             );
           })}
@@ -130,7 +134,7 @@ export function EnhancedNationalityScreen({
               aria-label="最近选择"
               className="mb-4 border-b border-enhanced-line pb-4"
             >
-              <h2 className="mb-2 text-[11px] font-bold text-zinc-500">
+              <h2 className="mb-2 text-[11px] font-bold text-enhanced-supporting">
                 最近选择
               </h2>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -155,7 +159,7 @@ export function EnhancedNationalityScreen({
                 <p className="text-base font-bold">
                   没有匹配的国家
                 </p>
-                <p className="mt-1 text-[13px] text-zinc-500">
+                <p className="mt-1 text-[13px] text-enhanced-supporting">
                   换个中文、英文或 FIFA code 试试
                 </p>
               </div>
@@ -231,7 +235,7 @@ function CountryButton({
         <span className="block truncate text-[13px] font-bold">
           {country.nameZh}
         </span>
-        <span className="block text-[10px] text-zinc-500">
+        <span className="block text-[10px] text-enhanced-supporting">
           {country.fifaCode}
         </span>
       </span>

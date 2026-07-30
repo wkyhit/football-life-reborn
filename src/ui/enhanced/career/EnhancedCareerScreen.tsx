@@ -10,11 +10,13 @@ type EnhancedCareerScreenProps = {
     decisionId: string,
     optionId: string,
   ) => void;
+  readonly statusMessage?: string | null;
   readonly view: CareerPresentation;
 };
 
 export function EnhancedCareerScreen({
   onChoose,
+  statusMessage,
   view,
 }: EnhancedCareerScreenProps) {
   return (
@@ -22,7 +24,18 @@ export function EnhancedCareerScreen({
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
       data-enhanced-career-shell=""
       id="main-content"
+      tabIndex={-1}
     >
+      {statusMessage ? (
+        <p
+          aria-atomic="true"
+          aria-live="polite"
+          className="sr-only"
+          role="status"
+        >
+          {statusMessage}
+        </p>
+      ) : null}
       <CareerHeader view={view} />
       <div
         className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,7fr)_380px] lg:grid-rows-1 lg:gap-6 lg:p-6"
@@ -77,7 +90,7 @@ function CareerHeader({
         </div>
 
         <div className="shrink-0 border-l border-white/10 pl-3 text-right lg:pl-5">
-          <div className="text-[10px] font-bold text-zinc-500">
+          <div className="text-[10px] font-bold text-enhanced-supporting">
             年龄
           </div>
           <div className="text-xl font-black tabular-nums">
@@ -98,7 +111,7 @@ function CareerHeader({
             ] as const
           ).map(([label, value]) => (
             <div className="min-w-20 px-4 text-center" key={label}>
-              <dt className="text-[10px] font-bold text-zinc-500">
+              <dt className="text-[10px] font-bold text-enhanced-supporting">
                 {label}
               </dt>
               <dd className="mt-0.5 text-lg font-extrabold tabular-nums">
@@ -119,7 +132,7 @@ function CareerHeader({
           ] as const
         ).map(([label, value]) => (
           <div className="text-center" key={label}>
-            <dt className="text-[9px] font-bold text-zinc-500">
+            <dt className="text-[9px] font-bold text-enhanced-supporting">
               {label}
             </dt>
             <dd className="mt-0.5 text-base font-extrabold tabular-nums">
@@ -144,8 +157,9 @@ function CareerTimeline({
   return (
     <section
       aria-labelledby="enhanced-timeline-heading"
-      className="min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 lg:rounded-[16px] lg:border lg:border-white/10 lg:bg-white/[0.025] lg:p-5"
+      className="min-h-0 overflow-y-auto overscroll-contain px-4 py-4 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-emerald-300 sm:px-6 lg:rounded-[16px] lg:border lg:border-white/10 lg:bg-white/[0.025] lg:p-5"
       data-enhanced-timeline=""
+      tabIndex={0}
     >
       <div className="mb-3 flex items-end justify-between gap-4">
         <div>
@@ -159,7 +173,7 @@ function CareerTimeline({
             生涯时间线
           </h1>
         </div>
-        <p className="text-right text-[11px] font-bold text-zinc-500">
+        <p className="text-right text-[11px] font-bold text-enhanced-supporting">
           已记录{" "}
           <span className="text-zinc-300 tabular-nums">
             {recordedSeasons}
@@ -169,7 +183,7 @@ function CareerTimeline({
       </div>
 
       <div className="overflow-hidden rounded-[10px] border border-white/10 bg-black/10">
-        <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-white/10 px-2.5 py-2 text-[9px] font-bold text-zinc-500">
+        <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-white/10 px-2.5 py-2 text-[9px] font-bold text-enhanced-supporting">
           <span>岁</span>
           <span>俱乐部</span>
           <span className="text-center">能力</span>
@@ -186,7 +200,7 @@ function CareerTimeline({
             <span className="text-center text-sm">
               {view.nationalTeam.countryFlag}
             </span>
-            <span className="truncate text-xs font-bold text-zinc-500">
+            <span className="truncate text-xs font-bold text-enhanced-supporting">
               {view.nationalTeam.name}
             </span>
             <span />
@@ -244,10 +258,12 @@ function TimelineRow({
         className={gridClass}
         data-enhanced-season-row="empty"
       >
-        <span className="text-xs font-black tabular-nums text-zinc-700">
+        <span className="text-xs font-black tabular-nums text-enhanced-supporting">
           {row.age}
         </span>
-        <span className="text-xs text-zinc-700">待书写</span>
+        <span className="text-xs text-enhanced-supporting">
+          待书写
+        </span>
         <span />
         <span />
         <span />
@@ -270,7 +286,7 @@ function TimelineRow({
           <span className="block truncate text-[13px] font-bold">
             {row.club.shortName}
           </span>
-          <span className="block truncate text-[9px] text-zinc-600">
+          <span className="block truncate text-[9px] text-enhanced-supporting">
             {row.club.subtitle.replace(" · 次级联赛", "")}
           </span>
         </span>
@@ -293,7 +309,7 @@ function TimelineNumber({
   readonly children: number;
 }) {
   return (
-    <span className="text-right text-xs tabular-nums text-zinc-600">
+    <span className="text-right text-xs tabular-nums text-enhanced-supporting">
       {children}
     </span>
   );
@@ -329,7 +345,12 @@ function DecisionRail({
         className={`${railClass} flex items-center justify-center`}
         data-enhanced-decision-rail=""
       >
-        <p className="flex items-center gap-2 text-sm font-bold text-zinc-400">
+        <p
+          aria-atomic="true"
+          aria-live="polite"
+          className="flex items-center gap-2 text-sm font-bold text-zinc-400"
+          role="status"
+        >
           <span
             aria-hidden="true"
             className="h-2 w-2 rounded-full bg-emerald-400"
@@ -382,8 +403,7 @@ function DecisionOption({
 }) {
   return (
     <button
-      aria-label={`${option.title}，${option.subtitle}`}
-      className="block min-h-12 w-full rounded-[10px] border border-white/10 bg-white/[0.045] p-3 text-left outline-none transition-colors hover:border-emerald-400/40 hover:bg-emerald-400/[0.06] focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:scale-[0.97]"
+      className="block min-h-12 w-full rounded-[10px] border border-white/10 bg-white/[0.045] p-3 text-left outline-none transition-colors hover:border-emerald-400/40 hover:bg-emerald-400/[0.06] focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:scale-[0.97] motion-reduce:transform-none motion-reduce:transition-none"
       onClick={onChoose}
       type="button"
     >
@@ -404,7 +424,7 @@ function DecisionOption({
           <span className="block truncate text-[15px] font-bold">
             {option.title}
           </span>
-          <span className="mt-0.5 block truncate text-[11px] text-zinc-500">
+          <span className="mt-0.5 block truncate text-[11px] text-enhanced-supporting">
             {option.subtitle}
           </span>
         </span>
@@ -415,7 +435,7 @@ function DecisionOption({
             >
               {option.role}
             </span>
-            <span className="block text-[10px] text-zinc-600">
+            <span className="block text-[10px] text-enhanced-supporting">
               {option.stars}
             </span>
           </span>

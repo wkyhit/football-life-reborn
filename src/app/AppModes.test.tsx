@@ -107,7 +107,7 @@ describe("UI mode shells", () => {
       screen.getByRole("button", { name: "下一步" }),
     );
     await user.click(
-      screen.getByRole("button", { name: "中锋" }),
+      screen.getByRole("button", { name: /^中锋/ }),
     );
     await user.click(
       screen.getByRole("button", { name: "开始踢球" }),

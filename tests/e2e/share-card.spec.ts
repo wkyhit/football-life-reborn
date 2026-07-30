@@ -39,9 +39,19 @@ test("the share overlay edits, previews, and downloads a local PNG", async ({
   );
   await page.goto("/");
 
-  await page.getByRole("button", { name: "保存战绩卡" }).click();
+  const shareTrigger = page.getByRole("button", {
+    name: "保存战绩卡",
+  });
+  await shareTrigger.click();
 
   const name = page.getByRole("textbox", { name: "卡上名字" });
+  await expect(name).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(name).toBeHidden();
+  await expect(shareTrigger).toBeFocused();
+
+  await shareTrigger.press("Enter");
+  await expect(name).toBeFocused();
   await expect(name).toHaveValue("林一鸣");
   await expect(name).toHaveAttribute("maxlength", "12");
   await name.fill("新名字");
@@ -61,8 +71,17 @@ test("the share overlay edits, previews, and downloads a local PNG", async ({
     )
     .toEqual({ height: 1720, width: 1080 });
 
+  const downloadButton = page.getByRole("button", {
+    name: "下载图片",
+  });
+  await name.focus();
+  await page.keyboard.press("Shift+Tab");
+  await expect(downloadButton).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(name).toBeFocused();
+
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "下载图片" }).click();
+  await downloadButton.click();
   const download = await downloadPromise;
 
   expect(download.suggestedFilename()).toBe(
@@ -80,4 +99,5 @@ test("the share overlay edits, previews, and downloads a local PNG", async ({
 
   await page.getByRole("button", { name: "关闭" }).click();
   await expect(name).toBeHidden();
+  await expect(shareTrigger).toBeFocused();
 });

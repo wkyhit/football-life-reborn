@@ -54,7 +54,7 @@
   }
 
   body {
-    min-width: 320px;
+    min-width: 0;
     min-height: 100dvh;
     margin: 0;
     background: var(--color-canvas);
@@ -71,5 +71,85 @@
 
   button:disabled {
     cursor: not-allowed;
+  }
+}
+
+[data-enhanced-shell]
+  :where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-enhanced-pitch);
+  outline-offset: 3px;
+}
+
+[data-enhanced-shell]
+  :where(.text-zinc-500, .text-zinc-600, .text-zinc-700) {
+  color: var(--color-enhanced-supporting);
+}
+
+[data-enhanced-shell]
+  [role="dialog"]
+  .bg-emerald-500.text-zinc-950 {
+  color: var(--color-enhanced-pitch-ink);
+  background-color: var(--color-enhanced-pitch);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 260px) {
+  [data-enhanced-career-shell] {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  [data-enhanced-career-layout] {
+    display: flex;
+    min-height: auto;
+    flex-direction: column;
+  }
+
+  [data-enhanced-timeline] {
+    min-height: 12rem;
+    max-height: 70dvh;
+    flex: none;
+  }
+
+  [data-enhanced-timeline] > .overflow-hidden {
+    min-width: 20rem;
+  }
+
+  [data-enhanced-decision-rail] {
+    min-height: 12rem;
+    max-height: none;
+    flex: none;
+    overflow: visible;
+  }
+
+  [data-enhanced-decision-rail] button > span {
+    display: grid;
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  [data-enhanced-decision-rail]
+    button
+    > span
+    > span:nth-child(3) {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  [data-enhanced-decision-rail] .truncate {
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
   }
 }

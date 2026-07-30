@@ -50,6 +50,7 @@ import {
   resolveUiMode,
   type UiMode,
 } from "../ui/mode";
+import { useReducedMotion } from "../ui/shared/useReducedMotion";
 import { seedFromSearch } from "./seed";
 
 const EnhancedCareerScreen = lazy(async () => {
@@ -367,8 +368,32 @@ function CareerExperience({
   repository,
   uiMode,
 }: CareerExperienceProps) {
-  const reveal = useSeasonReveal(initialCareer);
+  const reducedMotion = useReducedMotion();
+  const reveal = useSeasonReveal(initialCareer, {
+    reducedMotion,
+  });
+  const [
+    enhancedAnnouncement,
+    setEnhancedAnnouncement,
+  ] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+
+  useEffect(() => {
+    if (!reducedMotion) {
+      setEnhancedAnnouncement(null);
+      return;
+    }
+
+    if (reveal.isRevealing) {
+      setEnhancedAnnouncement(
+        `赛季更新完成，已记录 ${reveal.committedCareer.seasons.length} 个赛季`,
+      );
+    }
+  }, [
+    reducedMotion,
+    reveal.committedCareer.seasons.length,
+    reveal.isRevealing,
+  ]);
 
   useEffect(() => {
     const result = repository.save(reveal.committedCareer);
@@ -422,12 +447,21 @@ function CareerExperience({
       return;
     }
 
-    reveal.commitCareer(
-      applyClassicChoice(reveal.committedCareer, {
+    const nextCareer = applyClassicChoice(
+      reveal.committedCareer,
+      {
         decisionId,
         decisionType: decision.type,
         optionId,
-      }),
+      },
+    );
+    reveal.commitCareer(nextCareer);
+    setEnhancedAnnouncement(
+      reducedMotion &&
+        nextCareer.seasons.length >
+          reveal.committedCareer.seasons.length
+        ? `赛季更新完成，已记录 ${nextCareer.seasons.length} 个赛季`
+        : null,
     );
   };
 
@@ -436,6 +470,7 @@ function CareerExperience({
       <Suspense fallback={null}>
         <EnhancedCareerScreen
           onChoose={onChoose}
+          statusMessage={enhancedAnnouncement}
           view={view}
         />
       </Suspense>

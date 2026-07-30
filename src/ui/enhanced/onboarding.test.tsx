@@ -80,6 +80,9 @@ describe("Enhanced onboarding", () => {
     await user.click(
       screen.getByRole("button", { name: /^亚洲/ }),
     );
+    expect(
+      screen.getByRole("button", { name: /^亚洲/ }),
+    ).toHaveTextContent("当前");
     const regionalCountries = Array.from(
       document.querySelectorAll<HTMLElement>(
         "[data-enhanced-country]",
@@ -169,6 +172,9 @@ describe("Enhanced onboarding", () => {
     await user.click(
       screen.getByRole("button", { name: "速通" }),
     );
+    expect(
+      screen.getByRole("button", { name: "速通" }),
+    ).toHaveTextContent("已选择");
     await user.click(
       screen.getByRole("button", { name: "随机球员" }),
     );

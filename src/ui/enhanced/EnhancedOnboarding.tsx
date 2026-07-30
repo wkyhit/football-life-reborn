@@ -120,6 +120,7 @@ function EnhancedIdentityScreen({
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
       data-enhanced-setup-shell="identity"
       id="main-content"
+      tabIndex={-1}
     >
       <EnhancedStepHeader
         description="姓名、号码和惯用脚只定义你的身份，不改变模拟数值"
@@ -143,7 +144,7 @@ function EnhancedIdentityScreen({
         <div className="flex min-h-0 flex-col justify-end pt-4 lg:justify-center lg:pt-0">
           <div className="grid grid-cols-[minmax(0,2fr)_minmax(88px,1fr)] gap-3">
             <label className="block">
-              <span className="text-[11px] font-bold text-zinc-500">
+              <span className="text-[11px] font-bold text-enhanced-supporting">
                 姓名
               </span>
               <input
@@ -159,7 +160,7 @@ function EnhancedIdentityScreen({
               />
             </label>
             <label className="block">
-              <span className="text-[11px] font-bold text-zinc-500">
+              <span className="text-[11px] font-bold text-enhanced-supporting">
                 号码
               </span>
               <input
@@ -177,7 +178,7 @@ function EnhancedIdentityScreen({
           </div>
 
           <fieldset className="mt-4">
-            <legend className="text-[11px] font-bold text-zinc-500">
+            <legend className="text-[11px] font-bold text-enhanced-supporting">
               惯用脚
             </legend>
             <div className="mt-1 grid grid-cols-2 gap-2">
@@ -265,6 +266,7 @@ function EnhancedPositionScreen({
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
       data-enhanced-setup-shell="position"
       id="main-content"
+      tabIndex={-1}
     >
       <EnhancedStepHeader
         description="位置决定赛季数据结构、竞争方式和奖项资格"
@@ -282,9 +284,6 @@ function EnhancedPositionScreen({
 
                 return (
                   <button
-                    aria-label={
-                      position === "ST" ? "中锋" : label
-                    }
                     aria-pressed={selected}
                     className={
                       selected
@@ -305,11 +304,11 @@ function EnhancedPositionScreen({
                       <span className="text-base font-bold">
                         {label}
                       </span>
-                      <span className="text-[10px] font-black text-zinc-600">
+                      <span className="text-[10px] font-black text-enhanced-supporting">
                         {position}
                       </span>
                     </span>
-                    <span className="mt-1 block text-[11px] text-zinc-500">
+                    <span className="mt-1 block text-[11px] text-enhanced-supporting">
                       {group}
                       {selected ? " · 已选择" : ""}
                     </span>
@@ -354,7 +353,7 @@ function EnhancedStepHeader({
             {description}
           </p>
         </div>
-        <span className="shrink-0 text-xs font-bold text-zinc-500">
+        <span className="shrink-0 text-xs font-bold text-enhanced-supporting">
           {step} / 3
         </span>
       </div>
