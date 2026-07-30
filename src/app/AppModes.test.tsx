@@ -30,6 +30,24 @@ describe("UI mode shells", () => {
     window.history.replaceState({}, "", "/");
   });
 
+  it("defaults the root route to Enhanced while preserving the Classic override", async () => {
+    const defaultRender = render(<App />);
+
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-ui-mode="enhanced"]'),
+      ).not.toBeNull();
+    });
+    defaultRender.unmount();
+
+    window.history.replaceState({}, "", "/?ui=classic");
+    render(<App />);
+
+    expect(
+      document.querySelector('[data-ui-mode="classic"]'),
+    ).not.toBeNull();
+  });
+
   it("isolates the shells while preserving one saved career controller", async () => {
     window.history.replaceState({}, "", "/?ui=classic");
     const classicRender = render(<App />);

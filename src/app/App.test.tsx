@@ -19,10 +19,12 @@ import { seedFromSearch } from "./seed";
 describe("Classic navigation", () => {
   beforeEach(() => {
     localStorage.clear();
+    window.history.replaceState({}, "", "/?ui=classic");
   });
 
   afterEach(() => {
     cleanup();
+    window.history.replaceState({}, "", "/");
   });
 
   it("uses the seed query as the reproducibility input", () => {

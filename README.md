@@ -6,9 +6,9 @@ A private research project that clean-room reimplements the observable behavior 
 
 Phases 1 through 3 provide the deterministic simulator, frozen full
 Classic catalog, and Classic visual/share-card compatibility baseline.
-Phase 4 is adding an Enhanced presentation over the same engine and
-career state. During private acceptance, `/` remains Classic and
-`?ui=enhanced` opts into the Enhanced experience.
+Phase 4 adds an Enhanced presentation over the same engine and career
+state. `/` opens Enhanced by default, while `?ui=classic` preserves the
+frozen compatibility experience.
 
 ## Phase 1 scope
 
@@ -72,9 +72,8 @@ replace the active slot.
 
 ## UI modes and deployment
 
-- `/` currently opens the frozen Classic baseline during Phase 4
-  acceptance.
-- `?ui=enhanced` opens the responsive Enhanced presentation.
+- `/` opens the responsive Enhanced presentation by default.
+- `?ui=enhanced` explicitly selects Enhanced.
 - `?ui=classic` always forces the Classic compatibility view.
 - The Enhanced mode adds visible resume, country discovery, random player
   setup, semantic landmarks, keyboard/focus support, zoom support, and
@@ -82,6 +81,8 @@ replace the active slot.
 - Vercel Git integration deploys every non-`main` branch push to Preview
   and every `main` push to Production. The application remains a static,
   local-first build; career data stays in browser storage.
+- Production is available at
+  [football-life-reborn.vercel.app](https://football-life-reborn.vercel.app/).
 
 ## Verification
 

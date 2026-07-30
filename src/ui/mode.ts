@@ -20,9 +20,9 @@ export function resolveUiMode(
       UI_MODE_STORAGE_KEY,
     );
 
-    return isUiMode(storedMode) ? storedMode : "classic";
+    return isUiMode(storedMode) ? storedMode : "enhanced";
   } catch {
-    return "classic";
+    return "enhanced";
   }
 }
 
