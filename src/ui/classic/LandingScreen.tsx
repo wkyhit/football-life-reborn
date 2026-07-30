@@ -4,7 +4,7 @@ import type { PacingMode } from "../../domain/pacing";
 import { primaryButtonClass } from "./classNames";
 
 type LandingScreenProps = {
-  onBegin: () => void;
+  onBegin: (mode: PacingMode) => void;
 };
 
 export function LandingScreen({ onBegin }: LandingScreenProps) {
@@ -94,7 +94,7 @@ export function LandingScreen({ onBegin }: LandingScreenProps) {
         })}
         <button
           className={`${primaryButtonClass} mt-4 h-12 w-full`}
-          onClick={onBegin}
+          onClick={() => onBegin(mode)}
           type="button"
         >
           开始生涯

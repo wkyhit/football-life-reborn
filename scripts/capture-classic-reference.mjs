@@ -14,11 +14,17 @@ const viewports = [
   { height: 830, width: 1280 },
   { height: 900, width: 1440 },
 ];
+const requestedProject = process.env.CLASSIC_REFERENCE_PROJECT;
 const browser = await chromium.launch();
 
 try {
   for (const viewport of viewports) {
     const projectName = `chromium-${viewport.width}x${viewport.height}`;
+
+    if (requestedProject && projectName !== requestedProject) {
+      continue;
+    }
+
     const outputDirectory = `${referenceRoot}/${projectName}`;
     const context = await browser.newContext({
       colorScheme: "dark",
@@ -55,6 +61,36 @@ try {
 
     await page.getByRole("button", { name: "中锋" }).click();
     await capture(page, outputDirectory, "position-selected");
+
+    if (viewport.width === 390 && viewport.height === 844) {
+      await page.addStyleTag({
+        content:
+          'img[src^="/crests/"] { visibility: hidden !important; }',
+      });
+      await page.getByRole("button", { name: "开始踢球" }).click();
+      await page.getByText(/岁 · 决策/).waitFor();
+      await capture(page, outputDirectory, "career-empty");
+      process.stdout.write(
+        `Reference career empty:\n${await page.locator("body").innerText()}\n`,
+      );
+
+      await page.getByRole("button", { name: /加盟/ }).first().click();
+      await page.waitForTimeout(50);
+      await capture(page, outputDirectory, "career-simulating");
+      process.stdout.write(
+        `Reference career simulating:\n${await page.locator("body").innerText()}\n`,
+      );
+
+      await page.waitForTimeout(700);
+      await capture(page, outputDirectory, "career-populated");
+
+      await page.getByText(/岁 · 决策/).waitFor({ timeout: 5_000 });
+      await capture(page, outputDirectory, "career-deciding");
+      process.stdout.write(
+        `Reference career deciding:\n${await page.locator("body").innerText()}\n`,
+      );
+    }
+
     await context.close();
     process.stdout.write(`Captured ${projectName} onboarding matrix\n`);
   }

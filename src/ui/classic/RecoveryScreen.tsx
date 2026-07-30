@@ -1,9 +1,13 @@
-import type { CareerLoadResult } from "../../storage/careerRepository";
-
-type RecoveryIssue = Exclude<
-  CareerLoadResult,
-  { status: "empty" } | { status: "ready" }
->;
+type RecoveryIssue =
+  | {
+      readonly reason: string;
+      readonly status: "unavailable";
+    }
+  | {
+      readonly quarantineKey: string | null;
+      readonly reason: string;
+      readonly status: "corrupt" | "unsupported";
+    };
 
 type RecoveryScreenProps = {
   onStartNew: () => void;

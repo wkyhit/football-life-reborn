@@ -3,6 +3,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -11,10 +12,11 @@ import {
   ACTIVE_CAREER_STORAGE_KEY,
   CAREER_QUARANTINE_PREFIX,
 } from "../storage/careerRepository";
+import { ACTIVE_CLASSIC_SESSION_STORAGE_KEY } from "../storage/classicSessionRepository";
 import { App } from "./App";
 import { seedFromSearch } from "./seed";
 
-describe("Phase 1 Classic navigation", () => {
+describe("Classic navigation", () => {
   beforeEach(() => {
     localStorage.clear();
   });
@@ -65,10 +67,13 @@ describe("Phase 1 Classic navigation", () => {
     expect(
       screen.getByRole("heading", { name: "青训报价" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("林一鸣")).toBeInTheDocument();
     expect(screen.getByText("#9 中锋")).toBeInTheDocument();
-    expect(screen.getByText("16 岁")).toBeInTheDocument();
     expect(screen.getByText("自由身")).toBeInTheDocument();
+    const header = document.querySelector<HTMLElement>(
+      "[data-classic-career-header]",
+    );
+    expect(header).not.toBeNull();
+    expect(within(header!).getByText("16")).toBeInTheDocument();
 
     const academyOptions = screen.getAllByRole("button", {
       name: /^加盟 /,
@@ -77,15 +82,36 @@ describe("Phase 1 Classic navigation", () => {
     await user.click(academyOptions[0]!);
 
     expect(
-      screen.getByRole("heading", { name: "两赛季小结" }),
+      screen.getByText("赛季进行中…"),
     ).toBeInTheDocument();
-    expect(screen.getByText("18 岁")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "继续生涯" }));
+    await waitFor(
+      () => {
+        expect(
+          document.querySelectorAll(
+            "[data-classic-career-panel] button",
+          ),
+        ).not.toHaveLength(0);
+      },
+      { timeout: 2_500 },
+    );
 
-    expect(
-      screen.getByRole("heading", { name: "额外训练" }),
-    ).toBeInTheDocument();
+    const raw = localStorage.getItem(
+      ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+    );
+    expect(raw).not.toBeNull();
+    expect(JSON.parse(raw!)).toMatchObject({
+      identity: {
+        lastName: "林一鸣",
+        nationalityFifaCode: "CHN",
+        position: "ST",
+        preferredNumber: 9,
+      },
+      mode: "normal",
+      seed: "phase-1-default",
+    });
+    expect(raw).not.toContain('"state"');
+    expect(raw).not.toContain('"seasons"');
   });
 
   it("resumes the exact identity form after the app reloads", async () => {
