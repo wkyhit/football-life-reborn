@@ -30,7 +30,7 @@ type ManifestEntry = {
 };
 type ViteManifest = Readonly<Record<string, ManifestEntry>>;
 
-describe("Phase 3 production artifact budgets", () => {
+describe("Production artifact budgets", () => {
   it("declares one static Vercel build and emits a Vite manifest", () => {
     expect(
       JSON.parse(
@@ -99,6 +99,26 @@ describe("Phase 3 production artifact budgets", () => {
     expect(rendererCode).toContain("生涯编号");
     expect(html).not.toContain(overlay.file);
     expect(html).not.toContain(renderer.file);
+  });
+
+  it("keeps the Enhanced shell out of the Classic initial chunk", () => {
+    const manifest = readManifest();
+    const entry = requireManifestEntry(manifest, "index.html");
+    const enhancedShell = requireManifestEntry(
+      manifest,
+      "src/ui/enhanced/EnhancedShell.tsx",
+    );
+    const initialCode = readDistText(entry.file);
+    const enhancedCode = readDistText(enhancedShell.file);
+    const html = readDistText("index.html");
+
+    expect(entry.dynamicImports).toContain(
+      "src/ui/enhanced/EnhancedShell.tsx",
+    );
+    expect(enhancedShell.isDynamicEntry).toBe(true);
+    expect(initialCode).not.toContain("data-enhanced-shell");
+    expect(enhancedCode).toContain("data-enhanced-shell");
+    expect(html).not.toContain(enhancedShell.file);
   });
 
   it("copies the exact local crest set into the static output", () => {

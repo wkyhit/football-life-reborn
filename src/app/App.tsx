@@ -38,6 +38,7 @@ import { CareerScreen } from "../ui/classic/CareerScreen";
 import {
   createCareerPresentation,
 } from "../ui/classic/careerPresentation";
+import { ClassicShell } from "../ui/classic/ClassicShell";
 import { IdentityScreen } from "../ui/classic/IdentityScreen";
 import { LandingScreen } from "../ui/classic/LandingScreen";
 import { NationalityScreen } from "../ui/classic/NationalityScreen";
@@ -45,7 +46,15 @@ import { PositionScreen } from "../ui/classic/PositionScreen";
 import { RecoveryScreen } from "../ui/classic/RecoveryScreen";
 import { SummaryScreen } from "../ui/classic/SummaryScreen";
 import { createSummaryPresentation } from "../ui/classic/summaryPresentation";
+import { resolveUiMode } from "../ui/mode";
 import { seedFromSearch } from "./seed";
+
+const EnhancedShell = lazy(async () => {
+  const module = await import(
+    "../ui/enhanced/EnhancedShell"
+  );
+  return { default: module.EnhancedShell };
+});
 
 const ShareCardOverlay = lazy(async () => {
   const module = await import(
@@ -117,6 +126,31 @@ function renderSetupScreen({
 }
 
 export function App() {
+  const [uiMode] = useState(() =>
+    resolveUiMode(
+      window.location.search,
+      window.localStorage,
+    ),
+  );
+
+  if (uiMode === "enhanced") {
+    return (
+      <Suspense fallback={null}>
+        <EnhancedShell>
+          <CareerController />
+        </EnhancedShell>
+      </Suspense>
+    );
+  }
+
+  return (
+    <ClassicShell>
+      <CareerController />
+    </ClassicShell>
+  );
+}
+
+function CareerController() {
   const setupRepository = useMemo(
     () => createCareerRepository(window.localStorage),
     [],
