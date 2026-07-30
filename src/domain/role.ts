@@ -128,8 +128,22 @@ export function resolveClassicSquadRole(input: {
   overall: number;
   roleGroup: RoleGroup;
 }): ClassicSquadRole {
+  return resolveClassicSquadRoleAgainstBase({
+    baseOverall: clubBaseOverall(
+      input.clubInternationalReputation,
+    ),
+    overall: input.overall,
+    roleGroup: input.roleGroup,
+  });
+}
+
+export function resolveClassicSquadRoleAgainstBase(input: {
+  baseOverall: number;
+  overall: number;
+  roleGroup: RoleGroup;
+}): ClassicSquadRole {
   return resolveRoleFromDifference(
-    input.overall - clubBaseOverall(input.clubInternationalReputation),
+    input.overall - input.baseOverall,
     input.roleGroup === "goalkeeper",
   );
 }
@@ -167,6 +181,7 @@ export function appearanceRangeForRole(
 
 export function simulateRoleSeason(input: {
   appearanceMultiplier?: number;
+  baseOverallOverride?: number;
   clubContinentalReputation: number;
   clubDomesticReputation: number;
   clubInternationalReputation: number;
@@ -177,6 +192,7 @@ export function simulateRoleSeason(input: {
   roleShift?: number;
   scoringMultiplier?: number;
   statsMultiplier?: number;
+  strengthReputationOverride?: number;
   suspended?: boolean;
 }): {
   readonly rngState: number;
@@ -184,10 +200,20 @@ export function simulateRoleSeason(input: {
   readonly stats: ClassicSeasonStats;
 } {
   const goalkeeper = input.roleGroup === "goalkeeper";
+  const baseOverall =
+    input.baseOverallOverride ??
+    clubBaseOverall(input.clubInternationalReputation);
+  const strengthReputation =
+    input.strengthReputationOverride ??
+    input.clubDomesticReputation;
   const resolvedRole =
     input.roleOverride ??
     shiftClassicSquadRole(
-      resolveClassicSquadRole(input),
+      resolveClassicSquadRoleAgainstBase({
+        baseOverall,
+        overall: input.overall,
+        roleGroup: input.roleGroup,
+      }),
       input.roleGroup,
       input.roleShift ?? 0,
     );
@@ -217,11 +243,10 @@ export function simulateRoleSeason(input: {
     );
     const clubStrength =
       GOALKEEPER_CONCEDING_MULTIPLIER[
-        clampInteger(input.clubDomesticReputation, 0, 5)
+        clampInteger(strengthReputation, 0, 5)
       ]!;
     const difference =
-      input.overall -
-      clubBaseOverall(input.clubInternationalReputation);
+      input.overall - baseOverall;
     const goalsConceded = Math.max(
       0,
       Math.round(
@@ -267,15 +292,13 @@ export function simulateRoleSeason(input: {
     0.9,
     1.1,
   );
-  const difference =
-    input.overall -
-    clubBaseOverall(input.clubInternationalReputation);
+  const difference = input.overall - baseOverall;
   const rateIndex = differenceBucket(difference);
   const multiplier =
     random.value *
     statsMultiplier *
     CLUB_SCORING_MULTIPLIER[
-      clampInteger(input.clubDomesticReputation, 0, 5)
+      clampInteger(strengthReputation, 0, 5)
     ]! *
     overallScoringMultiplier(input.overall) *
     (input.scoringMultiplier ?? 1);
