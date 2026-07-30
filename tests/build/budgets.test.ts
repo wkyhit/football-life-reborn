@@ -32,22 +32,32 @@ type ViteManifest = Readonly<Record<string, ManifestEntry>>;
 
 describe("Production artifact budgets", () => {
   it("declares one static Vercel build and emits a Vite manifest", () => {
-    expect(
-      JSON.parse(
-        readFileSync(join(process.cwd(), "vercel.json"), "utf8"),
-      ),
-    ).toEqual({
+    const vercelConfig = JSON.parse(
+      readFileSync(join(process.cwd(), "vercel.json"), "utf8"),
+    ) as {
+      readonly headers?: readonly unknown[];
+    };
+
+    expect(vercelConfig).toMatchObject({
       $schema: "https://openapi.vercel.sh/vercel.json",
       buildCommand: "npm run build",
       framework: "vite",
       outputDirectory: "dist",
     });
+    expect(vercelConfig.headers).toHaveLength(1);
     expect(existsSync(MANIFEST_PATH)).toBe(true);
     expect(
       walkFiles(DIST_DIRECTORY).every((path) =>
-        [".css", ".html", ".js", ".json", ".png"].includes(
-          extname(path),
-        ),
+        [
+          "",
+          ".css",
+          ".html",
+          ".js",
+          ".json",
+          ".png",
+          ".svg",
+          ".webmanifest",
+        ].includes(extname(path)),
       ),
     ).toBe(true);
   });

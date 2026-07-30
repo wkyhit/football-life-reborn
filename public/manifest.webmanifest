@@ -1,0 +1,27 @@
+{
+  "name": "Football Life Reborn",
+  "short_name": "Football Life",
+  "description": "用相同 seed 和选择重放完全一致的足球职业生涯。61 个国家、192 家俱乐部，纯前端、本地优先。",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "zh-CN",
+  "theme_color": "#09090b",
+  "background_color": "#09090b",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
