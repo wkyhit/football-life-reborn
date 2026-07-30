@@ -17,11 +17,13 @@ import {
 } from "./randomPlayer";
 
 export type EnhancedOnboardingProps = {
+  readonly archiveCount?: number;
   readonly dispatch: Dispatch<CareerAction>;
   readonly hasResume: boolean;
   readonly isEntryPrompt: boolean;
   readonly newCareerSeed: string;
   readonly onBegin: (mode: PacingMode) => void;
+  readonly onOpenArchive?: () => void;
   readonly onRandom: (
     mode: PacingMode,
     player: RandomPlayerSetup,
@@ -32,11 +34,13 @@ export type EnhancedOnboardingProps = {
 };
 
 export function EnhancedOnboarding({
+  archiveCount = 0,
   dispatch,
   hasResume,
   isEntryPrompt,
   newCareerSeed,
   onBegin,
+  onOpenArchive,
   onRandom,
   onResume,
   onStart,
@@ -45,6 +49,7 @@ export function EnhancedOnboarding({
   if (isEntryPrompt || state.phase === "landing") {
     return (
       <EnhancedLandingScreen
+        archiveCount={archiveCount}
         hasResume={hasResume}
         onBegin={onBegin}
         onRandom={(mode) =>
@@ -54,6 +59,9 @@ export function EnhancedOnboarding({
           )
         }
         onResume={onResume}
+        {...(onOpenArchive === undefined
+          ? {}
+          : { onOpenArchive })}
       />
     );
   }

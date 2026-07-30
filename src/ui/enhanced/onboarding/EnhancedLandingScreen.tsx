@@ -3,15 +3,19 @@ import { useState } from "react";
 import type { PacingMode } from "../../../domain/pacing";
 
 type EnhancedLandingScreenProps = {
+  readonly archiveCount?: number;
   readonly hasResume: boolean;
   readonly onBegin: (mode: PacingMode) => void;
+  readonly onOpenArchive?: () => void;
   readonly onRandom: (mode: PacingMode) => void;
   readonly onResume: () => void;
 };
 
 export function EnhancedLandingScreen({
+  archiveCount = 0,
   hasResume,
   onBegin,
+  onOpenArchive,
   onRandom,
   onResume,
 }: EnhancedLandingScreenProps) {
@@ -140,6 +144,19 @@ export function EnhancedLandingScreen({
             >
               随机球员
             </button>
+            {onOpenArchive ? (
+              <button
+                aria-label="生涯档案"
+                className="min-h-12 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-5 text-[15px] font-bold"
+                onClick={onOpenArchive}
+                type="button"
+              >
+                生涯档案
+                <span className="ml-2 text-xs text-enhanced-supporting">
+                  {archiveCount} / 20
+                </span>
+              </button>
+            ) : null}
           </div>
 
           <p className="mt-4 text-center text-[11px] leading-relaxed text-enhanced-supporting">

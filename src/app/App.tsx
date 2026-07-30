@@ -1,9 +1,11 @@
 import {
   lazy,
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   useState,
   type Dispatch,
 } from "react";
@@ -24,6 +26,14 @@ import type {
 import type { PacingMode } from "../domain/pacing";
 import { useSeasonReveal } from "../features/season-reveal/seasonReveal";
 import {
+  createArchiveRepository,
+  type ArchiveRepository,
+} from "../storage/archiveRepository";
+import {
+  readActiveArchiveId,
+  writeActiveArchiveId,
+} from "../storage/activeArchive";
+import {
   createCareerRepository,
   type CareerLoadResult,
   type CareerRepository,
@@ -34,6 +44,7 @@ import {
   type ClassicSessionLoadResult,
   type ClassicSessionRepository,
 } from "../storage/classicSessionRepository";
+import { migrateClassicSessionToArchive } from "../storage/migrations/migrations";
 import { CareerScreen } from "../ui/classic/CareerScreen";
 import {
   createCareerPresentation,
@@ -58,6 +69,13 @@ const EnhancedCareerScreen = lazy(async () => {
     "../ui/enhanced/career/EnhancedCareerScreen"
   );
   return { default: module.EnhancedCareerScreen };
+});
+
+const EnhancedArchiveScreen = lazy(async () => {
+  const module = await import(
+    "../features/archive/EnhancedArchiveScreen"
+  );
+  return { default: module.EnhancedArchiveScreen };
 });
 
 const EnhancedOnboarding = lazy(async () => {
@@ -183,13 +201,43 @@ function CareerController({
     () => createClassicSessionRepository(window.localStorage),
     [],
   );
-  const [initial] = useState(() =>
-    loadInitialState(
+  const archiveRepository = useMemo(
+    () => createArchiveRepository(window.localStorage),
+    [],
+  );
+  const [initial] = useState(() => {
+    const loaded = loadInitialState(
       setupRepository,
       classicRepository,
       seedFromSearch(window.location.search),
-    ),
-  );
+    );
+    let activeArchiveId =
+      uiMode === "enhanced"
+        ? readActiveArchiveId(window.localStorage)
+        : null;
+
+    if (
+      uiMode === "enhanced" &&
+      activeArchiveId === null
+    ) {
+      const migration = migrateClassicSessionToArchive(
+        window.localStorage,
+      );
+
+      if (
+        migration.status === "migrated" ||
+        migration.status === "already_migrated"
+      ) {
+        activeArchiveId = migration.archiveId;
+        writeActiveArchiveId(
+          window.localStorage,
+          activeArchiveId,
+        );
+      }
+    }
+
+    return { ...loaded, activeArchiveId };
+  });
   const [enhancedEntryPending, setEnhancedEntryPending] =
     useState(() => uiMode === "enhanced");
   const [resumeAvailable, setResumeAvailable] = useState(
@@ -201,9 +249,31 @@ function CareerController({
   );
   const [classicCareer, setClassicCareer] =
     useState<ClassicCareerState | null>(initial.classicCareer);
+  const [activeArchiveId, setActiveArchiveIdState] =
+    useState<string | null>(initial.activeArchiveId);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveRevision, setArchiveRevision] = useState(0);
   const [mode, setMode] = useState<PacingMode>("normal");
   const [recovery, setRecovery] = useState(initial.recovery);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const setActiveArchiveId = useCallback(
+    (id: string | null) => {
+      setActiveArchiveIdState(id);
+
+      if (!writeActiveArchiveId(window.localStorage, id)) {
+        setSaveError("无法保存当前档案标识");
+      }
+    },
+    [],
+  );
+  const onArchiveChanged = useCallback(() => {
+    setArchiveRevision((revision) => revision + 1);
+  }, []);
+  const archiveCount = useMemo(() => {
+    const listed = archiveRepository.list();
+
+    return listed.ok ? listed.entries.length : 0;
+  }, [archiveRepository, archiveRevision]);
 
   useEffect(() => {
     if (
@@ -241,6 +311,36 @@ function CareerController({
     );
   }
 
+  if (uiMode === "enhanced" && archiveOpen) {
+    return (
+      <Suspense fallback={null}>
+        <EnhancedArchiveScreen
+          activeArchiveId={activeArchiveId}
+          onActiveDeleted={(id) => {
+            if (id === activeArchiveId) {
+              discardClassicSession();
+              setActiveArchiveId(null);
+              setClassicCareer(null);
+              setResumeAvailable(false);
+              setEnhancedEntryPending(true);
+            }
+          }}
+          onBack={() => setArchiveOpen(false)}
+          onChanged={onArchiveChanged}
+          onContinue={(career, archiveId) => {
+            setClassicCareer(career);
+            setActiveArchiveId(archiveId);
+            setResumeAvailable(false);
+            setEnhancedEntryPending(false);
+            setArchiveOpen(false);
+          }}
+          repository={archiveRepository}
+          storage={window.localStorage}
+        />
+      </Suspense>
+    );
+  }
+
   return (
     <>
       <a
@@ -261,6 +361,7 @@ function CareerController({
       (enhancedEntryPending || classicCareer === null) ? (
         <Suspense fallback={null}>
           <EnhancedOnboarding
+            archiveCount={archiveCount}
             dispatch={dispatch}
             hasResume={resumeAvailable}
             isEntryPrompt={enhancedEntryPending}
@@ -270,6 +371,7 @@ function CareerController({
             onBegin={(selectedMode) => {
               setMode(selectedMode);
               discardClassicSession();
+              setActiveArchiveId(null);
               setClassicCareer(null);
               setResumeAvailable(false);
               setEnhancedEntryPending(false);
@@ -282,6 +384,7 @@ function CareerController({
             onRandom={(selectedMode, player) => {
               setMode(selectedMode);
               discardClassicSession();
+              setActiveArchiveId(null);
               setClassicCareer(null);
               setResumeAvailable(false);
               setEnhancedEntryPending(false);
@@ -311,7 +414,9 @@ function CareerController({
               setResumeAvailable(false);
               setEnhancedEntryPending(false);
             }}
+            onOpenArchive={() => setArchiveOpen(true)}
             onStart={() => {
+              setActiveArchiveId(null);
               setClassicCareer(
                 startClassicFromSetup(setupState, mode),
               );
@@ -321,10 +426,28 @@ function CareerController({
         </Suspense>
       ) : classicCareer ? (
         <CareerExperience
+          activeArchiveId={activeArchiveId}
+          archiveRepository={
+            uiMode === "enhanced"
+              ? archiveRepository
+              : null
+          }
           initialCareer={classicCareer}
+          key={
+            uiMode === "enhanced"
+              ? activeArchiveId ?? "new-enhanced-career"
+              : "classic-career"
+          }
+          onActiveArchiveId={setActiveArchiveId}
+          onArchiveChanged={onArchiveChanged}
+          onOpenArchive={(career) => {
+            setClassicCareer(career);
+            setArchiveOpen(true);
+          }}
           onSaveError={setSaveError}
           onRestart={() => {
             discardClassicSession();
+            setActiveArchiveId(null);
             setClassicCareer(null);
             dispatch({
               seed: seedFromSearch(window.location.search),
@@ -354,7 +477,14 @@ function CareerController({
 }
 
 type CareerExperienceProps = {
+  readonly activeArchiveId: string | null;
+  readonly archiveRepository: ArchiveRepository | null;
   readonly initialCareer: ClassicCareerState;
+  readonly onActiveArchiveId: (id: string | null) => void;
+  readonly onArchiveChanged: () => void;
+  readonly onOpenArchive: (
+    career: ClassicCareerState,
+  ) => void;
   readonly onSaveError: (reason: string | null) => void;
   readonly onRestart: () => void;
   readonly repository: ClassicSessionRepository;
@@ -362,7 +492,12 @@ type CareerExperienceProps = {
 };
 
 function CareerExperience({
+  activeArchiveId,
+  archiveRepository,
   initialCareer,
+  onActiveArchiveId,
+  onArchiveChanged,
+  onOpenArchive,
   onSaveError,
   onRestart,
   repository,
@@ -377,6 +512,15 @@ function CareerExperience({
     setEnhancedAnnouncement,
   ] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const pendingArchiveId = useRef<string | null>(null);
+
+  if (
+    archiveRepository !== null &&
+    pendingArchiveId.current === null
+  ) {
+    pendingArchiveId.current =
+      globalThis.crypto.randomUUID();
+  }
 
   useEffect(() => {
     if (!reducedMotion) {
@@ -400,6 +544,83 @@ function CareerExperience({
     onSaveError(result.ok ? null : result.reason);
   }, [onSaveError, repository, reveal.committedCareer]);
 
+  useEffect(() => {
+    if (archiveRepository === null) {
+      return;
+    }
+
+    const career = reveal.committedCareer;
+    const displayName = `${career.identity.lastName}的生涯`;
+    const archiveId =
+      activeArchiveId ?? pendingArchiveId.current;
+
+    if (archiveId === null) {
+      onSaveError("无法生成本地档案标识");
+      return;
+    }
+
+    const updated =
+      activeArchiveId === null
+        ? { ok: false as const, reason: "not_found" as const }
+        : archiveRepository.update(archiveId, career);
+
+    if (updated.ok) {
+      onSaveError(null);
+      onArchiveChanged();
+      return;
+    }
+
+    if (updated.reason !== "not_found") {
+      onSaveError(
+        updated.reason === "unavailable" ||
+          updated.reason === "corrupt_index"
+          ? updated.detail
+          : `档案更新失败：${updated.reason}`,
+      );
+      return;
+    }
+
+    const created = archiveRepository.create({
+      career,
+      displayName,
+      id: archiveId,
+    });
+
+    if (created.ok) {
+      onActiveArchiveId(created.entry.id);
+      onArchiveChanged();
+      onSaveError(null);
+      return;
+    }
+
+    if (created.reason === "duplicate_id") {
+      const existing = archiveRepository.load(archiveId);
+
+      if (existing.status === "ready") {
+        onActiveArchiveId(archiveId);
+        onArchiveChanged();
+        onSaveError(null);
+        return;
+      }
+    }
+
+    onSaveError(
+      created.reason === "capacity"
+        ? `档案已满（${created.capacity} / ${created.capacity}），请先导出或删除`
+        : created.reason === "unavailable" ||
+            created.reason === "corrupt_index"
+          ? created.detail
+          : `档案保存失败：${created.reason}`,
+    );
+  }, [
+    activeArchiveId,
+    archiveRepository,
+    onActiveArchiveId,
+    onArchiveChanged,
+    onSaveError,
+    reveal.committedCareer,
+  ]);
+
   if (
     reveal.committedCareer.phase === "summary" &&
     !reveal.isRevealing
@@ -410,6 +631,17 @@ function CareerExperience({
 
     return (
       <>
+        {uiMode === "enhanced" ? (
+          <button
+            className="fixed right-4 top-[max(12px,env(safe-area-inset-top))] z-30 min-h-10 rounded-[9px] border border-white/10 bg-zinc-900/95 px-3 text-xs font-bold text-zinc-200 shadow-lg"
+            onClick={() =>
+              onOpenArchive(reveal.committedCareer)
+            }
+            type="button"
+          >
+            生涯档案
+          </button>
+        ) : null}
         <SummaryScreen
           onRestart={() => {
             setShareOpen(false);
@@ -470,6 +702,9 @@ function CareerExperience({
       <Suspense fallback={null}>
         <EnhancedCareerScreen
           onChoose={onChoose}
+          onOpenArchive={() =>
+            onOpenArchive(reveal.committedCareer)
+          }
           statusMessage={enhancedAnnouncement}
           view={view}
         />

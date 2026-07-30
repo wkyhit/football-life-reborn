@@ -10,12 +10,14 @@ type EnhancedCareerScreenProps = {
     decisionId: string,
     optionId: string,
   ) => void;
+  readonly onOpenArchive?: () => void;
   readonly statusMessage?: string | null;
   readonly view: CareerPresentation;
 };
 
 export function EnhancedCareerScreen({
   onChoose,
+  onOpenArchive,
   statusMessage,
   view,
 }: EnhancedCareerScreenProps) {
@@ -36,7 +38,12 @@ export function EnhancedCareerScreen({
           {statusMessage}
         </p>
       ) : null}
-      <CareerHeader view={view} />
+      <CareerHeader
+        view={view}
+        {...(onOpenArchive === undefined
+          ? {}
+          : { onOpenArchive })}
+      />
       <div
         className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,7fr)_380px] lg:grid-rows-1 lg:gap-6 lg:p-6"
         data-enhanced-career-layout=""
@@ -49,8 +56,10 @@ export function EnhancedCareerScreen({
 }
 
 function CareerHeader({
+  onOpenArchive,
   view,
 }: {
+  readonly onOpenArchive?: () => void;
   readonly view: CareerPresentation;
 }) {
   const { header, totals } = view;
@@ -88,6 +97,16 @@ function CareerHeader({
             </span>
           </div>
         </div>
+
+        {onOpenArchive ? (
+          <button
+            className="min-h-10 shrink-0 rounded-[9px] border border-white/10 bg-white/[0.04] px-3 text-xs font-bold text-zinc-300"
+            onClick={onOpenArchive}
+            type="button"
+          >
+            生涯档案
+          </button>
+        ) : null}
 
         <div className="shrink-0 border-l border-white/10 pl-3 text-right lg:pl-5">
           <div className="text-[10px] font-bold text-enhanced-supporting">
