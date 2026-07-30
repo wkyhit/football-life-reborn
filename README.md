@@ -11,6 +11,8 @@ state. `/` opens Enhanced by default, while `?ui=classic` preserves the
 frozen compatibility experience. Phase 5 adds an Enhanced-only local
 career archive, validated import/export, copy-first migration,
 decision-boundary parallel lives, branch comparison, and a causal ledger.
+Phase 6 adds three deterministic daily challenges, live rule progress,
+challenge result cards, and storage-independent replay links.
 
 ## Phase 1 scope
 
@@ -77,6 +79,13 @@ archive entry automatically, and exported JSON is the durable recovery
 path for explicit deletion or moving a career between browser profiles.
 See [`docs/career-archive.md`](docs/career-archive.md) for the archive,
 transfer, migration, branching, and recovery contracts.
+
+Daily challenges use the `Asia/Shanghai` calendar date and remain separate
+from ordinary careers. Completed challenge paths can be copied as compact
+`#r=` replay URLs and opened without browser storage. See
+[`docs/challenges-and-replay.md`](docs/challenges-and-replay.md) for the
+rules, replay schema, version policy, privacy properties, and
+non-competitive product boundary.
 
 ## UI modes and deployment
 

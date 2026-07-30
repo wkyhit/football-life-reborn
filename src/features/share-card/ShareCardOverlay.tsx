@@ -6,15 +6,20 @@ import {
 
 import type { SummaryPresentation } from "../../ui/classic/summaryPresentation";
 import { Dialog } from "../../ui/shared/Dialog";
-import { shareCardFilename } from "./shareCardContract";
+import {
+  shareCardFilename,
+  type ShareCardChallenge,
+} from "./shareCardContract";
 
 type ShareCardOverlayProps = {
+  readonly challenge?: ShareCardChallenge;
   readonly onClose: () => void;
   readonly qrPayload: string;
   readonly view: SummaryPresentation;
 };
 
 export function ShareCardOverlay({
+  challenge,
   onClose,
   qrPayload,
   view,
@@ -39,6 +44,7 @@ export function ShareCardOverlay({
     void import("./shareCard")
       .then(({ createShareCardBlob }) =>
         createShareCardBlob({
+          ...(challenge === undefined ? {} : { challenge }),
           displayName,
           qrPayload,
           view,
@@ -69,7 +75,7 @@ export function ShareCardOverlay({
     return () => {
       cancelled = true;
     };
-  }, [displayName, qrPayload, view]);
+  }, [challenge, displayName, qrPayload, view]);
 
   useEffect(
     () => () => {
@@ -92,6 +98,11 @@ export function ShareCardOverlay({
         <h2 className="sr-only" id="share-card-title">
           生涯战绩卡
         </h2>
+        {challenge ? (
+          <p className="mb-3 text-center text-[12px] font-extrabold text-emerald-300">
+            {challenge.title} · {challenge.calendarDate}
+          </p>
+        ) : null}
         <div className="flex items-center gap-2">
           <label
             className="shrink-0 text-[12px] font-bold text-zinc-400"
@@ -151,6 +162,7 @@ export function ShareCardOverlay({
               anchor.download = shareCardFilename(
                 displayName,
                 view,
+                challenge,
               );
               anchor.click();
             }}

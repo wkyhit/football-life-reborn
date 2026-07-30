@@ -1,11 +1,21 @@
 import { useState } from "react";
 
 import type { PacingMode } from "../../../domain/pacing";
+import { challengeDefinition } from "../../../features/challenges/catalog";
+import {
+  getDailyChallenges,
+  type DailyChallenge,
+} from "../../../features/challenges/daily";
 
 type EnhancedLandingScreenProps = {
   readonly archiveCount?: number;
+  readonly dailyChallenges?: readonly DailyChallenge[];
   readonly hasResume: boolean;
   readonly onBegin: (mode: PacingMode) => void;
+  readonly onBeginChallenge?: (
+    challenge: DailyChallenge,
+    mode: PacingMode,
+  ) => void;
   readonly onOpenArchive?: () => void;
   readonly onRandom: (mode: PacingMode) => void;
   readonly onResume: () => void;
@@ -13,13 +23,18 @@ type EnhancedLandingScreenProps = {
 
 export function EnhancedLandingScreen({
   archiveCount = 0,
+  dailyChallenges,
   hasResume,
   onBegin,
+  onBeginChallenge,
   onOpenArchive,
   onRandom,
   onResume,
 }: EnhancedLandingScreenProps) {
   const [mode, setMode] = useState<PacingMode>("normal");
+  const [challenges] = useState(
+    () => dailyChallenges ?? getDailyChallenges(),
+  );
 
   return (
     <main
@@ -61,7 +76,7 @@ export function EnhancedLandingScreen({
           </dl>
         </div>
 
-        <div className="flex flex-col justify-center py-8 lg:py-0">
+        <div className="flex min-h-0 flex-col justify-center py-8 lg:overflow-y-auto lg:py-3">
           {hasResume ? (
             <button
               className="mb-6 min-h-14 rounded-[10px] border border-emerald-400/40 bg-emerald-400/[0.07] px-4 text-left"
@@ -129,13 +144,75 @@ export function EnhancedLandingScreen({
             </div>
           </fieldset>
 
-          <div className="mt-5 grid gap-3">
+          {onBeginChallenge ? (
+            <section
+              aria-labelledby="daily-challenges-heading"
+              className="mt-5"
+            >
+              <div className="flex items-end justify-between gap-3">
+                <h2
+                  className="text-[13px] font-extrabold"
+                  id="daily-challenges-heading"
+                >
+                  今日挑战
+                </h2>
+                <time
+                  className="text-[10px] font-bold tabular-nums text-enhanced-supporting"
+                  dateTime={challenges[0]?.calendarDate}
+                >
+                  {challenges[0]?.calendarDate}
+                </time>
+              </div>
+              <div className="mt-2 grid gap-2">
+                {challenges.map((challenge) => {
+                  const definition = challengeDefinition(
+                    challenge.family,
+                  );
+
+                  return (
+                    <button
+                      aria-label={`开始${definition.title}挑战`}
+                      className="group min-h-14 rounded-[10px] border border-emerald-400/20 bg-emerald-400/[0.05] px-3 py-2 text-left outline-none transition-colors hover:border-emerald-400/50 focus-visible:ring-2 focus-visible:ring-emerald-300"
+                      key={challenge.id}
+                      onClick={() =>
+                        onBeginChallenge(challenge, mode)
+                      }
+                      type="button"
+                    >
+                      <span className="flex items-center justify-between gap-3">
+                        <span>
+                          <span className="block text-[13px] font-extrabold text-zinc-100">
+                            {definition.title}
+                          </span>
+                          <span className="mt-0.5 block line-clamp-1 text-[10px] text-zinc-400">
+                            {definition.description}
+                          </span>
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className="shrink-0 text-emerald-300"
+                        >
+                          ›
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          <div className="mt-5 border-t border-enhanced-line pt-4">
+            <p className="mb-2 text-[10px] font-bold tracking-[0.1em] text-enhanced-supporting">
+              ORDINARY CAREER
+            </p>
+            <div className="grid gap-2">
             <button
               className="min-h-12 rounded-[10px] bg-enhanced-pitch px-5 text-[15px] font-bold text-enhanced-pitch-ink"
               onClick={() => onBegin(mode)}
               type="button"
             >
-              开始新生涯
+              开始普通生涯
             </button>
             <button
               className="min-h-12 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-5 text-[15px] font-bold"
@@ -157,6 +234,7 @@ export function EnhancedLandingScreen({
                 </span>
               </button>
             ) : null}
+            </div>
           </div>
 
           <p className="mt-4 text-center text-[11px] leading-relaxed text-enhanced-supporting">

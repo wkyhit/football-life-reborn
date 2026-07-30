@@ -77,6 +77,47 @@ describe("Classic share card", () => {
       `${view.identity.name}-生涯战绩卡.png`,
     );
   });
+
+  it("keeps a challenge replay in the QR and names the card for that challenge", () => {
+    const view = createFixtureSummary();
+    const canvas = createCanvas(1, 1);
+    const replayUrl =
+      "https://football-life-reborn.test/#r=challenge";
+    const challenge = {
+      calendarDate: "2026-07-30",
+      status: "completed",
+      title: "一人一城",
+    } as const;
+
+    renderShareCardToCanvas(
+      canvas as unknown as ShareCardCanvas,
+      {
+        challenge,
+        displayName: "林一鸣",
+        qrPayload: replayUrl,
+        view,
+      },
+    );
+
+    const context = canvas.getContext("2d");
+    const pixels = context.getImageData(
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    );
+    const decoded = jsQR(
+      pixels.data,
+      canvas.width,
+      canvas.height,
+      { inversionAttempts: "dontInvert" },
+    );
+
+    expect(decoded?.data).toBe(replayUrl);
+    expect(
+      shareCardFilename("林一鸣", view, challenge),
+    ).toBe("林一鸣-一人一城挑战卡.png");
+  });
 });
 
 function createFixtureSummary() {

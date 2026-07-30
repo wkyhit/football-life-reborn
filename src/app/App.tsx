@@ -24,6 +24,15 @@ import type {
   CareerState,
 } from "../domain/model";
 import type { PacingMode } from "../domain/pacing";
+import {
+  parseDailyChallengeSeed,
+  type DailyChallenge,
+} from "../features/challenges/daily";
+import { evaluateChallengeProgress } from "../features/challenges/progress";
+import { createReplayUrl } from "../features/replay/codec";
+import { createReplayPayload } from "../features/replay/replay";
+import { ReplayRouteScreen } from "../features/replay/ReplayRouteScreen";
+import { resolveReplayRoute } from "../features/replay/route";
 import { useSeasonReveal } from "../features/season-reveal/seasonReveal";
 import {
   createArchiveRepository,
@@ -162,12 +171,27 @@ function renderSetupScreen({
 }
 
 export function App() {
-  const [uiMode] = useState(() =>
-    resolveUiMode(
-      window.location.search,
-      window.localStorage,
-    ),
+  const [replayRoute] = useState(() =>
+    resolveReplayRoute(window.location.hash),
   );
+  const [uiMode] = useState(() =>
+    replayRoute.status === "absent"
+      ? resolveUiMode(
+          window.location.search,
+          window.localStorage,
+        )
+      : "enhanced",
+  );
+
+  if (replayRoute.status !== "absent") {
+    return (
+      <Suspense fallback={null}>
+        <EnhancedShell>
+          <ReplayRouteScreen route={replayRoute} />
+        </EnhancedShell>
+      </Suspense>
+    );
+  }
 
   if (uiMode === "enhanced") {
     return (
@@ -293,6 +317,10 @@ function CareerController({
     setupRepository,
     setupState,
   ]);
+  const activeChallenge =
+    uiMode === "enhanced" && classicCareer !== null
+      ? parseDailyChallengeSeed(classicCareer.seed)
+      : null;
 
   if (recovery !== null) {
     return (
@@ -381,6 +409,19 @@ function CareerController({
               });
               dispatch({ type: "begin_setup" });
             }}
+            onBeginChallenge={(challenge, selectedMode) => {
+              setMode(selectedMode);
+              discardClassicSession();
+              setActiveArchiveId(null);
+              setClassicCareer(null);
+              setResumeAvailable(false);
+              setEnhancedEntryPending(false);
+              dispatch({
+                seed: challenge.seed,
+                type: "reset_career",
+              });
+              dispatch({ type: "begin_setup" });
+            }}
             onRandom={(selectedMode, player) => {
               setMode(selectedMode);
               discardClassicSession();
@@ -432,6 +473,7 @@ function CareerController({
               ? archiveRepository
               : null
           }
+          challenge={activeChallenge}
           initialCareer={classicCareer}
           key={
             uiMode === "enhanced"
@@ -479,6 +521,7 @@ function CareerController({
 type CareerExperienceProps = {
   readonly activeArchiveId: string | null;
   readonly archiveRepository: ArchiveRepository | null;
+  readonly challenge: DailyChallenge | null;
   readonly initialCareer: ClassicCareerState;
   readonly onActiveArchiveId: (id: string | null) => void;
   readonly onArchiveChanged: () => void;
@@ -494,6 +537,7 @@ type CareerExperienceProps = {
 function CareerExperience({
   activeArchiveId,
   archiveRepository,
+  challenge,
   initialCareer,
   onActiveArchiveId,
   onArchiveChanged,
@@ -511,8 +555,17 @@ function CareerExperience({
     enhancedAnnouncement,
     setEnhancedAnnouncement,
   ] = useState<string | null>(null);
+  const [replayCopyMessage, setReplayCopyMessage] =
+    useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const pendingArchiveId = useRef<string | null>(null);
+  const challengeProgress =
+    challenge === null
+      ? null
+      : evaluateChallengeProgress(
+          challenge.family,
+          reveal.committedCareer,
+        );
 
   if (
     archiveRepository !== null &&
@@ -628,6 +681,16 @@ function CareerExperience({
     const view = createSummaryPresentation(
       reveal.committedCareer,
     );
+    const replayUrl =
+      challenge === null
+        ? null
+        : createReplayUrl(
+            new URL("/", window.location.href),
+            createReplayPayload({
+              career: reveal.committedCareer,
+              challengeId: challenge.id,
+            }),
+          );
 
     return (
       <>
@@ -643,6 +706,39 @@ function CareerExperience({
           </button>
         ) : null}
         <SummaryScreen
+          {...(challenge === null ||
+          challengeProgress === null ||
+          replayUrl === null
+            ? {}
+            : {
+                challenge: {
+                  daily: challenge,
+                  progress: challengeProgress,
+                  replayUrl,
+                },
+                onCopyReplay: () => {
+                  if (navigator.clipboard === undefined) {
+                    setReplayCopyMessage(
+                      "复制失败，请手动选择回放链接",
+                    );
+                    return;
+                  }
+
+                  void navigator.clipboard
+                    .writeText(replayUrl)
+                    .then(() =>
+                      setReplayCopyMessage(
+                        "回放链接已复制",
+                      ),
+                    )
+                    .catch(() =>
+                      setReplayCopyMessage(
+                        "复制失败，请手动选择回放链接",
+                      ),
+                    );
+                },
+                replayCopyMessage,
+              })}
           onRestart={() => {
             setShareOpen(false);
             onRestart();
@@ -653,8 +749,21 @@ function CareerExperience({
         {shareOpen ? (
           <Suspense fallback={null}>
             <ShareCardOverlay
+              {...(challenge === null ||
+              challengeProgress === null
+                ? {}
+                : {
+                    challenge: {
+                      calendarDate: challenge.calendarDate,
+                      status: challengeProgress.status,
+                      title: challengeProgress.title,
+                    },
+                  })}
               onClose={() => setShareOpen(false)}
-              qrPayload={new URL("/", window.location.href).href}
+              qrPayload={
+                replayUrl ??
+                new URL("/", window.location.href).href
+              }
               view={view}
             />
           </Suspense>
@@ -701,6 +810,15 @@ function CareerExperience({
     return (
       <Suspense fallback={null}>
         <EnhancedCareerScreen
+          {...(challenge === null ||
+          challengeProgress === null
+            ? {}
+            : {
+                challenge: {
+                  daily: challenge,
+                  progress: challengeProgress,
+                },
+              })}
           onChoose={onChoose}
           onOpenArchive={() =>
             onOpenArchive(reveal.committedCareer)
