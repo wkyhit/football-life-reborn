@@ -20,6 +20,7 @@ export type ClubTrophyContext = {
   readonly confederation: ConfederationId;
   readonly hasContinentalSecondary: boolean;
   readonly hasDomesticCup: boolean;
+  readonly hasLowerTier: boolean;
   readonly hasTopTier: boolean;
   readonly tier: 1 | 2;
 };
@@ -110,6 +111,11 @@ export function createCatalogClubTrophyContext(
         .continentalSecondary !== null,
     hasDomesticCup: catalog.domesticCupById.has(
       competition.domesticCupId,
+    ),
+    hasLowerTier: catalog.competitions.some(
+      (candidate) =>
+        candidate.countryFifaCode ===
+          competition.countryFifaCode && candidate.tier === 2,
     ),
     hasTopTier: catalog.competitions.some(
       (candidate) =>
