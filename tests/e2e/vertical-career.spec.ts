@@ -130,6 +130,60 @@ test("a deterministic Classic period commits before its visual reveal", async ({
   expect(browserErrors).toEqual([]);
 });
 
+test("the UI can reach the deterministic retirement summary", async ({
+  page,
+}) => {
+  await page.goto("/?seed=phase-3%3Asummary-e2e");
+  await page.getByRole("button", { name: "开始生涯" }).click();
+  await page.getByRole("button", { name: "中国" }).click();
+  await page.getByRole("button", { name: "下一步" }).click();
+  await page.getByRole("button", { name: "下一步" }).click();
+  await page.getByRole("button", { name: "中锋" }).click();
+  await page.getByRole("button", { name: "开始踢球" }).click();
+  await page.clock.install();
+
+  for (let index = 0; index < 24; index += 1) {
+    if (
+      await page
+        .locator("[data-classic-summary-shell]")
+        .isVisible()
+        .catch(() => false)
+    ) {
+      break;
+    }
+
+    const option = page
+      .locator("[data-classic-career-panel] button")
+      .first();
+    await expect(option).toBeVisible();
+    await option.click();
+    await page.clock.fastForward(5_000);
+  }
+
+  await expect(
+    page.locator("[data-classic-summary-shell]"),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "保存战绩卡" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/足球生涯模拟器 · \d+ 个赛季/),
+  ).toBeVisible();
+
+  const session = await readSession(page);
+  expect(session.choiceLog.length).toBeGreaterThan(5);
+
+  await page.getByRole("button", { name: "再来一局" }).click();
+  await expect(
+    page.getByRole("heading", { name: "足球生涯模拟器" }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      readRawOrNull(page, ACTIVE_CLASSIC_SESSION_STORAGE_KEY),
+    )
+    .toBeNull();
+});
+
 async function reloadWithoutStateDrift(
   page: Page,
   key: string,

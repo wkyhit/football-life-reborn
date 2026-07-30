@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "vite",
     "capture:classic-reference": "node scripts/capture-classic-reference.mjs",
+    "capture:classic-summary-reference": "node scripts/capture-classic-summary-reference.mjs",
     "generate:golden": "node scripts/generate-classic-golden.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint .",

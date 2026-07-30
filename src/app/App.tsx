@@ -41,6 +41,8 @@ import { LandingScreen } from "../ui/classic/LandingScreen";
 import { NationalityScreen } from "../ui/classic/NationalityScreen";
 import { PositionScreen } from "../ui/classic/PositionScreen";
 import { RecoveryScreen } from "../ui/classic/RecoveryScreen";
+import { SummaryScreen } from "../ui/classic/SummaryScreen";
+import { createSummaryPresentation } from "../ui/classic/summaryPresentation";
 import { seedFromSearch } from "./seed";
 
 type SetupScreenProps = {
@@ -177,6 +179,14 @@ export function App() {
         <ClassicCareerExperience
           initialCareer={classicCareer}
           onSaveError={setSaveError}
+          onRestart={() => {
+            discardClassicSession();
+            setClassicCareer(null);
+            dispatch({
+              seed: seedFromSearch(window.location.search),
+              type: "reset_career",
+            });
+          }}
           repository={classicRepository}
         />
       ) : (
@@ -201,12 +211,14 @@ export function App() {
 type ClassicCareerExperienceProps = {
   readonly initialCareer: ClassicCareerState;
   readonly onSaveError: (reason: string | null) => void;
+  readonly onRestart: () => void;
   readonly repository: ClassicSessionRepository;
 };
 
 function ClassicCareerExperience({
   initialCareer,
   onSaveError,
+  onRestart,
   repository,
 }: ClassicCareerExperienceProps) {
   const reveal = useSeasonReveal(initialCareer);
@@ -215,6 +227,21 @@ function ClassicCareerExperience({
     const result = repository.save(reveal.committedCareer);
     onSaveError(result.ok ? null : result.reason);
   }, [onSaveError, repository, reveal.committedCareer]);
+
+  if (
+    reveal.committedCareer.phase === "summary" &&
+    !reveal.isRevealing
+  ) {
+    return (
+      <SummaryScreen
+        onRestart={onRestart}
+        onShare={() => undefined}
+        view={createSummaryPresentation(
+          reveal.committedCareer,
+        )}
+      />
+    );
+  }
 
   const view = createCareerPresentation({
     career: reveal.committedCareer,

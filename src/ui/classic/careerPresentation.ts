@@ -340,7 +340,7 @@ export function createCareerPresentation({
       marketValue: headerSeason?.marketValue ?? career.marketValue,
       number: career.identity.preferredNumber,
       overall: headerSeason?.overall ?? career.overall,
-      position: POSITION_LABELS[career.identity.position],
+      position: positionLabel(career.identity.position),
     },
     nationalTeam: {
       countryFlag: countryFlag(country),
@@ -513,7 +513,9 @@ function seasonPresentation(
   };
 }
 
-function clubPresentation(club: Club): CareerClubPresentation {
+export function clubPresentation(
+  club: Club,
+): CareerClubPresentation {
   return {
     abbreviation: club.abbreviation,
     color: club.primaryColor,
@@ -593,7 +595,13 @@ function requireCountry(code: string): Country {
   return country;
 }
 
-function countryFlag(country: Country): string {
+export function positionLabel(
+  position: ClassicPosition,
+): string {
+  return POSITION_LABELS[position];
+}
+
+export function countryFlag(country: Country): string {
   if (country.fifaCode === "ENG") {
     return "🏴󠁧󠁢󠁥󠁮󠁧󠁿";
   }

@@ -3,12 +3,14 @@ import { createRoot } from "react-dom/client";
 
 import "../../src/styles.css";
 import { CareerScreen } from "../../src/ui/classic/CareerScreen";
+import { SummaryScreen } from "../../src/ui/classic/SummaryScreen";
 import type {
   CareerClubPresentation,
   CareerDecisionOptionPresentation,
   CareerPresentation,
   CareerTimelineRowPresentation,
 } from "../../src/ui/classic/careerPresentation";
+import type { SummaryPresentation } from "../../src/ui/classic/summaryPresentation";
 
 const TONGLIANG: CareerClubPresentation = {
   abbreviation: "CQT",
@@ -58,6 +60,42 @@ const HUBEI: CareerClubPresentation = {
   shortName: "青年星",
   subtitle: "中甲 · 次级联赛",
 };
+const GONGFU: CareerClubPresentation = {
+  abbreviation: "SJZ",
+  color: "#F58220",
+  id: "shijiazhuang",
+  name: "石家庄功夫",
+  shortName: "功夫",
+  subtitle: "中甲 · 次级联赛",
+};
+const OKAYAMA: CareerClubPresentation = {
+  abbreviation: "FGO",
+  color: "#8E1D41",
+  id: "fagiano-okayama",
+  name: "冈山绿雉",
+  shortName: "冈山",
+  subtitle: "日职联",
+};
+const THREE_TOWNS: CareerClubPresentation = {
+  abbreviation: "WHT",
+  color: "#E4002B",
+  id: "wuhan-three-towns",
+  name: "武汉三镇",
+  shortName: "三镇",
+  subtitle: "中超",
+};
+const SHONAN: CareerClubPresentation = {
+  abbreviation: "SBM",
+  color: "#00A651",
+  id: "shonan-bellmare",
+  name: "湘南比马",
+  shortName: "湘南",
+  subtitle: "日职联",
+};
+
+type VisualFixture =
+  | { readonly kind: "career"; readonly view: CareerPresentation }
+  | { readonly kind: "summary"; readonly view: SummaryPresentation };
 
 const fixtureName = new URLSearchParams(window.location.search).get(
   "fixture",
@@ -71,67 +109,111 @@ if (root === null) {
 
 createRoot(root).render(
   <StrictMode>
-    <CareerScreen onChoose={() => undefined} view={fixture} />
+    {fixture.kind === "career" ? (
+      <CareerScreen
+        onChoose={() => undefined}
+        view={fixture.view}
+      />
+    ) : (
+      <SummaryScreen
+        onRestart={() => undefined}
+        onShare={() => undefined}
+        view={fixture.view}
+      />
+    )}
   </StrictMode>,
 );
 
-function createFixture(name: string | null): CareerPresentation {
+function createFixture(name: string | null): VisualFixture {
   switch (name) {
     case "career-empty":
-      return presentation({
-        age: 16,
-        club: null,
-        currentAge: 16,
-        marketValue: 100_000,
-        options: [
-          clubOption(TONGLIANG, "join:chongqing-tongliang", "替补", "danger", "★"),
-          clubOption(YATAI, "join:changchun-yatai", "替补", "danger", "★"),
-          clubOption(WEST_COAST, "join:qingdao-west-coast", "轮换主力", "positive", "—"),
-        ],
-        overall: 50,
-        panel: "academy",
-        seasons: [],
-      });
+      return {
+        kind: "career",
+        view: presentation({
+          age: 16,
+          club: null,
+          currentAge: 16,
+          marketValue: 100_000,
+          options: [
+            clubOption(TONGLIANG, "join:chongqing-tongliang", "替补", "danger", "★"),
+            clubOption(YATAI, "join:changchun-yatai", "替补", "danger", "★"),
+            clubOption(WEST_COAST, "join:qingdao-west-coast", "轮换主力", "positive", "—"),
+          ],
+          overall: 50,
+          panel: "academy",
+          seasons: [],
+        }),
+      };
     case "career-simulating":
-      return presentation({
-        age: 18,
-        club: TONGLIANG,
-        marketValue: 540_000,
-        options: [],
-        overall: 57,
-        panel: "simulating",
-        seasons: [],
-      });
+      return {
+        kind: "career",
+        view: presentation({
+          age: 18,
+          club: TONGLIANG,
+          marketValue: 540_000,
+          options: [],
+          overall: 57,
+          panel: "simulating",
+          seasons: [],
+        }),
+      };
     case "career-populated":
-      return presentation({
-        age: 16,
-        club: TONGLIANG,
-        marketValue: 150_000,
-        options: [],
-        overall: 50,
-        panel: "simulating",
-        seasons: [
-          season(16, 50, 9, 0, 0),
-        ],
-      });
+      return {
+        kind: "career",
+        view: presentation({
+          age: 16,
+          club: TONGLIANG,
+          marketValue: 150_000,
+          options: [],
+          overall: 50,
+          panel: "simulating",
+          seasons: [
+            season(16, 50, 9, 0, 0),
+          ],
+        }),
+      };
     case "career-deciding":
-      return presentation({
-        age: 18,
-        club: TONGLIANG,
-        currentAge: 18,
-        marketValue: 540_000,
-        options: [
-          clubOption(MEIZHOU, "loan:meizhou-hakka", "绝对主力", "primary", "—", "租借去"),
-          clubOption(WUXI, "loan:wuxi-wugou", "绝对主力", "primary", "—", "租借去"),
-          clubOption(HUBEI, "loan:hubei-istar", "绝对主力", "primary", "—", "租借去"),
-        ],
-        overall: 57,
-        panel: "loan",
-        seasons: [
-          season(16, 50, 9, 0, 0),
-          season(17, 55, 6, 0, 0),
-        ],
-      });
+      return {
+        kind: "career",
+        view: presentation({
+          age: 18,
+          club: TONGLIANG,
+          currentAge: 18,
+          marketValue: 540_000,
+          options: [
+            clubOption(MEIZHOU, "loan:meizhou-hakka", "绝对主力", "primary", "—", "租借去"),
+            clubOption(WUXI, "loan:wuxi-wugou", "绝对主力", "primary", "—", "租借去"),
+            clubOption(HUBEI, "loan:hubei-istar", "绝对主力", "primary", "—", "租借去"),
+          ],
+          overall: 57,
+          panel: "loan",
+          seasons: [
+            season(16, 50, 9, 0, 0),
+            season(17, 55, 6, 0, 0),
+          ],
+        }),
+      };
+    case "summary-attacker":
+    case "summary-national-team":
+      return { kind: "summary", view: attackerSummary() };
+    case "summary-title":
+      return {
+        kind: "summary",
+        view: {
+          ...attackerSummary(),
+          titles: [
+            {
+              description: "整个生涯只效力过一家俱乐部",
+              id: "one_club_man",
+              label: "一人一城",
+            },
+          ],
+        },
+      };
+    case "summary-goalkeeper":
+      return { kind: "summary", view: goalkeeperSummary() };
+    case "summary-no-title":
+      return { kind: "summary", view: noTitleSummary() };
     default:
       throw new RangeError(`Unknown visual fixture: ${String(name)}`);
   }
@@ -240,5 +322,158 @@ function clubOption(
     stars,
     subtitle: club.subtitle,
     title: `${action} ${club.name}`,
+  };
+}
+
+function attackerSummary(): SummaryPresentation {
+  return {
+    badge: "gold",
+    clubs: [
+      {
+        club: GONGFU,
+        stats: "702 场 · 377 球 · 149 助",
+        trophyCount: 2,
+      },
+      {
+        club: OKAYAMA,
+        stats: "62 场 · 13 球 · 5 助",
+        trophyCount: 0,
+      },
+    ],
+    honors: [
+      {
+        count: 1,
+        id: "trophy:中甲冠军",
+        kind: "trophy",
+        label: "中甲冠军",
+      },
+      {
+        count: 1,
+        id: "trophy:中国足协杯",
+        kind: "trophy",
+        label: "中国足协杯",
+      },
+    ],
+    identity: {
+      country: "中国",
+      name: "李",
+      number: 10,
+      position: "中锋",
+    },
+    maxMarketValue: 57_000_000,
+    maxOverall: 86,
+    metrics: [
+      { label: "出场", value: 873 },
+      { label: "进球", value: 414 },
+      { label: "助攻", value: 163 },
+    ],
+    nationalTeam: {
+      bestTournament: "亚洲杯八强",
+      name: "中国国家队",
+      stats: "109 场 · 24 球 · 9 助",
+    },
+    seasonCount: 22,
+    seed: "ms74jclp-1yj5if",
+    titles: [],
+  };
+}
+
+function goalkeeperSummary(): SummaryPresentation {
+  return {
+    badge: "gold",
+    clubs: [
+      {
+        club: HUBEI,
+        stats: "699 场 · 228 零封",
+        trophyCount: 1,
+      },
+    ],
+    honors: [
+      {
+        count: 1,
+        id: "trophy:中甲冠军",
+        kind: "trophy",
+        label: "中甲冠军",
+      },
+    ],
+    identity: {
+      country: "中国",
+      name: "李",
+      number: 10,
+      position: "门将",
+    },
+    maxMarketValue: 26_000_000,
+    maxOverall: 82,
+    metrics: [
+      { label: "出场", value: 795 },
+      { label: "零封", value: 254 },
+      { label: "失球", value: 649 },
+    ],
+    nationalTeam: {
+      bestTournament: "世界杯小组赛 · 亚洲杯四强",
+      name: "中国国家队",
+      stats: "96 场 · 26 零封",
+    },
+    seasonCount: 24,
+    seed: "ms74faaw-18h9kt",
+    titles: [
+      {
+        description: "整个生涯只效力过一家俱乐部",
+        id: "one_club_man",
+        label: "一人一城",
+      },
+    ],
+  };
+}
+
+function noTitleSummary(): SummaryPresentation {
+  return {
+    badge: "silver",
+    clubs: [
+      {
+        club: WEST_COAST,
+        stats: "57 场 · 7 球 · 2 助",
+        trophyCount: 0,
+      },
+      {
+        club: THREE_TOWNS,
+        stats: "653 场 · 209 球 · 73 助",
+        trophyCount: 2,
+      },
+      {
+        club: SHONAN,
+        stats: "63 场 · 12 球 · 4 助",
+        trophyCount: 0,
+      },
+    ],
+    honors: [
+      {
+        count: 2,
+        id: "trophy:中国足协杯",
+        kind: "trophy",
+        label: "中国足协杯",
+      },
+    ],
+    identity: {
+      country: "中国",
+      name: "李",
+      number: 10,
+      position: "中锋",
+    },
+    maxMarketValue: 5_100_000,
+    maxOverall: 75,
+    metrics: [
+      { label: "出场", value: 827 },
+      { label: "进球", value: 235 },
+      { label: "助攻", value: 81 },
+    ],
+    nationalTeam: {
+      bestTournament: "世界杯小组赛 · 亚洲杯小组赛",
+      name: "中国国家队",
+      stats: "54 场 · 7 球 · 2 助",
+    },
+    seasonCount: 22,
+    seed: "ms74ggo4-radcb7",
+    titles: [],
   };
 }
