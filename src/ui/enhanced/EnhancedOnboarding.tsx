@@ -8,6 +8,7 @@ import type {
   PreferredFoot,
 } from "../../domain/model";
 import type { PacingMode } from "../../domain/pacing";
+import type { DailyChallenge } from "../../features/challenges/daily";
 import { JerseyPreview } from "../classic/JerseyPreview";
 import { EnhancedLandingScreen } from "./onboarding/EnhancedLandingScreen";
 import { EnhancedNationalityScreen } from "./onboarding/EnhancedNationalityScreen";
@@ -18,11 +19,16 @@ import {
 
 export type EnhancedOnboardingProps = {
   readonly archiveCount?: number;
+  readonly dailyChallenges?: readonly DailyChallenge[];
   readonly dispatch: Dispatch<CareerAction>;
   readonly hasResume: boolean;
   readonly isEntryPrompt: boolean;
   readonly newCareerSeed: string;
   readonly onBegin: (mode: PacingMode) => void;
+  readonly onBeginChallenge?: (
+    challenge: DailyChallenge,
+    mode: PacingMode,
+  ) => void;
   readonly onOpenArchive?: () => void;
   readonly onRandom: (
     mode: PacingMode,
@@ -35,11 +41,13 @@ export type EnhancedOnboardingProps = {
 
 export function EnhancedOnboarding({
   archiveCount = 0,
+  dailyChallenges,
   dispatch,
   hasResume,
   isEntryPrompt,
   newCareerSeed,
   onBegin,
+  onBeginChallenge,
   onOpenArchive,
   onRandom,
   onResume,
@@ -59,6 +67,12 @@ export function EnhancedOnboarding({
           )
         }
         onResume={onResume}
+        {...(dailyChallenges === undefined
+          ? {}
+          : { dailyChallenges })}
+        {...(onBeginChallenge === undefined
+          ? {}
+          : { onBeginChallenge })}
         {...(onOpenArchive === undefined
           ? {}
           : { onOpenArchive })}

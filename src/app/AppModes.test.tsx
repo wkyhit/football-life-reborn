@@ -83,7 +83,7 @@ describe("UI mode shells", () => {
 
     const user = userEvent.setup();
     await user.click(
-      screen.getByRole("button", { name: "开始新生涯" }),
+      screen.getByRole("button", { name: "开始普通生涯" }),
     );
     await user.click(screen.getByRole("button", { name: "中国" }));
 
@@ -120,7 +120,7 @@ describe("UI mode shells", () => {
     const user = userEvent.setup();
     await user.click(
       await screen.findByRole("button", {
-        name: "开始新生涯",
+        name: "开始普通生涯",
       }),
     );
     await user.click(screen.getByRole("button", { name: "中国" }));
@@ -305,7 +305,7 @@ describe("UI mode shells", () => {
 
     await user.click(
       await screen.findByRole("button", {
-        name: "开始新生涯",
+        name: "开始普通生涯",
       }),
     );
     await user.click(screen.getByRole("button", { name: "中国" }));

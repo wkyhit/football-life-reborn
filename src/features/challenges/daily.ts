@@ -90,6 +90,43 @@ export function getDailyChallenges(
   );
 }
 
+export function parseDailyChallengeSeed(
+  seed: string,
+): DailyChallenge | null {
+  const match =
+    /^daily:v(\d+):(\d{4}-\d{2}-\d{2}):([a-z_]+)$/.exec(
+      seed,
+    );
+
+  if (match === null) {
+    return null;
+  }
+
+  const family = DAILY_CHALLENGE_FAMILIES.find(
+    (candidate) => candidate === match[3],
+  );
+  const version = Number(match[1]);
+
+  if (
+    family === undefined ||
+    version !== DAILY_CHALLENGE_VERSION
+  ) {
+    return null;
+  }
+
+  try {
+    const challenge = deriveDailyChallenge({
+      calendarDate: match[2]!,
+      family,
+      version,
+    });
+
+    return challenge.seed === seed ? challenge : null;
+  } catch {
+    return null;
+  }
+}
+
 function readDatePart(
   parts: readonly Intl.DateTimeFormatPart[],
   type: "day" | "month" | "year",

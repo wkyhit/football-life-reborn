@@ -1,4 +1,7 @@
-import type { DailyChallengeFamily } from "./daily";
+import {
+  DAILY_CHALLENGE_VERSION,
+  type DailyChallengeFamily,
+} from "./daily";
 
 export type ChallengeRuleDefinition = {
   readonly description: string;
@@ -11,6 +14,7 @@ export type ChallengeDefinition = {
   readonly family: DailyChallengeFamily;
   readonly rules: readonly ChallengeRuleDefinition[];
   readonly title: string;
+  readonly version: number;
 };
 
 function rule(
@@ -32,6 +36,7 @@ function challenge(
     family,
     rules: Object.freeze(rules),
     title,
+    version: DAILY_CHALLENGE_VERSION,
   });
 }
 

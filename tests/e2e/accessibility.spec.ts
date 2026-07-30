@@ -34,7 +34,7 @@ test("Enhanced supports keyboard-only setup and announces season updates", async
   await random.focus();
   await page.keyboard.press("Shift+Tab");
   await expect(
-    page.getByRole("button", { name: "开始新生涯" }),
+    page.getByRole("button", { name: "开始普通生涯" }),
   ).toBeFocused();
   await page.keyboard.press("Enter");
 

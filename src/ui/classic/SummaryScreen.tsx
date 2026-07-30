@@ -2,17 +2,31 @@ import type {
   SummaryHonorPresentation,
   SummaryPresentation,
 } from "./summaryPresentation";
+import {
+  ChallengeProgressPanel,
+  type ChallengeSurface,
+} from "../../features/challenges/ChallengeProgressPanel";
 import { ClubIdentity } from "./components/ClubIdentity";
 
+type ChallengeSummarySurface = ChallengeSurface & {
+  readonly replayUrl: string;
+};
+
 type SummaryScreenProps = {
+  readonly challenge?: ChallengeSummarySurface;
+  readonly onCopyReplay?: () => void;
   readonly onRestart: () => void;
   readonly onShare: () => void;
+  readonly replayCopyMessage?: string | null;
   readonly view: SummaryPresentation;
 };
 
 export function SummaryScreen({
+  challenge,
+  onCopyReplay,
   onRestart,
   onShare,
+  replayCopyMessage,
   view,
 }: SummaryScreenProps) {
   return (
@@ -29,6 +43,40 @@ export function SummaryScreen({
         <article className="animate-rise overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900 p-4">
           <SummaryHeader view={view} />
           <SummaryMetrics view={view} />
+          {challenge ? (
+            <div className="mt-4">
+              <ChallengeProgressPanel
+                daily={challenge.daily}
+                progress={challenge.progress}
+              />
+              <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                <input
+                  aria-label="挑战回放链接"
+                  className="min-w-0 rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-[10px] text-zinc-500"
+                  readOnly
+                  value={challenge.replayUrl}
+                />
+                {onCopyReplay ? (
+                  <button
+                    className="min-h-10 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 text-[11px] font-bold text-emerald-300"
+                    onClick={onCopyReplay}
+                    type="button"
+                  >
+                    复制挑战回放链接
+                  </button>
+                ) : null}
+              </div>
+              {replayCopyMessage ? (
+                <p
+                  aria-live="polite"
+                  className="mt-1 text-center text-[10px] font-bold text-emerald-300"
+                  role="status"
+                >
+                  {replayCopyMessage}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           {view.nationalTeam ? (
             <div className="mt-3 rounded-xl bg-zinc-950/60 py-2">
               <div className="flex items-center justify-center gap-2">

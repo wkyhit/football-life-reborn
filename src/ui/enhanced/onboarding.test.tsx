@@ -184,7 +184,7 @@ describe("Enhanced onboarding", () => {
     );
 
     await user.click(
-      screen.getByRole("button", { name: "开始新生涯" }),
+      screen.getByRole("button", { name: "开始普通生涯" }),
     );
     expect(onBegin).toHaveBeenCalledWith("express");
   });

@@ -3,9 +3,14 @@ import type {
   CareerPresentation,
   CareerTimelineRowPresentation,
 } from "../../classic/careerPresentation";
+import {
+  ChallengeProgressPanel,
+  type ChallengeSurface,
+} from "../../../features/challenges/ChallengeProgressPanel";
 import { ClubIdentity } from "../../classic/components/ClubIdentity";
 
 type EnhancedCareerScreenProps = {
+  readonly challenge?: ChallengeSurface;
   readonly onChoose: (
     decisionId: string,
     optionId: string,
@@ -16,6 +21,7 @@ type EnhancedCareerScreenProps = {
 };
 
 export function EnhancedCareerScreen({
+  challenge,
   onChoose,
   onOpenArchive,
   statusMessage,
@@ -49,7 +55,11 @@ export function EnhancedCareerScreen({
         data-enhanced-career-layout=""
       >
         <CareerTimeline view={view} />
-        <DecisionRail onChoose={onChoose} view={view} />
+        <DecisionRail
+          onChoose={onChoose}
+          view={view}
+          {...(challenge === undefined ? {} : { challenge })}
+        />
       </div>
     </main>
   );
@@ -347,9 +357,11 @@ function SeasonNumber({
 }
 
 function DecisionRail({
+  challenge,
   onChoose,
   view,
 }: {
+  readonly challenge?: ChallengeSurface;
   readonly onChoose: EnhancedCareerScreenProps["onChoose"];
   readonly view: CareerPresentation;
 }) {
@@ -364,6 +376,11 @@ function DecisionRail({
         className={`${railClass} flex items-center justify-center`}
         data-enhanced-decision-rail=""
       >
+        {challenge ? (
+          <div className="mb-4 w-full">
+            <ChallengeProgressPanel {...challenge} />
+          </div>
+        ) : null}
         <p
           aria-atomic="true"
           aria-live="polite"
@@ -386,6 +403,11 @@ function DecisionRail({
       className={railClass}
       data-enhanced-decision-rail=""
     >
+      {challenge ? (
+        <div className="mb-4">
+          <ChallengeProgressPanel {...challenge} />
+        </div>
+      ) : null}
       <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
         DECISION RAIL · {panel.age} 岁
       </p>

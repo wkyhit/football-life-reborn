@@ -121,6 +121,7 @@ export function renderShareCardToCanvas(
   drawClubs(context, input.view, crestImages);
   drawMetrics(context, input.view);
   drawAchievement(context, input.view);
+  drawChallenge(context, input);
   drawFooter(context, input);
 }
 
@@ -454,6 +455,37 @@ function drawFooter(
   });
 
   drawQr(context, input.qrPayload, 710, 1260, 250);
+}
+
+function drawChallenge(
+  context: ShareCardContext,
+  input: ShareCardInput,
+): void {
+  if (input.challenge === undefined) {
+    return;
+  }
+
+  const status =
+    input.challenge.status === "completed"
+      ? "已完成"
+      : input.challenge.status === "failed"
+        ? "未完成"
+        : "进行中";
+
+  fillRoundedRect(context, 88, 1128, 904, 42, 12, "#064e3b");
+  drawText(
+    context,
+    `${input.challenge.title} · ${input.challenge.calendarDate} · ${status}`,
+    SHARE_CARD_WIDTH / 2,
+    1157,
+    {
+      align: "center",
+      color: "#6ee7b7",
+      maxWidth: 840,
+      size: 20,
+      weight: 800,
+    },
+  );
 }
 
 function drawQr(

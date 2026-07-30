@@ -7,6 +7,7 @@ import {
   deriveCalendarDate,
   deriveDailyChallenge,
   getDailyChallenges,
+  parseDailyChallengeSeed,
 } from "./daily";
 
 describe("daily challenges", () => {
@@ -136,5 +137,42 @@ describe("daily challenges", () => {
         version: DAILY_CHALLENGE_VERSION,
       }),
     ).toThrow("calendar date");
+  });
+
+  it("recovers challenge metadata only from an exact daily seed", () => {
+    expect(
+      parseDailyChallengeSeed(
+        "daily:v1:2026-07-30:goalkeeper_legend",
+      ),
+    ).toEqual({
+      calendarDate: "2026-07-30",
+      family: "goalkeeper_legend",
+      id: "daily-v1-2026-07-30-goalkeeper_legend",
+      seed: "daily:v1:2026-07-30:goalkeeper_legend",
+      version: 1,
+    });
+    expect(
+      parseDailyChallengeSeed("ordinary-career"),
+    ).toBeNull();
+    expect(
+      parseDailyChallengeSeed(
+        "daily:v0:2026-07-30:one_club",
+      ),
+    ).toBeNull();
+    expect(
+      parseDailyChallengeSeed(
+        "daily:v2:2026-07-30:one_club",
+      ),
+    ).toBeNull();
+    expect(
+      parseDailyChallengeSeed(
+        "daily:v1:2026-02-30:one_club",
+      ),
+    ).toBeNull();
+    expect(
+      parseDailyChallengeSeed(
+        "daily:v1:2026-07-30:unknown",
+      ),
+    ).toBeNull();
   });
 });

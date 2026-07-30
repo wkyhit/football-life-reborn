@@ -56,6 +56,11 @@ describe("challenge progress", () => {
         (challenge) => challenge.title,
       ),
     ).toEqual(["一人一城", "亚洲之光", "门将传奇"]);
+    expect(
+      Object.values(CHALLENGE_CATALOG).map(
+        (challenge) => challenge.version,
+      ),
+    ).toEqual([1, 1, 1]);
     expect(challengeDefinition("one_club")).toBe(
       CHALLENGE_CATALOG.one_club,
     );

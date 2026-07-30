@@ -12,7 +12,9 @@ test("an Enhanced user can archive, export/import, fork, finish, and compare acr
   );
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.getByRole("button", { name: "速通" }).click();
-  await page.getByRole("button", { name: "开始新生涯" }).click();
+  await page
+    .getByRole("button", { name: "开始普通生涯" })
+    .click();
   await page.getByRole("button", { name: "中国" }).click();
   await page.getByRole("button", { name: "下一步" }).click();
   await page.getByRole("button", { name: "下一步" }).click();
