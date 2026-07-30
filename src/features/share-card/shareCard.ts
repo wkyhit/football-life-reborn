@@ -2,6 +2,7 @@ import * as QRCode from "qrcode";
 
 import type { BadgeTier } from "../../domain/summary";
 import type { SummaryPresentation } from "../../ui/classic/summaryPresentation";
+import { classicCrestUrl } from "../../ui/classic/components/classicCrests";
 import {
   shareCardFilename,
   type ShareCardInput,
@@ -35,6 +36,13 @@ type ShareCardContext = {
     x: number,
     y: number,
     maxWidth?: number,
+  ): void;
+  drawImage(
+    image: CanvasImageSource,
+    dx: number,
+    dy: number,
+    dWidth: number,
+    dHeight: number,
   ): void;
   lineTo(x: number, y: number): void;
   moveTo(x: number, y: number): void;
@@ -75,6 +83,7 @@ const BADGE_COLOR: Readonly<Record<BadgeTier, string>> = {
 export function renderShareCardToCanvas(
   canvas: ShareCardCanvas,
   input: ShareCardInput,
+  crestImages: ReadonlyMap<string, CanvasImageSource> = new Map(),
 ): void {
   canvas.width = SHARE_CARD_WIDTH;
   canvas.height = SHARE_CARD_HEIGHT;
@@ -109,7 +118,7 @@ export function renderShareCardToCanvas(
   );
 
   drawHeader(context, input);
-  drawClubs(context, input.view);
+  drawClubs(context, input.view, crestImages);
   drawMetrics(context, input.view);
   drawAchievement(context, input.view);
   drawFooter(context, input);
@@ -118,10 +127,12 @@ export function renderShareCardToCanvas(
 export async function createShareCardBlob(
   input: ShareCardInput,
 ): Promise<Blob> {
+  const crestImages = await loadCrestImages(input.view);
   const canvas = document.createElement("canvas");
   renderShareCardToCanvas(
     canvas as unknown as ShareCardCanvas,
     input,
+    crestImages,
   );
 
   return new Promise((resolve, reject) => {
@@ -226,6 +237,7 @@ function drawHeader(
 function drawClubs(
   context: ShareCardContext,
   view: SummaryPresentation,
+  crestImages: ReadonlyMap<string, CanvasImageSource>,
 ): void {
   drawText(context, "效 力 过", SHARE_CARD_WIDTH / 2, 358, {
     align: "center",
@@ -242,22 +254,41 @@ function drawClubs(
 
   clubs.forEach(({ club, trophyCount }, index) => {
     const center = startX + index * columnWidth;
-    fillRoundedRect(
-      context,
-      center - 45,
-      398,
-      90,
-      90,
-      24,
-      club.color,
-    );
-    drawText(context, club.abbreviation, center, 454, {
-      align: "center",
-      color: "#ffffff",
-      maxWidth: 70,
-      size: 24,
-      weight: 900,
-    });
+    const crest = crestImages.get(club.id);
+
+    if (crest === undefined) {
+      fillRoundedRect(
+        context,
+        center - 45,
+        398,
+        90,
+        90,
+        24,
+        club.color,
+      );
+      drawText(context, club.abbreviation, center, 454, {
+        align: "center",
+        color: "#ffffff",
+        maxWidth: 70,
+        size: 24,
+        weight: 900,
+      });
+    } else {
+      const dimensions = imageDimensions(crest);
+      const scale = Math.min(
+        90 / dimensions.width,
+        90 / dimensions.height,
+      );
+      const width = dimensions.width * scale;
+      const height = dimensions.height * scale;
+      context.drawImage(
+        crest,
+        center - width / 2,
+        398 + (90 - height) / 2,
+        width,
+        height,
+      );
+    }
     drawText(context, club.shortName, center, 530, {
       align: "center",
       color: "#f4f4f5",
@@ -571,4 +602,59 @@ function readableHost(payload: string): string {
   } catch {
     return payload;
   }
+}
+
+async function loadCrestImages(
+  view: SummaryPresentation,
+): Promise<ReadonlyMap<string, CanvasImageSource>> {
+  const entries = await Promise.all(
+    view.clubs.slice(0, 5).map(async ({ club }) => {
+      const url = classicCrestUrl(club.id);
+
+      if (url === null) {
+        return null;
+      }
+
+      const image = await loadImage(url);
+      return image === null
+        ? null
+        : ([club.id, image] as const);
+    }),
+  );
+
+  const images = new Map<string, CanvasImageSource>();
+
+  for (const entry of entries) {
+    if (entry !== null) {
+      images.set(entry[0], entry[1]);
+    }
+  }
+
+  return images;
+}
+
+function loadImage(url: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = url;
+  });
+}
+
+function imageDimensions(image: CanvasImageSource): {
+  readonly height: number;
+  readonly width: number;
+} {
+  const source = image as {
+    readonly height: number;
+    readonly naturalHeight?: number;
+    readonly naturalWidth?: number;
+    readonly width: number;
+  };
+
+  return {
+    height: source.naturalHeight ?? source.height,
+    width: source.naturalWidth ?? source.width,
+  };
 }

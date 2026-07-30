@@ -1,9 +1,9 @@
 import type {
-  CareerClubPresentation,
   CareerDecisionOptionPresentation,
   CareerPresentation,
   CareerTimelineRowPresentation,
 } from "./careerPresentation";
+import { ClubIdentity } from "./components/ClubIdentity";
 
 type CareerScreenProps = {
   readonly onChoose: (decisionId: string, optionId: string) => void;
@@ -54,7 +54,7 @@ function CareerHeader({ view }: { readonly view: CareerPresentation }) {
           </div>
           <div className="mt-1 flex items-center gap-1.5 truncate">
             {header.club ? (
-              <ClubMark club={header.club} size={20} />
+              <ClubIdentity club={header.club} size={20} />
             ) : null}
             <span className="truncate text-lg font-black text-zinc-50">
               {header.club?.shortName ?? "自由身"}
@@ -197,7 +197,7 @@ function TimelineRow({
         {row.age}
       </span>
       <span className="flex min-w-0 items-center gap-1.5">
-        <ClubMark club={row.club} size={18} />
+        <ClubIdentity club={row.club} size={18} />
         <span className="min-w-0">
           <span className="block truncate text-[13px] font-bold text-zinc-100">
             {row.club.shortName}
@@ -306,7 +306,7 @@ function DecisionOption({
     >
       <span className="flex items-center gap-2.5">
         {option.club ? (
-          <ClubMark club={option.club} size={34} />
+          <ClubIdentity club={option.club} size={34} />
         ) : null}
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-bold text-zinc-100">
@@ -330,29 +330,6 @@ function DecisionOption({
         ) : null}
       </span>
     </button>
-  );
-}
-
-function ClubMark({
-  club,
-  size,
-}: {
-  readonly club: CareerClubPresentation;
-  readonly size: number;
-}) {
-  return (
-    <span
-      aria-hidden="true"
-      className="invisible flex shrink-0 items-center justify-center rounded-md text-[8px] font-black leading-none"
-      data-classic-club-mark=""
-      style={{
-        backgroundColor: club.color,
-        height: size,
-        width: size,
-      }}
-    >
-      {club.abbreviation.slice(0, 3)}
-    </span>
   );
 }
 

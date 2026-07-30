@@ -2,6 +2,7 @@ import type {
   SummaryHonorPresentation,
   SummaryPresentation,
 } from "./summaryPresentation";
+import { ClubIdentity } from "./components/ClubIdentity";
 
 type SummaryScreenProps = {
   readonly onRestart: () => void;
@@ -237,14 +238,7 @@ function SummaryClubs({
             className="flex items-center gap-2 rounded-lg bg-zinc-950/60 px-2.5 py-1.5"
             key={club.id}
           >
-            <span
-              aria-hidden="true"
-              className="invisible flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[7px] font-black leading-none"
-              data-classic-club-mark=""
-              style={{ backgroundColor: club.color }}
-            >
-              {club.abbreviation}
-            </span>
+            <ClubIdentity club={club} size={20} />
             <span className="min-w-0 flex-1 truncate text-[12px] font-bold text-zinc-200">
               {club.shortName}
             </span>
