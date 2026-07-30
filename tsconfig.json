@@ -9,6 +9,12 @@
     },
     {
       "path": "./tsconfig.e2e.json"
+    },
+    {
+      "path": "./tsconfig.golden.json"
+    },
+    {
+      "path": "./tsconfig.property.json"
     }
   ]
 }

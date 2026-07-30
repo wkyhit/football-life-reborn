@@ -9,11 +9,14 @@
   },
   "scripts": {
     "dev": "vite",
+    "generate:golden": "node scripts/generate-classic-golden.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint .",
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:golden": "vitest run tests/golden/classicParity.test.ts",
+    "test:property": "vitest run tests/property/careerInvariants.test.ts",
     "test:watch": "vitest",
     "typecheck": "tsc -b --pretty false"
   },
