@@ -6,6 +6,16 @@ A private research project that clean-room reimplements the observable behavior 
 
 Planning and issue decomposition. No product implementation has started.
 
+## GitHub roadmap
+
+- [Roadmap epic](https://github.com/wkyhit/football-life-reborn/issues/1)
+- [Phase 1: playable deterministic vertical slice](https://github.com/wkyhit/football-life-reborn/issues/2)
+- [Phase 2: Classic simulation and content parity](https://github.com/wkyhit/football-life-reborn/issues/3)
+- [Phase 3: Classic visual parity and local share card](https://github.com/wkyhit/football-life-reborn/issues/4)
+- [Phase 4: Enhanced UI, accessibility, and metadata](https://github.com/wkyhit/football-life-reborn/issues/5)
+- [Phase 5: career archive and parallel-life branching](https://github.com/wkyhit/football-life-reborn/issues/6)
+- [Phase 6: deterministic challenges and replayable sharing](https://github.com/wkyhit/football-life-reborn/issues/7)
+
 ## Delivery workflow
 
 - GitHub issues are the source of truth.
@@ -20,4 +30,3 @@ Planning and issue decomposition. No product implementation has started.
 - Static, local-first application with no required runtime backend.
 - No accounts, payments, multiplayer, live match engine, or competitive leaderboard in the approved scope.
 - Brand, club, and crest usage has been confirmed as authorized for this project.
-
