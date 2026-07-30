@@ -1,4 +1,5 @@
 import {
+  classicPick,
   classicPickWeighted,
   nextClassicFloat,
 } from "./classicRng";
@@ -138,42 +139,62 @@ export function generateTransferOffers(input: {
     input.player.overall,
     input.player.age,
   );
-  const reputationDraw = drawNearbyReputation(
-    input.rngState,
-    playerReputationLevel(adjustedOverall),
+  const playerReputation = playerReputationLevel(
+    input.player.overall,
   );
   const origin = input.candidates.find(
     (candidate) => candidate.id === input.player.currentClubId,
   );
   const offers: TransferCandidate[] = [];
-  let rngState = reputationDraw.rngState;
+  let rngState = input.rngState;
+  const count = input.count ?? 2;
 
-  for (const reputation of nearbyReputations(reputationDraw.reputation)) {
-    const pool = input.candidates.filter(
-      (candidate) =>
-        candidate.id !== input.player.currentClubId &&
-        !offers.some((offer) => offer.id === candidate.id) &&
-        candidate.internationalReputation === reputation,
-    );
-    const selection = selectDistinctWeighted({
-      candidates: pool,
-      count: (input.count ?? 2) - offers.length,
+  while (offers.length < count) {
+    const reputationDraw = drawNearbyReputation(
       rngState,
-      weight: (candidate) =>
-        transferAffinityWeight({
-          adjustedOverall,
-          candidate,
-          origin,
-          player: input.player,
-        }),
-    });
+      playerReputation,
+    );
+    rngState = reputationDraw.rngState;
+    let selected:
+      | {
+          readonly item: TransferCandidate;
+          readonly state: number;
+        }
+      | undefined;
 
-    offers.push(...selection.offers);
-    rngState = selection.rngState;
+    for (const reputation of nearbyReputations(
+      reputationDraw.reputation,
+    )) {
+      const pool = input.candidates.filter(
+        (candidate) =>
+          candidate.id !== input.player.currentClubId &&
+          !offers.some((offer) => offer.id === candidate.id) &&
+          candidate.internationalReputation === reputation,
+      );
+      const picked = pickTransferCandidate(
+        rngState,
+        pool,
+        (candidate) =>
+          transferAffinityWeight({
+            adjustedOverall,
+            candidate,
+            origin,
+            player: input.player,
+          }),
+      );
 
-    if (offers.length >= (input.count ?? 2)) {
+      if (picked !== undefined) {
+        selected = picked;
+        break;
+      }
+    }
+
+    if (selected === undefined) {
       break;
     }
+
+    offers.push(selected.item);
+    rngState = selected.state;
   }
 
   return {
@@ -225,6 +246,9 @@ export function generateLoanOffers(input: {
 }): TransferOfferResult | null {
   const count = input.count ?? 3;
   const reputation = playerReputationLevel(input.overall);
+  const origin = input.candidates.find(
+    (candidate) => candidate.id === input.currentClubId,
+  );
   const suitable = input.candidates.filter((candidate) => {
     if (
       candidate.id === input.currentClubId ||
@@ -242,21 +266,49 @@ export function generateLoanOffers(input: {
 
     return role === "starter" || role === "high_rotation";
   });
+  const offers: TransferCandidate[] = [];
+  let rngState = input.rngState;
 
-  const selection = selectDistinctWeighted({
-    candidates: suitable,
-    count,
-    rngState: input.rngState,
-    weight: (candidate) =>
-      candidate.countryFifaCode === input.nationalityFifaCode
-        ? 90
-        : candidate.confederation ===
-            input.nationalityConfederation
-          ? 10
-          : 0,
-  });
+  while (offers.length < count) {
+    const available = suitable.filter(
+      (candidate) =>
+        !offers.some((offer) => offer.id === candidate.id),
+    );
+    const sameCountry = available.filter(
+      (candidate) =>
+        origin !== undefined &&
+        candidate.countryFifaCode === origin.countryFifaCode,
+    );
+    const sameConfederation = available.filter(
+      (candidate) =>
+        origin !== undefined &&
+        candidate.countryFifaCode !== origin.countryFifaCode &&
+        candidate.confederation === origin.confederation,
+    );
+    const buckets = [
+      { item: sameCountry, weight: sameCountry.length > 0 ? 90 : 0 },
+      {
+        item: sameConfederation,
+        weight: sameConfederation.length > 0 ? 10 : 0,
+      },
+    ];
 
-  return selection.offers.length === count ? selection : null;
+    if (buckets.every((bucket) => bucket.weight === 0)) {
+      break;
+    }
+
+    const bucket = classicPickWeighted(rngState, buckets);
+    const candidate = classicPick(bucket.state, bucket.item);
+    rngState = candidate.state;
+    offers.push(candidate.item);
+  }
+
+  return offers.length === count
+    ? {
+        offers: Object.freeze(offers),
+        rngState,
+      }
+    : null;
 }
 
 export function resolveLoanReturn(
@@ -314,55 +366,41 @@ export function generateFreeAgentOffers(
       0,
       maximumReputation - (draw.value < 0.5 ? 0 : 1),
     );
-    const available = input.candidates.filter(
-      (candidate) =>
-        candidate.id !== input.currentClubId &&
-        !offers.some((offer) => offer.id === candidate.id) &&
-        candidate.internationalReputation <= maximumReputation,
+    const excluded = new Set([
+      input.currentClubId,
+      ...offers.map((offer) => offer.id),
+    ]);
+    const pool = freeAgentCandidatePool(
+      input.candidates,
+      preferredReputation,
+      maximumReputation,
+      excluded,
     );
-    const preferred = available.filter(
-      (candidate) =>
-        candidate.internationalReputation ===
-        preferredReputation,
-    );
-    const pool =
-      preferred.length > 0
-        ? preferred
-        : available.sort(
-            (left, right) =>
-              right.internationalReputation -
-              left.internationalReputation,
-          );
 
     if (pool.length === 0) {
       break;
     }
 
-    const weighted = pool.filter(
-      (candidate) =>
-        transferAffinityWeight({
-          adjustedOverall,
-          candidate,
-          origin,
-          player: input,
-        }) > 0,
-    );
-    const candidates = weighted.length > 0 ? weighted : pool;
-    const picked = classicPickWeighted(
-      rngState,
-      candidates.map((candidate) => ({
-        item: candidate,
-        weight:
-          weighted.length > 0
-            ? transferAffinityWeight({
-                adjustedOverall,
-                candidate,
-                origin,
-                player: input,
-              })
-            : 1,
-      })),
-    );
+    const weight = (candidate: TransferCandidate): number =>
+      transferAffinityWeight({
+        adjustedOverall,
+        candidate,
+        origin,
+        player: input,
+      });
+    const picked =
+      pickTransferCandidate(rngState, pool, weight) ??
+      pickTransferCandidate(
+        rngState,
+        input.candidates.filter(
+          (candidate) => !excluded.has(candidate.id),
+        ),
+        weight,
+      );
+
+    if (picked === undefined) {
+      break;
+    }
 
     offers.push(picked.item);
     rngState = picked.state;
@@ -373,6 +411,36 @@ export function generateFreeAgentOffers(
     offers: Object.freeze(offers),
     rngState,
   };
+}
+
+function freeAgentCandidatePool(
+  candidates: readonly TransferCandidate[],
+  startingReputation: number,
+  maximumReputation: number,
+  excluded: ReadonlySet<string>,
+): TransferCandidate[] {
+  for (
+    let reputation = startingReputation;
+    reputation >= 0;
+    reputation -= 1
+  ) {
+    const pool = candidates.filter(
+      (candidate) =>
+        candidate.internationalReputation === reputation &&
+        candidate.internationalReputation <= maximumReputation &&
+        !excluded.has(candidate.id),
+    );
+
+    if (pool.length > 0) {
+      return pool;
+    }
+  }
+
+  return candidates.filter(
+    (candidate) =>
+      candidate.internationalReputation <= maximumReputation &&
+      !excluded.has(candidate.id),
+  );
 }
 
 export function relegationProbability(
@@ -394,7 +462,8 @@ export function relegationProbability(
   return clamp(
     0.05 +
       0.1 *
-        ((1.1 - overallScoringMultiplier(overall)) / 0.5),
+        ((1.1 - overallScoringMultiplier(overall)) /
+          0.500_000_000_000_000_1),
     0.05,
     0.15,
   );
@@ -489,37 +558,32 @@ function nearbyReputations(reputation: number): number[] {
   return levels;
 }
 
-function selectDistinctWeighted(input: {
-  readonly candidates: readonly TransferCandidate[];
-  readonly count: number;
-  readonly rngState: number;
-  readonly weight: (candidate: TransferCandidate) => number;
-}): TransferOfferResult {
-  const remaining = [...input.candidates];
-  const offers: TransferCandidate[] = [];
-  let rngState = input.rngState;
-
-  while (offers.length < input.count && remaining.length > 0) {
-    const weighted = remaining
-      .map((candidate) => ({
-        item: candidate,
-        weight: input.weight(candidate),
-      }))
-      .filter((candidate) => candidate.weight > 0);
-
-    if (weighted.length === 0) {
-      break;
+function pickTransferCandidate(
+  rngState: number,
+  candidates: readonly TransferCandidate[],
+  weight: (candidate: TransferCandidate) => number,
+):
+  | {
+      readonly item: TransferCandidate;
+      readonly state: number;
     }
+  | undefined {
+  const weighted = candidates
+    .map((candidate) => ({
+      item: candidate,
+      weight: weight(candidate),
+    }))
+    .filter((candidate) => candidate.weight > 0);
 
-    const picked = classicPickWeighted(rngState, weighted);
-    offers.push(picked.item);
-    rngState = picked.state;
-    remaining.splice(remaining.indexOf(picked.item), 1);
+  if (weighted.length === 0) {
+    return undefined;
   }
 
+  const picked = classicPickWeighted(rngState, weighted);
+
   return {
-    offers: Object.freeze(offers),
-    rngState,
+    item: picked.item,
+    state: picked.state,
   };
 }
 

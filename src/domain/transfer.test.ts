@@ -62,8 +62,8 @@ describe("Classic transfer, loan, and contract policy", () => {
       offerIds: first.offers.map((offer) => offer.id),
       rngState: first.rngState,
     }).toEqual({
-      offerIds: ["nice", "west-ham"],
-      rngState: 658_288_649,
+      offerIds: ["nice", "lille"],
+      rngState: 2_525_289_079,
     });
     expect(first.offers).toHaveLength(2);
     expect(new Set(first.offers.map((offer) => offer.id)).size).toBe(2);
@@ -114,8 +114,8 @@ describe("Classic transfer, loan, and contract policy", () => {
       candidates: provider.all(),
       count: 3,
       currentClubId: "shanghai-port",
-      nationalityConfederation: "AFC",
-      nationalityFifaCode: "CHN",
+      nationalityConfederation: "UEFA",
+      nationalityFifaCode: "ESP",
       overall: 76,
       rngState: createClassicRngState("phase-2:loan"),
     });
@@ -126,11 +126,11 @@ describe("Classic transfer, loan, and contract policy", () => {
       rngState: offers!.rngState,
     }).toEqual({
       offerIds: [
-        "beijing-guoan",
         "zhejiang",
         "shandong-taishan",
+        "shanghai-shenhua",
       ],
-      rngState: 1_629_282_870,
+      rngState: 9_250_890,
     });
     expect(offers!.offers).toHaveLength(3);
     expect(
