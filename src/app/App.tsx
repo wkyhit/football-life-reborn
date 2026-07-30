@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
   useMemo,
   useReducer,
@@ -44,6 +46,13 @@ import { RecoveryScreen } from "../ui/classic/RecoveryScreen";
 import { SummaryScreen } from "../ui/classic/SummaryScreen";
 import { createSummaryPresentation } from "../ui/classic/summaryPresentation";
 import { seedFromSearch } from "./seed";
+
+const ShareCardOverlay = lazy(async () => {
+  const module = await import(
+    "../features/share-card/ShareCardOverlay"
+  );
+  return { default: module.ShareCardOverlay };
+});
 
 type SetupScreenProps = {
   readonly dispatch: Dispatch<CareerAction>;
@@ -222,6 +231,7 @@ function ClassicCareerExperience({
   repository,
 }: ClassicCareerExperienceProps) {
   const reveal = useSeasonReveal(initialCareer);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     const result = repository.save(reveal.committedCareer);
@@ -232,14 +242,30 @@ function ClassicCareerExperience({
     reveal.committedCareer.phase === "summary" &&
     !reveal.isRevealing
   ) {
+    const view = createSummaryPresentation(
+      reveal.committedCareer,
+    );
+
     return (
-      <SummaryScreen
-        onRestart={onRestart}
-        onShare={() => undefined}
-        view={createSummaryPresentation(
-          reveal.committedCareer,
-        )}
-      />
+      <>
+        <SummaryScreen
+          onRestart={() => {
+            setShareOpen(false);
+            onRestart();
+          }}
+          onShare={() => setShareOpen(true)}
+          view={view}
+        />
+        {shareOpen ? (
+          <Suspense fallback={null}>
+            <ShareCardOverlay
+              onClose={() => setShareOpen(false)}
+              qrPayload={new URL("/", window.location.href).href}
+              view={view}
+            />
+          </Suspense>
+        ) : null}
+      </>
     );
   }
 

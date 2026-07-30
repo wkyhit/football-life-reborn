@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import "../../src/styles.css";
+import { ShareCardOverlay } from "../../src/features/share-card/ShareCardOverlay";
 import { CareerScreen } from "../../src/ui/classic/CareerScreen";
 import { SummaryScreen } from "../../src/ui/classic/SummaryScreen";
 import type {
@@ -95,6 +96,7 @@ const SHONAN: CareerClubPresentation = {
 
 type VisualFixture =
   | { readonly kind: "career"; readonly view: CareerPresentation }
+  | { readonly kind: "share"; readonly view: SummaryPresentation }
   | { readonly kind: "summary"; readonly view: SummaryPresentation };
 
 const fixtureName = new URLSearchParams(window.location.search).get(
@@ -114,12 +116,25 @@ createRoot(root).render(
         onChoose={() => undefined}
         view={fixture.view}
       />
-    ) : (
+    ) : fixture.kind === "summary" ? (
       <SummaryScreen
         onRestart={() => undefined}
         onShare={() => undefined}
         view={fixture.view}
       />
+    ) : (
+      <>
+        <SummaryScreen
+          onRestart={() => undefined}
+          onShare={() => undefined}
+          view={fixture.view}
+        />
+        <ShareCardOverlay
+          onClose={() => undefined}
+          qrPayload="https://football-life-reborn.test/"
+          view={fixture.view}
+        />
+      </>
     )}
   </StrictMode>,
 );
@@ -214,6 +229,8 @@ function createFixture(name: string | null): VisualFixture {
       return { kind: "summary", view: goalkeeperSummary() };
     case "summary-no-title":
       return { kind: "summary", view: noTitleSummary() };
+    case "share":
+      return { kind: "share", view: attackerSummary() };
     default:
       throw new RangeError(`Unknown visual fixture: ${String(name)}`);
   }
