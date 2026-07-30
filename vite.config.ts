@@ -5,5 +5,8 @@ import { defineConfig } from "vite";
 import "./src/domain/catalog/classicCatalog";
 
 export default defineConfig({
+  build: {
+    manifest: true,
+  },
   plugins: [react(), tailwindcss()],
 });

@@ -17,6 +17,9 @@
       "path": "./tsconfig.property.json"
     },
     {
+      "path": "./tsconfig.budget.json"
+    },
+    {
       "path": "./tsconfig.visual.json"
     }
   ]

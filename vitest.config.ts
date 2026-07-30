@@ -8,6 +8,7 @@ export default defineConfig({
     environment: "happy-dom",
     exclude: [
       ...configDefaults.exclude,
+      "tests/build/**",
       "tests/e2e/**",
       "tests/visual/**",
     ],
