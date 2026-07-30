@@ -85,7 +85,10 @@ type ArchiveMutationFailure =
     }
   | {
       readonly ok: false;
-      readonly reason: "invalid_name" | "not_found";
+      readonly reason:
+        | "invalid_name"
+        | "invalid_timestamp"
+        | "not_found";
     };
 
 export type ArchiveMutationResult =
@@ -156,7 +159,10 @@ export type ArchiveUndoResult =
 export type ArchiveRepository = {
   readonly create: (input: {
     readonly career: ClassicCareerState;
+    readonly createdAt?: string;
     readonly displayName: string;
+    readonly id?: string;
+    readonly updatedAt?: string;
   }) => ArchiveCreateResult;
   readonly delete: (id: string) => ArchiveDeleteResult;
   readonly list: () => ArchiveListResult;
@@ -237,7 +243,7 @@ export function createArchiveRepository(
         };
       }
 
-      const id = createId();
+      const id = input.id ?? createId();
 
       if (!isArchiveId(id)) {
         return { id, ok: false, reason: "invalid_id" };
@@ -255,13 +261,22 @@ export function createArchiveRepository(
         return { ok: false, reason: "invalid_name" };
       }
 
-      const timestamp = now();
+      const createdAt = input.createdAt ?? now();
+      const updatedAt = input.updatedAt ?? createdAt;
+
+      if (
+        !isIsoTimestamp(createdAt) ||
+        !isIsoTimestamp(updatedAt)
+      ) {
+        return { ok: false, reason: "invalid_timestamp" };
+      }
+
       const entry = createEntry({
         career: input.career,
-        createdAt: timestamp,
+        createdAt,
         displayName,
         id,
-        updatedAt: timestamp,
+        updatedAt,
       });
       const payloadRaw = serializePayload(id, input.career);
       const nextEntries = sortEntries([
@@ -732,6 +747,15 @@ function normalizeDisplayName(value: string): string | null {
   return normalized.length >= 1 && normalized.length <= 80
     ? normalized
     : null;
+}
+
+function isIsoTimestamp(value: string): boolean {
+  const parsed = new Date(value);
+
+  return (
+    !Number.isNaN(parsed.valueOf()) &&
+    parsed.toISOString() === value
+  );
 }
 
 function isArchiveId(value: string): boolean {
