@@ -1,261 +1,354 @@
-import { getCslClub } from "../../domain/catalog/csl";
 import type {
-  CareerDecision,
-  CareerPhase,
-  CareerProgress,
-  CareerState,
-} from "../../domain/model";
+  CareerDecisionOptionPresentation,
+  CareerPresentation,
+  CareerTimelineRowPresentation,
+} from "./careerPresentation";
+import { ClubIdentity } from "./components/ClubIdentity";
 
 type CareerScreenProps = {
-  onChoose: (decisionId: string, optionId: string) => void;
-  onContinue: () => void;
-  state: CareerState;
+  readonly onChoose: (decisionId: string, optionId: string) => void;
+  readonly view: CareerPresentation;
 };
-
-const timelineAges = Array.from({ length: 12 }, (_, index) => 16 + index * 2);
 
 export function CareerScreen({
   onChoose,
-  onContinue,
-  state,
+  view,
 }: CareerScreenProps) {
-  const { career, player } = state;
-  const clubName = career.clubId
-    ? (getCslClub(career.clubId)?.name ?? "未知球队")
-    : "自由身";
-
   return (
     <main
-      className="min-h-dvh bg-canvas px-4 py-5 text-primary sm:px-5"
+      className="flex h-dvh flex-col overflow-hidden bg-zinc-950 text-zinc-100"
+      data-classic-career-shell=""
       id="main-content"
     >
-      <div className="mx-auto max-w-[1240px]">
-        <header className="grid grid-cols-[auto_1fr_auto] items-start gap-3">
-          <div className="flex size-14 flex-col items-center justify-center rounded-[12px] bg-ability text-ability-ink shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-            <span className="text-[10px]">能力</span>
-            <strong className="text-2xl font-black tabular-nums">
-              {career.ability}
-            </strong>
-          </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2 text-[11px]">
-              <span className="rounded-[4px] bg-surface-elevated px-2 py-1 text-secondary">
-                🇨🇳 CHN
-              </span>
-              <span className="rounded-[4px] bg-accent-soft px-2 py-1 text-accent">
-                #{player.number} 中锋
-              </span>
-            </div>
-            <h1 className="mt-2 truncate text-xl font-black">
-              {player.name.trim()}
-            </h1>
-            <p className="mt-1 text-sm text-secondary">{clubName}</p>
-          </div>
-          <div className="text-right">
-            <span className="block text-[10px] text-muted">年龄</span>
-            <strong className="block text-xl font-black tabular-nums">
-              {career.age} 岁
-            </strong>
-            <span className="mt-1 block text-[11px] text-secondary">
-              身价 {formatValue(career.valueEuro)}
+      <CareerHeader view={view} />
+      <CareerTimeline view={view} />
+      <CareerPanel onChoose={onChoose} view={view} />
+    </main>
+  );
+}
+
+function CareerHeader({ view }: { readonly view: CareerPresentation }) {
+  const { header, totals } = view;
+
+  return (
+    <header
+      className="shrink-0 border-b border-zinc-800 bg-zinc-950/95 px-4 pb-2 pt-4"
+      data-classic-career-header=""
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex h-14 w-14 flex-col items-center justify-center rounded-xl border border-amber-600/50 bg-gradient-to-br from-amber-700 to-amber-900 text-2xl font-black tabular-nums text-amber-50">
+          <span className="text-[8px] font-bold leading-none opacity-70">
+            能力
+          </span>
+          <span className="leading-none">{header.overall}</span>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-bold text-zinc-300">
+              {header.countryFlag} {header.countryCode}
+            </span>
+            <span className="rounded bg-emerald-900/60 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+              #{header.number} {header.position}
             </span>
           </div>
-        </header>
+          <div className="mt-1 flex items-center gap-1.5 truncate">
+            {header.club ? (
+              <ClubIdentity club={header.club} size={20} />
+            ) : null}
+            <span className="truncate text-lg font-black text-zinc-50">
+              {header.club?.shortName ?? "自由身"}
+            </span>
+          </div>
+        </div>
 
-        <dl className="mt-5 grid grid-cols-4 divide-x divide-line border-b border-line pb-4 text-center">
-          {[
-            ["出场", String(career.totals.appearances)],
-            ["进球", String(career.totals.goals)],
-            ["助攻", String(career.totals.assists)],
-            ["奖杯", String(career.trophies.length)],
-          ].map(([label, value]) => (
-            <div key={label}>
-              <dt className="text-[10px] text-muted">{label}</dt>
-              <dd className="mt-1 text-lg font-semibold tabular-nums">
+        <div className="shrink-0 text-right">
+          <div className="text-[10px] text-zinc-500">年龄</div>
+          <div className="text-xl font-black tabular-nums text-zinc-100">
+            {header.age}
+          </div>
+          <div className="text-[11px] font-bold text-emerald-400">
+            <span className="mr-0.5 font-normal text-zinc-500">
+              身价
+            </span>
+            {formatMarketValue(header.marketValue)}
+          </div>
+        </div>
+      </div>
+
+      <div className="-mx-1 mt-1">
+        <dl className="grid grid-flow-col auto-cols-fr divide-x divide-zinc-800">
+          {(
+            [
+              ["出场", totals.appearances],
+              ["进球", totals.goals],
+              ["助攻", totals.assists],
+              ["奖杯", totals.trophies],
+            ] as const
+          ).map(([label, value]) => (
+            <div className="px-2 py-2.5 text-center" key={label}>
+              <dt className="text-[10px] font-medium tracking-wide text-zinc-500">
+                {label}
+              </dt>
+              <dd className="mt-0.5 text-lg font-bold tabular-nums text-zinc-100">
                 {value}
               </dd>
             </div>
           ))}
         </dl>
-
-        <section
-          aria-labelledby="timeline-heading"
-          className="mt-4 overflow-hidden rounded-[12px] bg-surface shadow-[0_1px_0_rgba(255,255,255,0.05)]"
-        >
-          <h2 className="sr-only" id="timeline-heading">
-            生涯时间线
-          </h2>
-          <div className="grid grid-cols-[56px_1fr] border-b border-line px-3 py-2 text-[10px] text-muted">
-            <span>岁</span>
-            <span>球队与状态</span>
-          </div>
-          <ol className="max-h-48 overflow-y-auto overscroll-contain">
-            {timelineAges.map((age) => {
-              const isCurrent = age === career.age;
-
-              return (
-                <li
-                  className={
-                    isCurrent
-                      ? "grid min-h-10 grid-cols-[56px_1fr] items-center border-b border-line bg-accent-soft px-3 text-xs text-accent last:border-b-0"
-                      : "grid min-h-10 grid-cols-[56px_1fr] items-center border-b border-line px-3 text-xs text-muted last:border-b-0"
-                  }
-                  key={age}
-                >
-                  <span className="tabular-nums">{age}</span>
-                  <span>{timelineLabel(career, state.phase, age)}</span>
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-
-        <CareerPanel
-          career={career}
-          decision={state.activeDecision}
-          phase={state.phase}
-          onChoose={onChoose}
-          onContinue={onContinue}
-        />
       </div>
-    </main>
+    </header>
   );
 }
 
-type CareerPanelProps = {
-  career: CareerProgress;
-  decision: CareerDecision | null;
-  onChoose: CareerScreenProps["onChoose"];
-  onContinue: CareerScreenProps["onContinue"];
-  phase: CareerPhase;
-};
+function CareerTimeline({
+  view,
+}: {
+  readonly view: CareerPresentation;
+}) {
+  return (
+    <section
+      aria-label="生涯时间线"
+      className="min-h-0 flex-1 overflow-y-auto px-4 py-2"
+      data-classic-timeline-scroll=""
+    >
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60">
+        <div className="grid grid-cols-[26px_minmax(0,1fr)_38px_30px_28px_28px] items-center gap-1 px-2.5 py-1.5 text-[9px] font-bold tracking-wide text-zinc-600">
+          <span>岁</span>
+          <span>球队</span>
+          <span className="text-center">能力</span>
+          <span className="text-right">场</span>
+          <span className="text-right">球</span>
+          <span className="text-right">助</span>
+        </div>
+
+        <div className="divide-y divide-zinc-800/50 border-t border-zinc-800/70">
+          {view.timeline.map((row) => (
+            <TimelineRow key={row.age} row={row} />
+          ))}
+          <div className="grid grid-cols-[26px_minmax(0,1fr)_38px_30px_28px_28px] items-center gap-1 bg-zinc-800/30 px-2.5 py-[7px]">
+            <span className="text-center text-[14px] leading-none">
+              {view.nationalTeam.countryFlag}
+            </span>
+            <span className="truncate text-[13px] font-bold text-zinc-600">
+              {view.nationalTeam.name}
+            </span>
+            <span />
+            <TimelineNumber>
+              {view.nationalTeam.stats.appearances}
+            </TimelineNumber>
+            <TimelineNumber>
+              {view.nationalTeam.stats.goals}
+            </TimelineNumber>
+            <TimelineNumber>
+              {view.nationalTeam.stats.assists}
+            </TimelineNumber>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TimelineRow({
+  row,
+}: {
+  readonly row: CareerTimelineRowPresentation;
+}) {
+  const gridClass =
+    "grid grid-cols-[26px_minmax(0,1fr)_38px_30px_28px_28px] items-center gap-1 px-2.5 py-[6px]";
+
+  if (row.kind === "current") {
+    return (
+      <div className={`${gridClass} bg-emerald-500/5`}>
+        <span className="text-[12px] font-black tabular-nums text-emerald-400">
+          {row.age}
+        </span>
+        <span className="flex items-center gap-1.5 text-[12px] font-bold text-emerald-400">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+          决策中…
+        </span>
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+    );
+  }
+
+  if (row.kind === "empty") {
+    return (
+      <div className={gridClass}>
+        <span className="text-[12px] font-black tabular-nums text-zinc-700">
+          {row.age}
+        </span>
+        <span className="text-[12px] text-zinc-800">—</span>
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${gridClass} animate-rise`}>
+      <span className="text-[12px] font-black tabular-nums text-zinc-400">
+        {row.age}
+      </span>
+      <span className="flex min-w-0 items-center gap-1.5">
+        <ClubIdentity club={row.club} size={18} />
+        <span className="min-w-0">
+          <span className="block truncate text-[13px] font-bold text-zinc-100">
+            {row.club.shortName}
+          </span>
+          <span className="block truncate text-[9px] text-zinc-600">
+            {row.club.subtitle.replace(" · 次级联赛", "")}
+          </span>
+        </span>
+      </span>
+      <span className="text-center">
+        <span className="inline-block min-w-[30px] rounded-md border border-amber-600/50 bg-gradient-to-br from-amber-700 to-amber-900 px-1 py-0.5 text-center text-[11px] font-black tabular-nums text-amber-50">
+          {row.overall}
+        </span>
+      </span>
+      <SeasonNumber>{row.stats.appearances}</SeasonNumber>
+      <SeasonNumber>{row.stats.goals}</SeasonNumber>
+      <SeasonNumber>{row.stats.assists}</SeasonNumber>
+    </div>
+  );
+}
+
+function TimelineNumber({ children }: { readonly children: number }) {
+  return (
+    <span className="text-right text-[12px] tabular-nums text-zinc-700">
+      {children}
+    </span>
+  );
+}
+
+function SeasonNumber({ children }: { readonly children: number }) {
+  return (
+    <span className="text-right text-[12px] tabular-nums text-zinc-300">
+      {children}
+    </span>
+  );
+}
 
 function CareerPanel({
-  career,
-  decision,
   onChoose,
-  onContinue,
-  phase,
-}: CareerPanelProps) {
-  if (phase === "decision" && decision) {
+  view,
+}: {
+  readonly onChoose: CareerScreenProps["onChoose"];
+  readonly view: CareerPresentation;
+}) {
+  const { panel } = view;
+
+  if (panel.kind === "simulating") {
     return (
-      <section className="py-7" aria-labelledby="decision-heading">
-        <p className="text-xs text-accent">{decision.age} 岁 · 决策</p>
-        <h2 className="mt-2 text-xl font-black" id="decision-heading">
-          {decision.title}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          {decision.description}
-        </p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          {decision.options.map((option, index) => (
-            <button
-              className={
-                index === 0
-                  ? "min-h-12 rounded-[12px] bg-accent px-4 py-3 text-sm font-bold text-accent-ink transition-colors hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                  : "min-h-12 rounded-[12px] border border-line bg-surface px-4 py-3 text-sm font-bold text-primary transition-colors hover:bg-surface-elevated focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              }
-              key={option.id}
-              onClick={() => onChoose(decision.id, option.id)}
-              type="button"
-            >
-              {option.label}
-            </button>
-          ))}
+      <aside
+        className="shrink-0 border-t border-zinc-800 bg-zinc-950 px-4 py-6 text-center"
+        data-classic-career-panel=""
+      >
+        <span className="inline-flex items-center gap-2 text-[13px] font-bold text-zinc-500">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+          赛季进行中…
+        </span>
+      </aside>
+    );
+  }
+
+  return (
+    <aside
+      className="shrink-0 border-t border-zinc-800 bg-zinc-950"
+      data-classic-career-panel=""
+    >
+      <div className="max-h-[46dvh] overflow-y-auto px-4 pb-5 pt-3">
+        <div className="animate-rise">
+          <div className="text-[10px] font-bold tracking-wide text-emerald-500">
+            {panel.age} 岁 · 决策
+          </div>
+          <h2 className="mt-1 text-lg font-black text-zinc-50">
+            {panel.title}
+          </h2>
+          <p className="mt-1 text-[13px] leading-relaxed text-zinc-400">
+            {panel.description}
+          </p>
+          <div className="mt-3 space-y-2">
+            {panel.options.map((option) => (
+              <DecisionOption
+                key={option.id}
+                onChoose={() =>
+                  onChoose(panel.decisionId, option.id)
+                }
+                option={option}
+              />
+            ))}
+          </div>
         </div>
-      </section>
-    );
-  }
-
-  if (phase === "period_result") {
-    const latestSeasons = career.seasons.slice(-2);
-    const appearances = latestSeasons.reduce(
-      (total, season) => total + season.appearances,
-      0,
-    );
-    const goals = latestSeasons.reduce(
-      (total, season) => total + season.goals,
-      0,
-    );
-    const assists = latestSeasons.reduce(
-      (total, season) => total + season.assists,
-      0,
-    );
-
-    return (
-      <section className="py-7" aria-labelledby="decision-heading">
-        <p className="text-xs text-accent">
-          {career.age - 2}–{career.age - 1} 岁 · 阶段完成
-        </p>
-        <h2 className="mt-2 text-xl font-black" id="decision-heading">
-          两赛季小结
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          你在这段周期出场 {appearances} 次，打进 {goals} 球并送出{" "}
-          {assists} 次助攻。
-        </p>
-        <button
-          className="mt-5 min-h-12 w-full rounded-[12px] bg-accent px-4 py-3 text-sm font-bold text-accent-ink transition-colors hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-auto sm:min-w-48"
-          onClick={onContinue}
-          type="button"
-        >
-          继续生涯
-        </button>
-      </section>
-    );
-  }
-
-  if (phase === "retired") {
-    return (
-      <section className="py-7" aria-labelledby="decision-heading">
-        <p className="text-xs text-accent">{career.age} 岁 · 退役</p>
-        <h2 className="mt-2 text-xl font-black" id="decision-heading">
-          职业生涯结束
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          {career.retirementReason ?? "你结束了职业球员生涯。"}
-        </p>
-        <p className="mt-4 text-sm leading-6 text-secondary">
-          共出场 {career.totals.appearances} 次，打进{" "}
-          {career.totals.goals} 球，赢得 {career.trophies.length} 座奖杯。
-        </p>
-      </section>
-    );
-  }
-
-  return null;
-}
-
-function timelineLabel(
-  career: CareerProgress,
-  phase: CareerPhase,
-  age: number,
-): string {
-  const seasons = career.seasons.filter(
-    (season) => season.age === age || season.age === age + 1,
+      </div>
+    </aside>
   );
-
-  if (seasons.length > 0) {
-    const club = getCslClub(seasons[0]!.clubId);
-    const appearances = seasons.reduce(
-      (total, season) => total + season.appearances,
-      0,
-    );
-    const goals = seasons.reduce(
-      (total, season) => total + season.goals,
-      0,
-    );
-    return `${club?.shortName ?? "未知"} · ${appearances} 场 ${goals} 球`;
-  }
-
-  if (age === career.age) {
-    return phase === "retired" ? "正式退役" : "等待决定";
-  }
-
-  return "—";
 }
 
-function formatValue(valueEuro: number): string {
+function DecisionOption({
+  onChoose,
+  option,
+}: {
+  readonly onChoose: () => void;
+  readonly option: CareerDecisionOptionPresentation;
+}) {
+  return (
+    <button
+      className="block w-full rounded-xl border border-zinc-700 bg-zinc-800/50 p-3 text-left transition-colors active:bg-zinc-700"
+      onClick={onChoose}
+      type="button"
+    >
+      <span className="flex items-center gap-2.5">
+        {option.club ? (
+          <ClubIdentity club={option.club} size={34} />
+        ) : null}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[15px] font-bold text-zinc-100">
+            {option.title}
+          </span>
+          <span className="block truncate text-[11px] text-zinc-500">
+            {option.subtitle}
+          </span>
+        </span>
+        {option.role ? (
+          <span className="shrink-0 text-right">
+            <span
+              className={`block text-[11px] font-bold ${roleToneClass(option.roleTone)}`}
+            >
+              {option.role}
+            </span>
+            <span className="block text-[10px] text-zinc-600">
+              {option.stars}
+            </span>
+          </span>
+        ) : null}
+      </span>
+    </button>
+  );
+}
+
+function roleToneClass(
+  tone: CareerDecisionOptionPresentation["roleTone"],
+): string {
+  switch (tone) {
+    case "positive":
+      return "text-lime-400";
+    case "primary":
+      return "text-emerald-400";
+    case "warning":
+      return "text-yellow-400";
+    case "danger":
+      return "text-red-400";
+  }
+}
+
+function formatMarketValue(valueEuro: number): string {
   if (valueEuro >= 100_000_000) {
     return `€${trimDecimal(valueEuro / 100_000_000)}亿`;
   }

@@ -1,4 +1,5 @@
 import { getCslClub } from "../domain/catalog/csl";
+import { CLASSIC_CATALOG } from "../domain/catalog/classicCatalog";
 import {
   PHASE_1_CONTENT_VERSION,
   type CareerDecision,
@@ -8,12 +9,16 @@ import {
   type PlayerProfile,
   type SeasonRecord,
 } from "../domain/model";
+import { POSITION_ROLE_GROUPS } from "../domain/role";
 
 export const CAREER_SCHEMA_VERSION = 1 as const;
 export const ACTIVE_CAREER_STORAGE_KEY =
   "football-life-reborn:career:v1" as const;
 export const CAREER_QUARANTINE_PREFIX =
   "football-life-reborn:career:quarantine:" as const;
+const CLASSIC_POSITIONS = new Set<string>(
+  Object.values(POSITION_ROLE_GROUPS).flat(),
+);
 
 export type StorageLike = {
   getItem: (key: string) => string | null;
@@ -295,11 +300,15 @@ function isPlayerProfile(value: unknown): value is PlayerProfile {
     isRecord(value) &&
     (value.foot === "left" || value.foot === "right") &&
     typeof value.name === "string" &&
-    value.name.length <= 12 &&
+    value.name.length <= 8 &&
     typeof value.number === "string" &&
     isIntegerBetween(Number(value.number), 1, 99) &&
-    (value.nationality === null || value.nationality === "CHN") &&
-    (value.position === null || value.position === "ST")
+    (value.nationality === null ||
+      (typeof value.nationality === "string" &&
+        CLASSIC_CATALOG.countryByFifaCode.has(value.nationality))) &&
+    (value.position === null ||
+      (typeof value.position === "string" &&
+        CLASSIC_POSITIONS.has(value.position)))
   );
 }
 

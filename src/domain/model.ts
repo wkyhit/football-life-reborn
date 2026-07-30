@@ -1,3 +1,6 @@
+import type { ClassicCountryCode } from "./catalog/classicCatalog";
+import type { ClassicPosition } from "./role";
+
 export const PHASE_1_CONTENT_VERSION = "phase-1" as const;
 
 export type CareerPhase =
@@ -10,8 +13,8 @@ export type CareerPhase =
   | "retired";
 
 export type PreferredFoot = "left" | "right";
-export type NationalityCode = "CHN";
-export type PositionCode = "ST";
+export type NationalityCode = ClassicCountryCode;
+export type PositionCode = ClassicPosition;
 
 export type Phase1EventType =
   | "academy_offer"

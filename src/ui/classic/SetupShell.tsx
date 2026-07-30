@@ -10,13 +10,12 @@ type SetupShellProps = {
 export function SetupShell({ children, current }: SetupShellProps) {
   return (
     <main
-      className="min-h-dvh bg-canvas px-5 py-7 text-primary"
+      className="flex h-dvh flex-col overflow-hidden bg-canvas px-5 pb-6 pt-8 text-primary"
+      data-classic-setup-shell=""
       id="main-content"
     >
-      <div className="mx-auto max-w-[1240px]">
-        <SetupProgress current={current} />
-        {children}
-      </div>
+      <SetupProgress current={current} />
+      {children}
     </main>
   );
 }

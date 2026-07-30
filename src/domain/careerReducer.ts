@@ -47,7 +47,7 @@ export function createInitialCareerState(seed: string): CareerState {
     phase: "landing",
     player: {
       foot: "right",
-      name: "刘",
+      name: "李",
       nationality: null,
       number: "10",
       position: null,
@@ -144,7 +144,7 @@ function isValidIdentity(name: string, number: string): boolean {
   const trimmedName = name.trim();
   return (
     trimmedName.length >= 1 &&
-    trimmedName.length <= 12 &&
+    trimmedName.length <= 8 &&
     isValidShirtNumber(number)
   );
 }

@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
   useMemo,
   useReducer,
@@ -7,40 +9,75 @@ import {
 } from "react";
 
 import {
+  applyClassicChoice,
+  startClassicCareer,
+  type ClassicCareerState,
+} from "../domain/classicEngine";
+import {
   careerReducer,
   createInitialCareerState,
 } from "../domain/careerReducer";
-import type { CareerAction, CareerState } from "../domain/model";
+import type {
+  CareerAction,
+  CareerState,
+} from "../domain/model";
+import type { PacingMode } from "../domain/pacing";
+import { useSeasonReveal } from "../features/season-reveal/seasonReveal";
 import {
   createCareerRepository,
   type CareerLoadResult,
   type CareerRepository,
 } from "../storage/careerRepository";
+import {
+  ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+  createClassicSessionRepository,
+  type ClassicSessionLoadResult,
+  type ClassicSessionRepository,
+} from "../storage/classicSessionRepository";
 import { CareerScreen } from "../ui/classic/CareerScreen";
+import {
+  createCareerPresentation,
+} from "../ui/classic/careerPresentation";
 import { IdentityScreen } from "../ui/classic/IdentityScreen";
 import { LandingScreen } from "../ui/classic/LandingScreen";
 import { NationalityScreen } from "../ui/classic/NationalityScreen";
 import { PositionScreen } from "../ui/classic/PositionScreen";
 import { RecoveryScreen } from "../ui/classic/RecoveryScreen";
+import { SummaryScreen } from "../ui/classic/SummaryScreen";
+import { createSummaryPresentation } from "../ui/classic/summaryPresentation";
 import { seedFromSearch } from "./seed";
 
-function renderScreen(
-  state: CareerState,
-  dispatch: Dispatch<CareerAction>,
-) {
+const ShareCardOverlay = lazy(async () => {
+  const module = await import(
+    "../features/share-card/ShareCardOverlay"
+  );
+  return { default: module.ShareCardOverlay };
+});
+
+type SetupScreenProps = {
+  readonly dispatch: Dispatch<CareerAction>;
+  readonly onBegin: (mode: PacingMode) => void;
+  readonly onStart: () => void;
+  readonly state: CareerState;
+};
+
+function renderSetupScreen({
+  dispatch,
+  onBegin,
+  onStart,
+  state,
+}: SetupScreenProps) {
   switch (state.phase) {
     case "landing":
-      return (
-        <LandingScreen onBegin={() => dispatch({ type: "begin_setup" })} />
-      );
+      return <LandingScreen onBegin={onBegin} />;
     case "nationality":
       return (
         <NationalityScreen
           nationality={state.player.nationality}
           onBack={() => dispatch({ type: "back" })}
           onContinue={() => dispatch({ type: "continue_setup" })}
-          onSelect={() =>
-            dispatch({ nationality: "CHN", type: "select_nationality" })
+          onSelect={(nationality) =>
+            dispatch({ nationality, type: "select_nationality" })
           }
         />
       );
@@ -51,13 +88,13 @@ function renderScreen(
           onBack={() => dispatch({ type: "back" })}
           onContinue={() => dispatch({ type: "continue_setup" })}
           onFootChange={(foot) =>
-            dispatch({ type: "update_identity", foot })
+            dispatch({ foot, type: "update_identity" })
           }
           onNameChange={(name) =>
-            dispatch({ type: "update_identity", name })
+            dispatch({ name, type: "update_identity" })
           }
           onNumberChange={(number) =>
-            dispatch({ type: "update_identity", number })
+            dispatch({ number, type: "update_identity" })
           }
         />
       );
@@ -66,64 +103,62 @@ function renderScreen(
         <PositionScreen
           position={state.player.position}
           onBack={() => dispatch({ type: "back" })}
-          onSelect={() =>
-            dispatch({ position: "ST", type: "select_position" })
+          onSelect={(position) =>
+            dispatch({ position, type: "select_position" })
           }
-          onStart={() => dispatch({ type: "start_career" })}
+          onStart={onStart}
         />
       );
     case "decision":
     case "period_result":
     case "retired":
-      return (
-        <CareerScreen
-          state={state}
-          onChoose={(decisionId, optionId) =>
-            dispatch({
-              decisionId,
-              optionId,
-              type: "choose_decision",
-            })
-          }
-          onContinue={() => dispatch({ type: "continue_career" })}
-        />
-      );
+      return null;
   }
 }
 
 export function App() {
-  const repository = useMemo(
+  const setupRepository = useMemo(
     () => createCareerRepository(window.localStorage),
+    [],
+  );
+  const classicRepository = useMemo(
+    () => createClassicSessionRepository(window.localStorage),
     [],
   );
   const [initial] = useState(() =>
     loadInitialState(
-      repository,
+      setupRepository,
+      classicRepository,
       seedFromSearch(window.location.search),
     ),
   );
-  const [state, dispatch] = useReducer(
+  const [setupState, dispatch] = useReducer(
     careerReducer,
-    initial.state,
+    initial.setupState,
   );
+  const [classicCareer, setClassicCareer] =
+    useState<ClassicCareerState | null>(initial.classicCareer);
+  const [mode, setMode] = useState<PacingMode>("normal");
   const [recovery, setRecovery] = useState(initial.recovery);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (recovery !== null) {
+    if (recovery !== null || classicCareer !== null) {
       return;
     }
 
-    const result = repository.save(state);
+    const result = setupRepository.save(setupState);
     setSaveError(result.ok ? null : result.reason);
-  }, [recovery, repository, state]);
+  }, [classicCareer, recovery, setupRepository, setupState]);
 
   if (recovery !== null) {
     return (
       <RecoveryScreen
         recovery={recovery}
         onStartNew={() => {
+          discardClassicSession();
           setRecovery(null);
+          setClassicCareer(null);
           dispatch({
             seed: seedFromSearch(window.location.search),
             type: "reset_career",
@@ -149,36 +184,239 @@ export function App() {
           本地保存失败：{saveError}
         </p>
       ) : null}
-      {renderScreen(state, dispatch)}
+      {classicCareer ? (
+        <ClassicCareerExperience
+          initialCareer={classicCareer}
+          onSaveError={setSaveError}
+          onRestart={() => {
+            discardClassicSession();
+            setClassicCareer(null);
+            dispatch({
+              seed: seedFromSearch(window.location.search),
+              type: "reset_career",
+            });
+          }}
+          repository={classicRepository}
+        />
+      ) : (
+        renderSetupScreen({
+          dispatch,
+          onBegin: (selectedMode) => {
+            setMode(selectedMode);
+            dispatch({ type: "begin_setup" });
+          },
+          onStart: () => {
+            setClassicCareer(
+              startClassicFromSetup(setupState, mode),
+            );
+          },
+          state: setupState,
+        })
+      )}
     </>
   );
 }
 
-type RecoveryIssue = Exclude<
-  CareerLoadResult,
-  { status: "empty" } | { status: "ready" }
->;
+type ClassicCareerExperienceProps = {
+  readonly initialCareer: ClassicCareerState;
+  readonly onSaveError: (reason: string | null) => void;
+  readonly onRestart: () => void;
+  readonly repository: ClassicSessionRepository;
+};
+
+function ClassicCareerExperience({
+  initialCareer,
+  onSaveError,
+  onRestart,
+  repository,
+}: ClassicCareerExperienceProps) {
+  const reveal = useSeasonReveal(initialCareer);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  useEffect(() => {
+    const result = repository.save(reveal.committedCareer);
+    onSaveError(result.ok ? null : result.reason);
+  }, [onSaveError, repository, reveal.committedCareer]);
+
+  if (
+    reveal.committedCareer.phase === "summary" &&
+    !reveal.isRevealing
+  ) {
+    const view = createSummaryPresentation(
+      reveal.committedCareer,
+    );
+
+    return (
+      <>
+        <SummaryScreen
+          onRestart={() => {
+            setShareOpen(false);
+            onRestart();
+          }}
+          onShare={() => setShareOpen(true)}
+          view={view}
+        />
+        {shareOpen ? (
+          <Suspense fallback={null}>
+            <ShareCardOverlay
+              onClose={() => setShareOpen(false)}
+              qrPayload={new URL("/", window.location.href).href}
+              view={view}
+            />
+          </Suspense>
+        ) : null}
+      </>
+    );
+  }
+
+  const view = createCareerPresentation({
+    career: reveal.committedCareer,
+    isRevealing: reveal.isRevealing,
+    visibleSeasonCount: reveal.visibleSeasonCount,
+  });
+
+  return (
+    <CareerScreen
+      view={view}
+      onChoose={(decisionId, optionId) => {
+        const decision = reveal.committedCareer.currentDecision;
+
+        if (
+          decision === null ||
+          decision.id !== decisionId
+        ) {
+          return;
+        }
+
+        reveal.commitCareer(
+          applyClassicChoice(reveal.committedCareer, {
+            decisionId,
+            decisionType: decision.type,
+            optionId,
+          }),
+        );
+      }}
+    />
+  );
+}
+
+type RecoveryIssue =
+  | Exclude<
+      CareerLoadResult,
+      { status: "empty" } | { status: "ready" }
+    >
+  | Exclude<
+      ClassicSessionLoadResult,
+      { status: "empty" } | { status: "ready" }
+    >;
 
 type InitialAppState = {
-  recovery: RecoveryIssue | null;
-  state: CareerState;
+  readonly classicCareer: ClassicCareerState | null;
+  readonly recovery: RecoveryIssue | null;
+  readonly setupState: CareerState;
 };
 
 function loadInitialState(
-  repository: CareerRepository,
+  setupRepository: CareerRepository,
+  classicRepository: ClassicSessionRepository,
   seed: string,
 ): InitialAppState {
-  const loaded = repository.load();
+  const classicLoaded = classicRepository.load();
 
-  if (loaded.status === "ready") {
+  if (classicLoaded.status === "ready") {
     return {
+      classicCareer: classicLoaded.state,
       recovery: null,
-      state: loaded.state,
+      setupState: createInitialCareerState(seed),
+    };
+  }
+
+  if (classicLoaded.status !== "empty") {
+    return {
+      classicCareer: null,
+      recovery: classicLoaded,
+      setupState: createInitialCareerState(seed),
+    };
+  }
+
+  const setupLoaded = setupRepository.load();
+
+  if (setupLoaded.status === "ready") {
+    if (isSetupPhase(setupLoaded.state)) {
+      return {
+        classicCareer: null,
+        recovery: null,
+        setupState: setupLoaded.state,
+      };
+    }
+
+    return {
+      classicCareer: startClassicFromSetup(
+        setupLoaded.state,
+        "normal",
+      ),
+      recovery: null,
+      setupState: setupLoaded.state,
     };
   }
 
   return {
-    recovery: loaded.status === "empty" ? null : loaded,
-    state: createInitialCareerState(seed),
+    classicCareer: null,
+    recovery:
+      setupLoaded.status === "empty" ? null : setupLoaded,
+    setupState: createInitialCareerState(seed),
   };
+}
+
+function startClassicFromSetup(
+  state: CareerState,
+  mode: PacingMode,
+): ClassicCareerState {
+  const { nationality, number, position } = state.player;
+
+  if (nationality === null || position === null) {
+    throw new RangeError(
+      "Nationality and position are required before starting",
+    );
+  }
+
+  const preferredNumber = Number(number);
+
+  if (
+    !Number.isInteger(preferredNumber) ||
+    preferredNumber < 1 ||
+    preferredNumber > 99
+  ) {
+    throw new RangeError("Shirt number must be between 1 and 99");
+  }
+
+  return startClassicCareer({
+    identity: {
+      lastName: state.player.name.trim(),
+      nationalityFifaCode: nationality,
+      position,
+      preferredNumber,
+    },
+    mode,
+    seed: state.seed,
+  });
+}
+
+function isSetupPhase(state: CareerState): boolean {
+  return (
+    state.phase === "landing" ||
+    state.phase === "nationality" ||
+    state.phase === "identity" ||
+    state.phase === "position"
+  );
+}
+
+function discardClassicSession(): void {
+  try {
+    window.localStorage.removeItem(
+      ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+    );
+  } catch {
+    // Recovery can continue in memory when storage is unavailable.
+  }
 }
