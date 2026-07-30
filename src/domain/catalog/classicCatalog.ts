@@ -9,11 +9,13 @@ export const CLASSIC_CONTENT_VERSION =
   "2026-07-30-classic-v1" as const;
 
 export type ConfederationId = keyof typeof CONFEDERATION_ROWS;
+export type ClassicCountryCode =
+  (typeof COUNTRY_ROWS)[number][1];
 
 export type Country = {
   readonly confederation: ConfederationId;
   readonly continentalReputation: number;
-  readonly fifaCode: string;
+  readonly fifaCode: ClassicCountryCode;
   readonly fifaReputation: number;
   readonly internationalReputation: number;
   readonly isoAlpha2: string;
@@ -80,7 +82,7 @@ export type ClassicCatalog = {
 
 type CountryRow = readonly [
   isoAlpha2: string,
-  fifaCode: string,
+  fifaCode: ClassicCountryCode,
   nameZh: string,
   nameEn: string,
   confederation: ConfederationId,

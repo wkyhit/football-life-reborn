@@ -30,16 +30,44 @@ try {
     await page.goto(referenceUrl, { waitUntil: "networkidle" });
     await freezePresentation(page);
     await mkdir(outputDirectory, { recursive: true });
-    await page.screenshot({
-      animations: "disabled",
-      caret: "hide",
-      path: `${outputDirectory}/landing.png`,
-    });
+    await capture(page, outputDirectory, "landing");
+
+    await page.getByRole("button", { name: "开始生涯" }).click();
+    await capture(page, outputDirectory, "nationality-initial");
+
+    await page.getByRole("button", { name: /中国/ }).click();
+    await capture(page, outputDirectory, "nationality-selected");
+    await page.getByRole("button", { name: "下一步" }).click();
+    await page.getByLabel("姓名").fill("李");
+    await page.getByLabel("号码").fill("10");
+    await page.getByRole("heading", { name: "填一下名字" }).click();
+    await capture(page, outputDirectory, "identity-default");
+
+    await page.getByLabel("姓名").fill("");
+    await page.getByLabel("号码").fill("");
+    await page.getByRole("heading", { name: "填一下名字" }).click();
+    await capture(page, outputDirectory, "identity-empty");
+
+    await page.getByLabel("姓名").fill("李");
+    await page.getByLabel("号码").fill("10");
+    await page.getByRole("button", { name: "下一步" }).click();
+    await capture(page, outputDirectory, "position-initial");
+
+    await page.getByRole("button", { name: "中锋" }).click();
+    await capture(page, outputDirectory, "position-selected");
     await context.close();
-    process.stdout.write(`Captured ${projectName}/landing.png\n`);
+    process.stdout.write(`Captured ${projectName} onboarding matrix\n`);
   }
 } finally {
   await browser.close();
+}
+
+async function capture(page, outputDirectory, name) {
+  await page.screenshot({
+    animations: "disabled",
+    caret: "hide",
+    path: `${outputDirectory}/${name}.png`,
+  });
 }
 
 async function freezePresentation(page) {

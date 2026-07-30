@@ -51,8 +51,8 @@ describe("Phase 1 Classic navigation", () => {
     ).toBeInTheDocument();
     await user.clear(screen.getByRole("textbox", { name: "姓名" }));
     await user.type(screen.getByRole("textbox", { name: "姓名" }), "林一鸣");
-    await user.clear(screen.getByRole("spinbutton", { name: "号码" }));
-    await user.type(screen.getByRole("spinbutton", { name: "号码" }), "9");
+    await user.clear(screen.getByLabelText("号码"));
+    await user.type(screen.getByLabelText("号码"), "9");
     await user.click(screen.getByRole("button", { name: "左脚" }));
     await user.click(screen.getByRole("button", { name: "下一步" }));
 

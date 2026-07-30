@@ -39,8 +39,8 @@ function renderScreen(
           nationality={state.player.nationality}
           onBack={() => dispatch({ type: "back" })}
           onContinue={() => dispatch({ type: "continue_setup" })}
-          onSelect={() =>
-            dispatch({ nationality: "CHN", type: "select_nationality" })
+          onSelect={(nationality) =>
+            dispatch({ nationality, type: "select_nationality" })
           }
         />
       );
@@ -66,8 +66,8 @@ function renderScreen(
         <PositionScreen
           position={state.player.position}
           onBack={() => dispatch({ type: "back" })}
-          onSelect={() =>
-            dispatch({ position: "ST", type: "select_position" })
+          onSelect={(position) =>
+            dispatch({ position, type: "select_position" })
           }
           onStart={() => dispatch({ type: "start_career" })}
         />

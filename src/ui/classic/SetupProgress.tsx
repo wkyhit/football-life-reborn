@@ -3,36 +3,39 @@ type SetupProgressProps = {
 };
 
 const steps = ["国籍", "身份", "位置"] as const;
-const stepAlignment = ["text-left", "text-center", "text-right"] as const;
 
 export function SetupProgress({ current }: SetupProgressProps) {
   return (
-    <div aria-label={`建档进度：第 ${current} 步，共 3 步`} className="mb-7">
-      <div className="grid grid-cols-3 gap-1" aria-hidden="true">
-        {steps.map((step, index) => (
-          <span
-            className={
-              index + 1 <= current
-                ? "h-1 rounded-full bg-accent"
-                : "h-1 rounded-full bg-line"
-            }
-            key={step}
-          />
-        ))}
-      </div>
-      <ol className="mt-2 grid grid-cols-3 text-[11px]">
-        {steps.map((step, index) => (
-          <li
-            aria-current={index + 1 === current ? "step" : undefined}
-            className={`${stepAlignment[index]} ${
-              index + 1 <= current ? "text-accent" : "text-muted"
-            }`}
-            key={step}
-          >
-            {step}
-          </li>
-        ))}
-      </ol>
+    <div
+      aria-label={`建档进度：第 ${current} 步，共 3 步`}
+      className="mb-4 flex shrink-0 gap-1.5"
+    >
+      {steps.map((step, index) => {
+        const reached = index + 1 <= current;
+
+        return (
+          <div className="flex-1" key={step}>
+            <div
+              aria-hidden="true"
+              className={
+                reached
+                  ? "h-1 rounded-full bg-accent"
+                  : "h-1 rounded-full bg-line"
+              }
+            />
+            <div
+              aria-current={index + 1 === current ? "step" : undefined}
+              className={
+                reached
+                  ? "mt-1.5 text-[10px] font-bold leading-[15px] text-accent"
+                  : "mt-1.5 text-[10px] font-bold leading-[15px] text-zinc-600"
+              }
+            >
+              {step}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

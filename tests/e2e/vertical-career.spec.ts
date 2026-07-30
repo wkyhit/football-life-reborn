@@ -73,7 +73,7 @@ test("a Chinese striker completes the deterministic vertical career", async ({
   await page.getByRole("button", { name: "下一步" }).click();
 
   await page.getByRole("textbox", { name: "姓名" }).fill("林一鸣");
-  await page.getByRole("spinbutton", { name: "号码" }).fill("9");
+  await page.getByLabel("号码").fill("9");
   await page.getByRole("button", { name: "左脚" }).click();
   await reloadWithoutStateDrift(page, "填一下名字");
   await expect(page.getByRole("textbox", { name: "姓名" })).toHaveValue(
