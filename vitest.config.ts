@@ -6,7 +6,11 @@ export default defineConfig({
   test: {
     clearMocks: true,
     environment: "happy-dom",
-    exclude: [...configDefaults.exclude, "tests/e2e/**"],
+    exclude: [
+      ...configDefaults.exclude,
+      "tests/e2e/**",
+      "tests/visual/**",
+    ],
     restoreMocks: true,
     setupFiles: "./src/test/setup.ts",
   },

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "capture:classic-reference": "node scripts/capture-classic-reference.mjs",
     "generate:golden": "node scripts/generate-classic-golden.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint .",
@@ -17,6 +18,7 @@
     "test:e2e": "playwright test",
     "test:golden": "vitest run tests/golden/classicParity.test.ts",
     "test:property": "vitest run tests/property/careerInvariants.test.ts",
+    "test:visual": "playwright test --config=playwright.visual.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc -b --pretty false"
   },

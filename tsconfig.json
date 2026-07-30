@@ -15,6 +15,9 @@
     },
     {
       "path": "./tsconfig.property.json"
+    },
+    {
+      "path": "./tsconfig.visual.json"
     }
   ]
 }
