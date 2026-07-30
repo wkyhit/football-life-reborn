@@ -52,8 +52,44 @@ export type PlayerProfile = {
   position: PositionCode | null;
 };
 
+export type CareerTotals = {
+  appearances: number;
+  assists: number;
+  goals: number;
+};
+
+export type SquadRole = "reserve" | "rotation" | "starter" | "star";
+
+export type SeasonRecord = {
+  abilityAfter: number;
+  abilityBefore: number;
+  age: number;
+  appearances: number;
+  assists: number;
+  clubId: string;
+  goals: number;
+  role: SquadRole;
+  trophies: readonly string[];
+  valueEuroAfter: number;
+  valueEuroBefore: number;
+};
+
+export type CareerProgress = {
+  ability: number;
+  age: number;
+  clubId: string | null;
+  parentClubId: string | null;
+  retirementReason: string | null;
+  role: "free_agent" | SquadRole;
+  seasons: readonly SeasonRecord[];
+  totals: CareerTotals;
+  trophies: readonly string[];
+  valueEuro: number;
+};
+
 export type CareerState = {
   activeDecision: CareerDecision | null;
+  career: CareerProgress;
   choiceLog: readonly ChoiceLogEntry[];
   contentVersion: typeof PHASE_1_CONTENT_VERSION;
   lastChoice: ChoiceLogEntry | null;
@@ -77,6 +113,7 @@ export type CareerAction =
       type: "update_identity";
     }
   | { type: "start_career" }
+  | { type: "continue_career" }
   | {
       decisionId: string;
       optionId: string;

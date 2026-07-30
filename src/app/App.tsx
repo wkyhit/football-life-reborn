@@ -62,15 +62,32 @@ function renderScreen(
     case "decision":
     case "period_result":
     case "retired":
-      return <CareerScreen player={state.player} />;
+      return (
+        <CareerScreen
+          state={state}
+          onChoose={(decisionId, optionId) =>
+            dispatch({
+              decisionId,
+              optionId,
+              type: "choose_decision",
+            })
+          }
+          onContinue={() => dispatch({ type: "continue_career" })}
+        />
+      );
   }
+}
+
+export function seedFromSearch(search: string): string {
+  const seed = new URLSearchParams(search).get("seed")?.trim();
+  return seed ? seed.slice(0, 128) : "phase-1-default";
 }
 
 export function App() {
   const [state, dispatch] = useReducer(
     careerReducer,
     undefined,
-    () => createInitialCareerState("phase-1-default"),
+    () => createInitialCareerState(seedFromSearch(window.location.search)),
   );
 
   return (

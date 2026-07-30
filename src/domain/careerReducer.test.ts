@@ -8,8 +8,8 @@ const academyDecision: CareerDecision = {
   description: "两家中超俱乐部邀请你加入青训。",
   id: "academy-offer-16",
   options: [
-    { id: "join-beijing", label: "加盟北京国安" },
-    { id: "join-shanghai", label: "加盟上海申花" },
+    { id: "join:beijing-guoan", label: "加盟北京国安" },
+    { id: "join:shanghai-shenhua", label: "加盟上海申花" },
   ],
   title: "青训报价",
   type: "academy_offer",
@@ -68,7 +68,7 @@ describe("career reducer", () => {
     };
     const unknownDecision = careerReducer(decisionState, {
       decisionId: "another-decision",
-      optionId: "join-beijing",
+      optionId: "join:beijing-guoan",
       type: "choose_decision",
     });
     const unknownOption = careerReducer(decisionState, {
@@ -82,7 +82,7 @@ describe("career reducer", () => {
 
     const resolved = careerReducer(decisionState, {
       decisionId: academyDecision.id,
-      optionId: "join-beijing",
+      optionId: "join:beijing-guoan",
       type: "choose_decision",
     });
 
@@ -96,7 +96,7 @@ describe("career reducer", () => {
         age: 16,
         decisionId: academyDecision.id,
         eventType: "academy_offer",
-        optionId: "join-beijing",
+        optionId: "join:beijing-guoan",
       },
     ]);
   });

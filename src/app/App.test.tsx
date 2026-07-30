@@ -2,10 +2,16 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import { App } from "./App";
+import { App, seedFromSearch } from "./App";
 
 describe("Phase 1 Classic navigation", () => {
-  it("lets a player create a Chinese striker and reach the career screen", async () => {
+  it("uses the seed query as the reproducibility input", () => {
+    expect(seedFromSearch("?seed=%20career-42%20")).toBe("career-42");
+    expect(seedFromSearch("")).toBe("phase-1-default");
+    expect(seedFromSearch("?seed=")).toBe("phase-1-default");
+  });
+
+  it("lets a player create a Chinese striker and play the first period", async () => {
     const user = userEvent.setup();
 
     render(<App />);
@@ -39,11 +45,28 @@ describe("Phase 1 Classic navigation", () => {
     await user.click(screen.getByRole("button", { name: "开始踢球" }));
 
     expect(
-      screen.getByRole("heading", { name: "等待青训报价" }),
+      screen.getByRole("heading", { name: "青训报价" }),
     ).toBeInTheDocument();
     expect(screen.getByText("林一鸣")).toBeInTheDocument();
     expect(screen.getByText("#9 中锋")).toBeInTheDocument();
     expect(screen.getByText("16 岁")).toBeInTheDocument();
     expect(screen.getByText("自由身")).toBeInTheDocument();
+
+    const academyOptions = screen.getAllByRole("button", {
+      name: /^加盟 /,
+    });
+    expect(academyOptions).toHaveLength(3);
+    await user.click(academyOptions[0]!);
+
+    expect(
+      screen.getByRole("heading", { name: "两赛季小结" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("18 岁")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "继续生涯" }));
+
+    expect(
+      screen.getByRole("heading", { name: "额外训练" }),
+    ).toBeInTheDocument();
   });
 });

@@ -1,21 +1,6 @@
 import { getCslClub } from "./catalog/csl";
+import type { SeasonRecord, SquadRole } from "./model";
 import { nextUint32 } from "./rng";
-
-export type SquadRole = "reserve" | "rotation" | "starter" | "star";
-
-export type SeasonRecord = {
-  abilityAfter: number;
-  abilityBefore: number;
-  age: number;
-  appearances: number;
-  assists: number;
-  clubId: string;
-  goals: number;
-  role: SquadRole;
-  trophies: readonly string[];
-  valueEuroAfter: number;
-  valueEuroBefore: number;
-};
 
 export type StandardPeriodInput = {
   ability: number;
@@ -161,7 +146,7 @@ function simulateSeason(
       age: context.age + 1,
       clubId: context.clubId,
       rngState: trophyDraw.state,
-      role: roleForAbility(abilityAfter),
+      role: squadRoleForAbility(abilityAfter),
       valueEuro: valueEuroAfter,
     },
     record: {
@@ -232,7 +217,7 @@ function growthRange(age: number): readonly [number, number] {
   return [-3, -1];
 }
 
-function roleForAbility(ability: number): SquadRole {
+export function squadRoleForAbility(ability: number): SquadRole {
   if (ability < 58) {
     return "reserve";
   }
