@@ -1,0 +1,61 @@
+{
+  "capturedAt": "2026-07-31",
+  "issue": 23,
+  "runner": {
+    "name": "ego-browser",
+    "taskSpaceId": 40,
+    "version": "1.2.3"
+  },
+  "source": {
+    "branch": "issue-23-career-ux",
+    "commit": "8579aae8cb5ba3317cbf8296d81a2fee6365612a",
+    "url": "http://127.0.0.1:4173/"
+  },
+  "acceptance": {
+    "ordinaryReplay": {
+      "profile": "left",
+      "profileLabel": "惯用脚 · 左脚",
+      "copyLabel": "复制本局回放",
+      "copyStatus": "回放链接已复制",
+      "copyActionFocusedLabel": "已复制✓",
+      "challengeIdentityPresent": false,
+      "challengeRecordPresent": false,
+      "replaySchemaVersion": 3,
+      "storageAfterReplay": {
+        "localStorageEntries": 0,
+        "sessionStorageEntries": 0
+      }
+    },
+    "mobile": {
+      "width": 320,
+      "height": 568,
+      "horizontalOverflowPx": 0,
+      "copyButtonHeightPx": 44,
+      "copyButtonWidthPx": 288
+    },
+    "zoom200": {
+      "width": 1280,
+      "height": 830,
+      "visualViewportScale": 2,
+      "horizontalOverflowPx": 0,
+      "minimumInteractiveHeightPx": 44,
+      "localStorageEntries": 0,
+      "sessionStorageEntries": 0
+    },
+    "verdict": "pass"
+  },
+  "screenshots": [
+    {
+      "file": "tests/visual/enhanced/issue-23/ordinary-replay-profile-320x568.png",
+      "sha256": "a3bbf8d11acd98febcd18a46a5ed3c0366bdb41f598b4a65d121c24032e7ec4c"
+    },
+    {
+      "file": "tests/visual/enhanced/issue-23/ordinary-replay-copy-320x568.png",
+      "sha256": "d5011879202e881f99235976c7e1a01054268e79e1928ef95635a533f98fd6fb"
+    },
+    {
+      "file": "tests/visual/enhanced/issue-23/ordinary-replay-zoom-200-1280x830.png",
+      "sha256": "ddbe3df1ea40e66f4a43e93173b3df95e5ed4d1a2a13f2c9d414dc61c1981e4c"
+    }
+  ]
+}
