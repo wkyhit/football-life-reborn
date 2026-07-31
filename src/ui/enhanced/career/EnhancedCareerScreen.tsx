@@ -8,9 +8,11 @@ import {
   type ChallengeSurface,
 } from "../../../features/challenges/ChallengeProgressPanel";
 import {
-  HonorIdentity,
-  type HonorIdentityKey,
-} from "../../shared/HonorIdentity";
+  CareerEventResultNarrative,
+  CareerMilestoneNarrative,
+  CareerRecentEventResult,
+  CareerSeasonNarrative,
+} from "../../shared/CareerMilestoneNarrative";
 import { ClubIdentity } from "../../classic/components/ClubIdentity";
 
 type EnhancedCareerScreenProps = {
@@ -332,86 +334,8 @@ function TimelineRow({
       <SeasonNumber>{row.stats.appearances}</SeasonNumber>
       <SeasonNumber>{row.stats.goals}</SeasonNumber>
       <SeasonNumber>{row.stats.assists}</SeasonNumber>
-      <SeasonNarrative row={row} />
+      <CareerSeasonNarrative row={row} variant="enhanced" />
     </div>
-  );
-}
-
-function SeasonNarrative({
-  row,
-}: {
-  readonly row: Extract<
-    CareerTimelineRowPresentation,
-    { readonly kind: "season" }
-  >;
-}) {
-  const items: Array<{
-    honor: HonorIdentityKey | null;
-    id: string;
-    kind: "honor" | "national" | "status";
-    label: string;
-  }> = [
-    ...row.honors.map((honor, index) => ({
-      honor:
-        honor.kind === "award"
-          ? honor.award
-          : honor.trophy,
-      id: `honor-${index}-${honor.label}`,
-      kind: "honor" as const,
-      label: honor.label,
-    })),
-    ...row.nationalTournaments.map(({ label }, index) => ({
-      honor: null,
-      id: `national-${index}-${label}`,
-      kind: "national" as const,
-      label,
-    })),
-    ...row.statuses.map(({ label }, index) => ({
-      honor: null,
-      id: `status-${index}-${label}`,
-      kind: "status" as const,
-      label,
-    })),
-    ...(row.tierChange === null
-      ? []
-      : [
-          {
-            honor: null,
-            id: `tier-${row.tierChange.from}-${row.tierChange.to}`,
-            kind: "status" as const,
-            label: row.tierChange.label,
-          },
-        ]),
-  ];
-
-  if (items.length === 0) {
-    return null;
-  }
-
-  return (
-    <ul
-      aria-label={`${row.age} 岁赛季事件`}
-      className="col-start-2 col-end-7 mt-1 flex flex-wrap gap-1"
-      data-enhanced-season-narrative=""
-    >
-      {items.map((item) => (
-        <li
-          className={
-            item.kind === "honor"
-              ? "inline-flex items-center gap-1 rounded-[5px] border border-amber-400/25 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-200"
-              : item.kind === "national"
-                ? "inline-flex items-center gap-1 rounded-[5px] border border-cyan-400/25 bg-cyan-400/10 px-1.5 py-0.5 text-[9px] font-bold text-cyan-200"
-                : "inline-flex items-center gap-1 rounded-[5px] border border-rose-400/25 bg-rose-400/10 px-1.5 py-0.5 text-[9px] font-bold text-rose-200"
-          }
-          key={item.id}
-        >
-          {item.honor === null ? null : (
-            <HonorIdentity honor={item.honor} size={14} />
-          )}
-          {item.label}
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -496,23 +420,11 @@ function DecisionRail({
           className="enhanced-reveal-enter"
           data-enhanced-event-result-reveal=""
         >
-          <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
-            EVENT RESULT · {panel.age} 岁
-          </p>
-          <h2
-            className="mt-1.5 text-[22px] font-extrabold leading-tight"
-            id="enhanced-event-result-heading"
-          >
-            {panel.title}
-          </h2>
-          <p className="mt-2 text-xs font-bold text-enhanced-supporting">
-            {panel.choiceLabel}
-          </p>
-          <p
-            className={`mt-4 rounded-[10px] border px-3 py-3 text-sm font-bold ${enhancedResultToneClass(panel.tone)}`}
-          >
-            {panel.summary}
-          </p>
+          <CareerEventResultNarrative
+            headingId="enhanced-event-result-heading"
+            panel={panel}
+            variant="enhanced"
+          />
         </div>
       </aside>
     );
@@ -543,11 +455,12 @@ function DecisionRail({
           >
             {panel.title}
           </h2>
-          <MilestoneNarrative
+          <CareerMilestoneNarrative
             honors={panel.honors}
             nationalTournaments={panel.nationalTournaments}
             statuses={panel.statuses}
             tierChange={panel.tierChange}
+            variant="enhanced"
           />
         </div>
       </aside>
@@ -566,17 +479,10 @@ function DecisionRail({
         </div>
       ) : null}
       {view.recentEventResult ? (
-        <div
-          className={`mb-4 rounded-[9px] border px-3 py-2.5 text-xs ${enhancedResultToneClass(view.recentEventResult.tone)}`}
-          data-enhanced-recent-event-result=""
-        >
-          <strong className="block">
-            {view.recentEventResult.title}
-          </strong>
-          <span className="mt-1 block">
-            {view.recentEventResult.summary}
-          </span>
-        </div>
+        <CareerRecentEventResult
+          result={view.recentEventResult}
+          variant="enhanced"
+        />
       ) : null}
       <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
         DECISION RAIL · {panel.age} 岁
@@ -603,81 +509,6 @@ function DecisionRail({
       </div>
     </aside>
   );
-}
-
-function MilestoneNarrative({
-  honors,
-  nationalTournaments,
-  statuses,
-  tierChange,
-}: Pick<
-  Extract<
-    CareerPresentation["panel"],
-    { readonly kind: "milestone" }
-  >,
-  | "honors"
-  | "nationalTournaments"
-  | "statuses"
-  | "tierChange"
->) {
-  return (
-    <ul className="mt-4 flex flex-wrap gap-2">
-      {honors.map((honor, index) => {
-        const identity =
-          honor.kind === "award"
-            ? honor.award
-            : honor.trophy;
-
-        return (
-          <li
-            className="inline-flex items-center gap-2 rounded-[8px] border border-amber-400/25 bg-amber-400/10 px-2.5 py-2 text-xs font-bold text-amber-100"
-            key={`honor-${index}-${honor.label}`}
-          >
-            <HonorIdentity honor={identity} size={22} />
-            {honor.label}
-          </li>
-        );
-      })}
-      {nationalTournaments.map(({ label }, index) => (
-        <li
-          className="rounded-[8px] border border-cyan-400/25 bg-cyan-400/10 px-2.5 py-2 text-xs font-bold text-cyan-100"
-          key={`national-${index}-${label}`}
-        >
-          {label}
-        </li>
-      ))}
-      {statuses.map(({ label }, index) => (
-        <li
-          className="rounded-[8px] border border-rose-400/25 bg-rose-400/10 px-2.5 py-2 text-xs font-bold text-rose-100"
-          key={`status-${index}-${label}`}
-        >
-          {label}
-        </li>
-      ))}
-      {tierChange ? (
-        <li className="rounded-[8px] border border-rose-400/25 bg-rose-400/10 px-2.5 py-2 text-xs font-bold text-rose-100">
-          {tierChange.label}
-        </li>
-      ) : null}
-    </ul>
-  );
-}
-
-function enhancedResultToneClass(
-  tone: NonNullable<
-    CareerPresentation["recentEventResult"]
-  >["tone"],
-): string {
-  switch (tone) {
-    case "positive":
-      return "border-emerald-400/25 bg-emerald-400/10 text-emerald-100";
-    case "negative":
-      return "border-rose-400/25 bg-rose-400/10 text-rose-100";
-    case "warning":
-      return "border-amber-400/25 bg-amber-400/10 text-amber-100";
-    case "neutral":
-      return "border-white/10 bg-white/[0.04] text-zinc-300";
-  }
 }
 
 function DecisionOption({

@@ -4,9 +4,11 @@ import type {
   CareerTimelineRowPresentation,
 } from "./careerPresentation";
 import {
-  HonorIdentity,
-  type HonorIdentityKey,
-} from "../shared/HonorIdentity";
+  CareerEventResultNarrative,
+  CareerMilestoneNarrative,
+  CareerRecentEventResult,
+  CareerSeasonNarrative,
+} from "../shared/CareerMilestoneNarrative";
 import { ClubIdentity } from "./components/ClubIdentity";
 
 type CareerScreenProps = {
@@ -231,86 +233,8 @@ function TimelineRow({
       <SeasonNumber>{row.stats.appearances}</SeasonNumber>
       <SeasonNumber>{row.stats.goals}</SeasonNumber>
       <SeasonNumber>{row.stats.assists}</SeasonNumber>
-      <SeasonNarrative row={row} />
+      <CareerSeasonNarrative row={row} variant="classic" />
     </div>
-  );
-}
-
-function SeasonNarrative({
-  row,
-}: {
-  readonly row: Extract<
-    CareerTimelineRowPresentation,
-    { readonly kind: "season" }
-  >;
-}) {
-  const items: Array<{
-    honor: HonorIdentityKey | null;
-    id: string;
-    kind: "honor" | "national" | "status";
-    label: string;
-  }> = [
-    ...row.honors.map((honor, index) => ({
-      honor:
-        honor.kind === "award"
-          ? honor.award
-          : honor.trophy,
-      id: `honor-${index}-${honor.label}`,
-      kind: "honor" as const,
-      label: honor.label,
-    })),
-    ...row.nationalTournaments.map(({ label }, index) => ({
-      honor: null,
-      id: `national-${index}-${label}`,
-      kind: "national" as const,
-      label,
-    })),
-    ...row.statuses.map(({ label }, index) => ({
-      honor: null,
-      id: `status-${index}-${label}`,
-      kind: "status" as const,
-      label,
-    })),
-    ...(row.tierChange === null
-      ? []
-      : [
-          {
-            honor: null,
-            id: `tier-${row.tierChange.from}-${row.tierChange.to}`,
-            kind: "status" as const,
-            label: row.tierChange.label,
-          },
-        ]),
-  ];
-
-  if (items.length === 0) {
-    return null;
-  }
-
-  return (
-    <ul
-      aria-label={`${row.age} 岁赛季事件`}
-      className="col-start-2 col-end-7 mt-1 flex flex-wrap gap-1"
-      data-classic-season-narrative=""
-    >
-      {items.map((item) => (
-        <li
-          className={
-            item.kind === "honor"
-              ? "inline-flex items-center gap-1 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-300"
-              : item.kind === "national"
-                ? "inline-flex items-center gap-1 rounded border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-bold text-sky-300"
-                : "inline-flex items-center gap-1 rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold text-rose-300"
-          }
-          key={item.id}
-        >
-          {item.honor === null ? null : (
-            <HonorIdentity honor={item.honor} size={14} />
-          )}
-          {item.label}
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -361,20 +285,10 @@ function CareerPanel({
         data-classic-event-result-reveal=""
       >
         <div className="animate-rise">
-          <p className="text-[10px] font-bold tracking-wide text-emerald-500">
-            {panel.age} 岁 · 事件结果
-          </p>
-          <h2 className="mt-1 text-lg font-black text-zinc-50">
-            {panel.title}
-          </h2>
-          <p className="mt-1 text-xs font-bold text-zinc-500">
-            {panel.choiceLabel}
-          </p>
-          <p
-            className={`mt-3 rounded-xl border px-3 py-2.5 text-sm font-bold ${classicResultToneClass(panel.tone)}`}
-          >
-            {panel.summary}
-          </p>
+          <CareerEventResultNarrative
+            panel={panel}
+            variant="classic"
+          />
         </div>
       </aside>
     );
@@ -396,11 +310,12 @@ function CareerPanel({
           <h2 className="mt-1 text-lg font-black text-zinc-50">
             {panel.title}
           </h2>
-          <MilestoneNarrative
+          <CareerMilestoneNarrative
             honors={panel.honors}
             nationalTournaments={panel.nationalTournaments}
             statuses={panel.statuses}
             tierChange={panel.tierChange}
+            variant="classic"
           />
         </div>
       </aside>
@@ -415,17 +330,10 @@ function CareerPanel({
       <div className="max-h-[46dvh] overflow-y-auto px-4 pb-5 pt-3">
         <div className="animate-rise">
           {view.recentEventResult ? (
-            <div
-              className={`mb-3 rounded-lg border px-3 py-2 text-xs ${classicResultToneClass(view.recentEventResult.tone)}`}
-              data-classic-recent-event-result=""
-            >
-              <strong className="block">
-                {view.recentEventResult.title}
-              </strong>
-              <span className="mt-0.5 block">
-                {view.recentEventResult.summary}
-              </span>
-            </div>
+            <CareerRecentEventResult
+              result={view.recentEventResult}
+              variant="classic"
+            />
           ) : null}
           <div className="text-[10px] font-bold tracking-wide text-emerald-500">
             {panel.age} 岁 · 决策
@@ -451,81 +359,6 @@ function CareerPanel({
       </div>
     </aside>
   );
-}
-
-function MilestoneNarrative({
-  honors,
-  nationalTournaments,
-  statuses,
-  tierChange,
-}: Pick<
-  Extract<
-    CareerPresentation["panel"],
-    { readonly kind: "milestone" }
-  >,
-  | "honors"
-  | "nationalTournaments"
-  | "statuses"
-  | "tierChange"
->) {
-  return (
-    <ul className="mt-3 flex flex-wrap gap-2">
-      {honors.map((honor, index) => {
-        const identity =
-          honor.kind === "award"
-            ? honor.award
-            : honor.trophy;
-
-        return (
-          <li
-            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-xs font-bold text-amber-200"
-            key={`honor-${index}-${honor.label}`}
-          >
-            <HonorIdentity honor={identity} size={20} />
-            {honor.label}
-          </li>
-        );
-      })}
-      {nationalTournaments.map(({ label }, index) => (
-        <li
-          className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-2.5 py-2 text-xs font-bold text-sky-200"
-          key={`national-${index}-${label}`}
-        >
-          {label}
-        </li>
-      ))}
-      {statuses.map(({ label }, index) => (
-        <li
-          className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-2 text-xs font-bold text-rose-200"
-          key={`status-${index}-${label}`}
-        >
-          {label}
-        </li>
-      ))}
-      {tierChange ? (
-        <li className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-2 text-xs font-bold text-rose-200">
-          {tierChange.label}
-        </li>
-      ) : null}
-    </ul>
-  );
-}
-
-function classicResultToneClass(
-  tone: NonNullable<
-    CareerPresentation["recentEventResult"]
-  >["tone"],
-): string {
-  switch (tone) {
-    case "positive":
-      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
-    case "negative":
-      return "border-rose-500/30 bg-rose-500/10 text-rose-200";
-    case "warning":
-      return "border-amber-500/30 bg-amber-500/10 text-amber-200";
-    case "neutral":
-      return "border-zinc-700 bg-zinc-800/70 text-zinc-300";
-  }
 }
 
 function DecisionOption({

@@ -47,6 +47,35 @@ invariants. See
 [`docs/classic-versioning.md`](docs/classic-versioning.md) for the
 content-version and fixture-change policy.
 
+### Frozen-v1 narrative compatibility
+
+The `2026-07-30-classic-v1` contract also covers the story a player can
+observe around each deterministic transition:
+
+- career-event choices show their frozen probability and consequence
+  copy before selection, then show the single outcome already resolved
+  by the engine;
+- season history retains club and national trophies, personal awards,
+  national-tournament results, suspension, relegation, and observable
+  tier changes;
+- ordinary seasons, event results, major milestones, and the next
+  decision keep a stable reveal order, while reduced motion presents the
+  same information immediately;
+- the timeline, milestone reveal, and summary reuse local category art,
+  while club marks remain limited to the 114 authorized crest files plus
+  explicit fallback and load-failure states.
+
+Reveal cursors and animation state are transient presentation data. They
+are not added to the Classic engine, ordered choice log, active-session
+envelope, archive schema, or replay payload.
+
+The current reference site may continue to change after this version was
+frozen. Those live differences are evidence for a future versioned issue,
+not permission to alter probabilities, catalog data, RNG consumption,
+saved-career replay, or golden outputs in v1. Enhanced may restyle this
+shared narrative contract, but it must not redefine or omit its
+information.
+
 ## Local development
 
 Requirements:
