@@ -293,6 +293,98 @@ Adjacent tests, benchmark generation fixtures, and Issue #18 evidence
 may be added or updated, but existing football golden fixtures and
 Classic visual reference PNGs remain immutable acceptance inputs.
 
+### Issue #23 approved amendment
+
+[Issue #23](https://github.com/wkyhit/football-life-reborn/issues/23)
+is the approved, additive exception for complete late-career timeline
+data, Enhanced short-screen usability and decision feedback, explicit
+Seed intent, and versioned presentation identity / ordinary replay
+metadata. Delivery uses one `issue-23-career-ux` branch, one commit per
+TDD slice, and one final PR after all nine slices pass acceptance.
+
+The public seams are the shared career/summary presentation builders,
+Enhanced screen props and DOM contracts, the season-reveal controller,
+the app-level entry/restart controller, and the versioned
+session/archive/transfer/replay readers and writers. This amendment does
+not unfreeze football simulation, RNG consumption, catalog/content
+inputs, economy-v1 policy, state hashing, Classic visual styling, or
+Classic reference PNGs.
+
+Create:
+
+- `src/presentation/profile.ts`
+- `src/presentation/profile.test.ts`
+- `src/ui/enhanced/career/useTimelineFollow.ts`
+- `src/ui/enhanced/career/useTimelineFollow.test.tsx`
+- `src/ui/enhanced/career/EnhancedCareerScreen.test.tsx`
+- `src/ui/enhanced/career/CareerKeyEventDialog.tsx`
+- `src/ui/enhanced/career/CareerKeyEventDialog.test.tsx`
+- `src/ui/enhanced/summary/EnhancedSummaryScreen.test.tsx`
+- `src/app/seed.test.ts`
+- Issue-specific JSON/PNG evidence under `tests/visual/enhanced/issue-23/`
+
+Modify:
+
+- `design.md`, `tokens.css`, and `tokens.json` only for named Issue #23
+  layout, disclosure, state, and motion roles
+- `src/styles.css`
+- `src/ui/classic/careerPresentation.ts` only to extend the shared
+  timeline through the last revealed/current age and to expose typed
+  presentation tones / full-value labels; ages 16-39 stay equivalent
+- `src/ui/classic/summaryPresentation.ts` only to expose additive
+  presentation-profile metadata without changing career facts
+- `src/ui/shared/CareerMilestoneNarrative.tsx`
+- `src/ui/shared/Dialog.tsx` only through additive Enhanced behavior
+- `src/ui/enhanced/EnhancedOnboarding.tsx`
+- `src/ui/enhanced/career/EnhancedCareerScreen.tsx`
+- `src/ui/enhanced/onboarding/EnhancedLandingScreen.tsx`
+- `src/ui/enhanced/summary/EnhancedSummaryScreen.tsx`
+- `src/features/archive/EnhancedArchiveScreen.tsx`
+- `src/features/replay/ReplayRouteScreen.tsx`
+- `src/features/replay/codec.ts`
+- `src/features/replay/replay.ts`
+- `src/features/replay/route.ts`
+- `src/features/season-reveal/seasonReveal.ts`
+- `src/app/App.tsx`
+- `src/app/seed.ts`
+- `src/storage/activeArchive.ts`
+- `src/storage/classicSessionRepository.ts`
+- `src/storage/archiveRepository.ts`
+- `src/storage/careerTransfer.ts`
+- `src/storage/migrations/migrations.ts`
+- `README.md`
+- `tests/visual/harness.tsx`
+- `tests/visual/enhanced/layout.spec.ts` only as a non-authoritative
+  diagnostic contract; ego-browser remains the browser acceptance source
+- the explicit adjacent tests named by Issue #23: `src/app/App.test.tsx`,
+  `src/app/AppModes.test.tsx`, `src/app/AppReplay.test.tsx`,
+  `src/features/archive/EnhancedArchiveScreen.test.tsx`,
+  `src/features/replay/codec.test.ts`, `src/features/replay/replay.test.ts`,
+  `src/features/replay/route.test.ts`,
+  `src/features/season-reveal/seasonReveal.test.tsx`,
+  `src/storage/archiveRepository.test.ts`,
+  `src/storage/careerTransfer.test.ts`,
+  `src/storage/classicSessionRepository.test.ts`,
+  `src/storage/migrations/migrations.test.ts`,
+  `src/ui/careerNarrative.test.tsx`,
+  `src/ui/classic/careerPresentation.test.ts`,
+  `src/ui/classic/summaryPresentation.test.ts`,
+  `src/ui/enhanced/accessibility.test.tsx`,
+  `src/ui/enhanced/onboarding.test.tsx`,
+  `src/ui/enhanced/onboarding/EnhancedLandingScreen.test.tsx`, and
+  `src/ui/shared/Dialog.test.tsx`
+
+Frozen:
+
+- `src/domain/classicEngine.ts`, all football RNG/catalog/content and
+  economy-policy sources, and deterministic core-state hashing
+- `tests/golden/fixtures.ts` and every Classic visual reference PNG
+- Classic component styling and layout; only the shared 40+ data rows
+  may become visible through the existing Classic presentation
+- replay v1/v2 decoding semantics and existing stored v1/v2 recovery;
+  v3 is additive and must create a recoverable v2 backup before its
+  first persistent write
+
 ## 11. Portable exports
 
 ### CSS source
