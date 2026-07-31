@@ -15,6 +15,31 @@ import { EnhancedLandingScreen } from "./EnhancedLandingScreen";
 describe("Enhanced daily challenge landing", () => {
   afterEach(cleanup);
 
+  it("anchors the overflowing entry rail below the app bar", () => {
+    render(
+      <EnhancedLandingScreen
+        hasResume
+        onBegin={() => undefined}
+        onRandom={() => undefined}
+        onResume={() => undefined}
+      />,
+    );
+
+    const resume = screen.getByRole("button", {
+      name: "继续上次生涯",
+    });
+    const entryRail = resume.parentElement;
+
+    expect(entryRail).not.toBeNull();
+    expect(entryRail).toHaveClass(
+      "flex",
+      "min-h-0",
+      "flex-col",
+      "lg:overflow-y-auto",
+    );
+    expect(entryRail).not.toHaveClass("justify-center");
+  });
+
   it("offers all three daily challenges and keeps an explicit ordinary-career path", async () => {
     const challenges = DAILY_CHALLENGE_FAMILIES.map(
       (family) =>

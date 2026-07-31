@@ -112,7 +112,7 @@ export function EnhancedLandingScreen({
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-col justify-center py-8 lg:overflow-y-auto lg:py-3">
+        <div className="flex min-h-0 flex-col py-8 lg:overflow-y-auto lg:py-3">
           {hasResume ? (
             <EnhancedAction
               className="mb-6 min-h-14 w-full justify-between px-4 text-left"
