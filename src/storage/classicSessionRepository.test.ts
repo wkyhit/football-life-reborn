@@ -6,7 +6,12 @@ import {
 } from "../domain/classicEngine";
 import { ECONOMY_POLICY_VERSION } from "../domain/economy/economyPolicy";
 import {
+  LEGACY_CAREER_PRESENTATION_PROFILE,
+  createCareerPresentationProfile,
+} from "../presentation/profile";
+import {
   ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+  CLASSIC_SESSION_V2_BACKUP_STORAGE_KEY,
   CLASSIC_SESSION_SCHEMA_VERSION,
   LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
   createClassicSessionRepository,
@@ -22,6 +27,19 @@ class MemoryStorage implements StorageLike {
 
   setItem(key: string, value: string): void {
     this.values.set(key, value);
+  }
+}
+
+class FailingStorage extends MemoryStorage {
+  failNextSetFor: string | null = null;
+
+  override setItem(key: string, value: string): void {
+    if (key === this.failNextSetFor) {
+      this.failNextSetFor = null;
+      throw new Error(`set failed: ${key}`);
+    }
+
+    super.setItem(key, value);
   }
 }
 
@@ -51,11 +69,12 @@ describe("classic session repository", () => {
     const storage = new MemoryStorage();
     const repository = createClassicSessionRepository(storage);
 
-    expect(repository.save(committed)).toEqual({ ok: true });
+    const profile = createCareerPresentationProfile("left");
+    expect(repository.save(committed, profile)).toEqual({ ok: true });
 
     const raw = storage.getItem(ACTIVE_CLASSIC_SESSION_STORAGE_KEY);
     expect(raw).not.toBeNull();
-    expect(CLASSIC_SESSION_SCHEMA_VERSION).toBe(2);
+    expect(CLASSIC_SESSION_SCHEMA_VERSION).toBe(3);
     expect(ACTIVE_CLASSIC_SESSION_STORAGE_KEY).toBe(
       "football-life-reborn:classic-session:v2",
     );
@@ -65,6 +84,7 @@ describe("classic session repository", () => {
       economyPolicyVersion: ECONOMY_POLICY_VERSION,
       identity: committed.identity,
       mode: committed.mode,
+      profile,
       schemaVersion: CLASSIC_SESSION_SCHEMA_VERSION,
       seed: committed.seed,
     });
@@ -84,7 +104,8 @@ describe("classic session repository", () => {
     );
     expect(restored).toMatchObject({
       economyPolicyVersion: ECONOMY_POLICY_VERSION,
-      sourceSchemaVersion: 2,
+      profile,
+      sourceSchemaVersion: 3,
     });
   });
 
@@ -118,6 +139,7 @@ describe("classic session repository", () => {
 
     expect(loaded).toMatchObject({
       economyPolicyVersion: ECONOMY_POLICY_VERSION,
+      profile: LEGACY_CAREER_PRESENTATION_PROFILE,
       sourceSchemaVersion: 1,
       state: initial,
       status: "ready",
@@ -129,6 +151,90 @@ describe("classic session repository", () => {
     ).toBe(legacyRaw);
     expect(
       storage.getItem(ACTIVE_CLASSIC_SESSION_STORAGE_KEY),
+    ).toBeNull();
+  });
+
+  it("reads v2 without a preferred foot and preserves its exact bytes before the first v3 write", () => {
+    const career = startClassicCareer({
+      identity: {
+        lastName: "旧版",
+        nationalityFifaCode: "CHN",
+        position: "CM",
+        preferredNumber: 8,
+      },
+      mode: "normal",
+      seed: "profile-session-v2",
+    });
+    const v2Raw = JSON.stringify({
+      choiceLog: career.choiceLog,
+      contentVersion: career.contentVersion,
+      economyPolicyVersion: ECONOMY_POLICY_VERSION,
+      identity: career.identity,
+      mode: career.mode,
+      schemaVersion: 2,
+      seed: career.seed,
+    });
+    const storage = new MemoryStorage();
+    storage.setItem(ACTIVE_CLASSIC_SESSION_STORAGE_KEY, v2Raw);
+    const repository = createClassicSessionRepository(storage);
+
+    expect(repository.load()).toMatchObject({
+      profile: LEGACY_CAREER_PRESENTATION_PROFILE,
+      sourceSchemaVersion: 2,
+      status: "ready",
+    });
+
+    expect(
+      repository.save(
+        career,
+        createCareerPresentationProfile("right"),
+      ),
+    ).toEqual({ ok: true });
+    expect(
+      storage.getItem(CLASSIC_SESSION_V2_BACKUP_STORAGE_KEY),
+    ).toBe(v2Raw);
+    expect(
+      JSON.parse(storage.getItem(ACTIVE_CLASSIC_SESSION_STORAGE_KEY)!),
+    ).toMatchObject({
+      profile: { preferredFoot: "right" },
+      schemaVersion: 3,
+    });
+  });
+
+  it("does not overwrite v2 when its recoverable backup cannot be written", () => {
+    const career = startClassicCareer({
+      identity: {
+        lastName: "回滚",
+        nationalityFifaCode: "CHN",
+        position: "CB",
+        preferredNumber: 5,
+      },
+      mode: "express",
+      seed: "profile-session-v2-backup-failure",
+    });
+    const v2Raw = JSON.stringify({
+      choiceLog: career.choiceLog,
+      contentVersion: career.contentVersion,
+      economyPolicyVersion: ECONOMY_POLICY_VERSION,
+      identity: career.identity,
+      mode: career.mode,
+      schemaVersion: 2,
+      seed: career.seed,
+    });
+    const storage = new FailingStorage();
+    storage.setItem(ACTIVE_CLASSIC_SESSION_STORAGE_KEY, v2Raw);
+    storage.failNextSetFor = CLASSIC_SESSION_V2_BACKUP_STORAGE_KEY;
+
+    expect(
+      createClassicSessionRepository(storage).save(career, {
+        preferredFoot: "left",
+      }),
+    ).toMatchObject({ ok: false });
+    expect(storage.getItem(ACTIVE_CLASSIC_SESSION_STORAGE_KEY)).toBe(
+      v2Raw,
+    );
+    expect(
+      storage.getItem(CLASSIC_SESSION_V2_BACKUP_STORAGE_KEY),
     ).toBeNull();
   });
 

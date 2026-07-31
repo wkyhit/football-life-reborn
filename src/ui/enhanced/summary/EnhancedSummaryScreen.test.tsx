@@ -18,6 +18,8 @@ describe("EnhancedSummaryScreen", () => {
         onRestart={onRestart}
         onShare={onShare}
         onStartNewCareer={onStartNewCareer}
+        onCopyReplay={vi.fn()}
+        replayUrl="https://example.test/#r=ordinary"
         view={summaryView()}
       />,
     );
@@ -69,6 +71,9 @@ describe("EnhancedSummaryScreen", () => {
     expect(onRestart).toHaveBeenCalledOnce();
     expect(onStartNewCareer).toHaveBeenCalledOnce();
     expect(onShare).toHaveBeenCalledOnce();
+    expect(
+      screen.getByRole("button", { name: "复制本局回放" }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -103,6 +108,7 @@ function summaryView(): SummaryPresentation {
       name: "短屏测试球员",
       number: 10,
       position: "中锋",
+      preferredFoot: "左脚",
     },
     maxMarketValue: 150_000_000,
     maxOverall: 94,

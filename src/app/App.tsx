@@ -25,6 +25,11 @@ import type {
 } from "../domain/model";
 import type { PacingMode } from "../domain/pacing";
 import {
+  LEGACY_CAREER_PRESENTATION_PROFILE,
+  createCareerPresentationProfile,
+  type CareerPresentationProfile,
+} from "../presentation/profile";
+import {
   parseDailyChallengeSeed,
   type DailyChallenge,
 } from "../features/challenges/daily";
@@ -376,6 +381,10 @@ function CareerController({
   );
   const [classicCareer, setClassicCareer] =
     useState<ClassicCareerState | null>(initial.classicCareer);
+  const [presentationProfile, setPresentationProfile] =
+    useState<CareerPresentationProfile>(
+      initial.presentationProfile,
+    );
   const [activeArchiveId, setActiveArchiveIdState] =
     useState<string | null>(initial.activeArchiveId);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -444,6 +453,9 @@ function CareerController({
       discardClassicSession();
       setRecovery(null);
       setClassicCareer(null);
+      setPresentationProfile(
+        LEGACY_CAREER_PRESENTATION_PROFILE,
+      );
       dispatch({
         seed: seedFromSearch(window.location.search),
         type: "reset_career",
@@ -493,9 +505,10 @@ function CareerController({
           }}
           onBack={() => setArchiveOpen(false)}
           onChanged={onArchiveChanged}
-          onContinue={(career, archiveId) => {
+          onContinue={(career, archiveId, profile) => {
             selectCareerSeed(career.seed);
             setClassicCareer(career);
+            setPresentationProfile(profile);
             setActiveArchiveId(archiveId);
             setResumeAvailable(false);
             setEnhancedEntryPending(false);
@@ -621,6 +634,11 @@ function CareerController({
             }}
             onOpenArchive={() => setArchiveOpen(true)}
             onStart={() => {
+              setPresentationProfile(
+                createCareerPresentationProfile(
+                  setupState.player.foot,
+                ),
+              );
               setActiveArchiveId(null);
               setClassicCareer(
                 startClassicFromSetup(setupState, mode),
@@ -639,6 +657,7 @@ function CareerController({
           }
           challenge={activeChallenge}
           initialCareer={classicCareer}
+          profile={presentationProfile}
           key={
             uiMode === "enhanced"
               ? activeArchiveId ?? "new-enhanced-career"
@@ -657,6 +676,9 @@ function CareerController({
             discardClassicSession();
             setActiveArchiveId(null);
             setClassicCareer(null);
+            setPresentationProfile(
+              LEGACY_CAREER_PRESENTATION_PROFILE,
+            );
             setResumeAvailable(false);
             setEnhancedEntryPending(false);
             dispatch({
@@ -676,6 +698,11 @@ function CareerController({
             dispatch({ type: "begin_setup" });
           },
           onStart: () => {
+            setPresentationProfile(
+              createCareerPresentationProfile(
+                setupState.player.foot,
+              ),
+            );
             setClassicCareer(
               startClassicFromSetup(setupState, mode),
             );
@@ -692,6 +719,7 @@ type CareerExperienceProps = {
   readonly archiveRepository: ArchiveRepository | null;
   readonly challenge: DailyChallenge | null;
   readonly initialCareer: ClassicCareerState;
+  readonly profile: CareerPresentationProfile;
   readonly onActiveArchiveId: (id: string | null) => void;
   readonly onArchiveChanged: () => void;
   readonly onOpenArchive: (
@@ -711,6 +739,7 @@ function CareerExperience({
   archiveRepository,
   challenge,
   initialCareer,
+  profile,
   onActiveArchiveId,
   onArchiveChanged,
   onOpenArchive,
@@ -746,9 +775,12 @@ function CareerExperience({
   }
 
   useEffect(() => {
-    const result = repository.save(reveal.committedCareer);
+    const result = repository.save(
+      reveal.committedCareer,
+      profile,
+    );
     onSaveError(result.ok ? null : result.reason);
-  }, [onSaveError, repository, reveal.committedCareer]);
+  }, [onSaveError, profile, repository, reveal.committedCareer]);
 
   useEffect(() => {
     if (archiveRepository === null) {
@@ -768,7 +800,7 @@ function CareerExperience({
     const updated =
       activeArchiveId === null
         ? { ok: false as const, reason: "not_found" as const }
-        : archiveRepository.update(archiveId, career);
+        : archiveRepository.update(archiveId, career, profile);
 
     if (updated.ok) {
       onSaveError(null);
@@ -790,6 +822,7 @@ function CareerExperience({
       career,
       displayName,
       id: archiveId,
+      profile,
     });
 
     if (created.ok) {
@@ -824,6 +857,7 @@ function CareerExperience({
     onActiveArchiveId,
     onArchiveChanged,
     onSaveError,
+    profile,
     reveal.committedCareer,
   ]);
 
@@ -852,44 +886,40 @@ function CareerExperience({
   ) {
     const view = createSummaryPresentation(
       reveal.committedCareer,
+      profile,
     );
-    const replayUrl =
-      challenge === null
-        ? null
-        : createReplayUrl(
-            new URL("/", window.location.href),
-            createReplayPayload({
-              career: reveal.committedCareer,
-              challengeId: challenge.id,
-            }),
-          );
-    const copyReplay =
-      replayUrl === null
-        ? undefined
-        : () => {
-            if (navigator.clipboard === undefined) {
-              setReplayCopyMessage(
-                "复制失败，请手动选择回放链接",
-              );
-              return;
-            }
+    const replayUrl = createReplayUrl(
+      new URL("/", window.location.href),
+      createReplayPayload({
+        career: reveal.committedCareer,
+        ...(challenge === null
+          ? {}
+          : { challengeId: challenge.id }),
+        profile,
+      }),
+    );
+    const copyReplay = () => {
+      if (navigator.clipboard === undefined) {
+        setReplayCopyMessage(
+          "复制失败，请手动选择回放链接",
+        );
+        return;
+      }
 
-            void navigator.clipboard
-              .writeText(replayUrl)
-              .then(() =>
-                setReplayCopyMessage("回放链接已复制"),
-              )
-              .catch(() =>
-                setReplayCopyMessage(
-                  "复制失败，请手动选择回放链接",
-                ),
-              );
-          };
+      void navigator.clipboard
+        .writeText(replayUrl)
+        .then(() =>
+          setReplayCopyMessage("回放链接已复制"),
+        )
+        .catch(() =>
+          setReplayCopyMessage(
+            "复制失败，请手动选择回放链接",
+          ),
+        );
+    };
     const summaryProps = {
       ...(challenge === null ||
-      challengeProgress === null ||
-      replayUrl === null ||
-      copyReplay === undefined
+      challengeProgress === null
         ? {}
         : {
             challenge: {
@@ -897,9 +927,8 @@ function CareerExperience({
               progress: challengeProgress,
               replayUrl,
             },
-            onCopyReplay: copyReplay,
-            replayCopyMessage,
           }),
+      onCopyReplay: copyReplay,
       onRestart: () => {
         setShareOpen(false);
         onRestart({
@@ -908,6 +937,8 @@ function CareerExperience({
         });
       },
       onShare: () => setShareOpen(true),
+      replayCopyMessage,
+      replayUrl,
       view,
     };
 
@@ -961,10 +992,7 @@ function CareerExperience({
                     },
                   })}
               onClose={() => setShareOpen(false)}
-              qrPayload={
-                replayUrl ??
-                new URL("/", window.location.href).href
-              }
+              qrPayload={replayUrl}
               variant={
                 uiMode === "enhanced"
                   ? "enhanced"
@@ -1069,6 +1097,7 @@ type RecoveryIssue =
 
 type LoadedAppState = {
   readonly classicCareer: ClassicCareerState | null;
+  readonly presentationProfile: CareerPresentationProfile;
   readonly recovery: RecoveryIssue | null;
   readonly setupState: CareerState;
 };
@@ -1100,6 +1129,7 @@ function loadInitialState(
   if (classicLoaded.status === "ready") {
     return {
       classicCareer: classicLoaded.state,
+      presentationProfile: classicLoaded.profile,
       recovery: null,
       setupState: createInitialCareerState(seed),
     };
@@ -1108,6 +1138,8 @@ function loadInitialState(
   if (classicLoaded.status !== "empty") {
     return {
       classicCareer: null,
+      presentationProfile:
+        LEGACY_CAREER_PRESENTATION_PROFILE,
       recovery: classicLoaded,
       setupState: createInitialCareerState(seed),
     };
@@ -1119,6 +1151,9 @@ function loadInitialState(
     if (isSetupPhase(setupLoaded.state)) {
       return {
         classicCareer: null,
+        presentationProfile: createCareerPresentationProfile(
+          setupLoaded.state.player.foot,
+        ),
         recovery: null,
         setupState: setupLoaded.state,
       };
@@ -1129,6 +1164,9 @@ function loadInitialState(
         setupLoaded.state,
         "normal",
       ),
+      presentationProfile: createCareerPresentationProfile(
+        setupLoaded.state.player.foot,
+      ),
       recovery: null,
       setupState: setupLoaded.state,
     };
@@ -1136,6 +1174,8 @@ function loadInitialState(
 
   return {
     classicCareer: null,
+    presentationProfile:
+      LEGACY_CAREER_PRESENTATION_PROFILE,
     recovery:
       setupLoaded.status === "empty" ? null : setupLoaded,
     setupState: createInitialCareerState(seed),

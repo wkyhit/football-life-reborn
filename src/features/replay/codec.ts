@@ -9,8 +9,13 @@ import { CLASSIC_CONTENT_VERSION } from "../../domain/catalog/classicCatalog";
 import { ECONOMY_POLICY_VERSION } from "../../domain/economy/economyPolicy";
 import type { PacingMode } from "../../domain/pacing";
 import type { ClassicPosition } from "../../domain/role";
+import {
+  LEGACY_CAREER_PRESENTATION_PROFILE,
+  isCareerPresentationProfile,
+  type CareerPresentationProfile,
+} from "../../presentation/profile";
 
-export const REPLAY_CODEC_VERSION = 2 as const;
+export const REPLAY_CODEC_VERSION = 3 as const;
 export const REPLAY_HASH_PREFIX = "#r=" as const;
 export const REPLAY_MAX_URL_LENGTH = 1_800 as const;
 
@@ -45,14 +50,18 @@ export type ReplayChoice = {
   readonly optionId: string;
 };
 
+export type ReplayKind = "daily_challenge" | "ordinary";
+
 export type ReplayPayload = {
-  readonly challengeId: string;
+  readonly challengeId: string | null;
   readonly choiceLog: readonly ReplayChoice[];
   readonly contentVersion: string;
   readonly economyPolicyVersion:
     typeof ECONOMY_POLICY_VERSION;
   readonly identity: ClassicIdentity;
+  readonly kind: ReplayKind;
   readonly mode: PacingMode;
+  readonly profile: CareerPresentationProfile;
   readonly seed: string;
   readonly stateHash: string;
 };
@@ -62,6 +71,7 @@ export type ReplayDecodeResult =
       readonly payload: ReplayPayload;
       readonly sourceCodecVersion:
         | 1
+        | 2
         | typeof REPLAY_CODEC_VERSION;
       readonly status: "ready";
     }
@@ -95,7 +105,7 @@ export type ReplayDecodeResult =
       readonly status: "unsupported";
     };
 
-type ReplayWireUnsignedV2 = {
+type ReplayWireUnsignedV3 = {
   readonly c: string;
   readonly d: string;
   readonly e: typeof ECONOMY_POLICY_VERSION;
@@ -107,14 +117,35 @@ type ReplayWireUnsignedV2 = {
     preferredNumber: number,
     firstName?: string,
   ];
+  readonly k: 0 | 1;
   readonly l: readonly string[];
   readonly m: number;
+  readonly p: 0 | 1 | 2;
   readonly s: string;
   readonly v: typeof REPLAY_CODEC_VERSION;
 };
 
-type ReplayWireDocumentV2 = ReplayWireUnsignedV2 & {
+type ReplayWireDocumentV3 = ReplayWireUnsignedV3 & {
   readonly x: string;
+};
+
+type ReplayWireUnsignedV3Encoded = Omit<
+  ReplayWireUnsignedV3,
+  "e"
+> & {
+  readonly e: string;
+};
+
+type ReplayWireDocumentV3Encoded =
+  ReplayWireUnsignedV3Encoded & {
+    readonly x: string;
+  };
+
+type ReplayWireUnsignedV2 = Omit<
+  ReplayWireUnsignedV3,
+  "k" | "p" | "v"
+> & {
+  readonly v: 2;
 };
 
 type ReplayWireUnsignedV2Encoded = Omit<
@@ -124,10 +155,9 @@ type ReplayWireUnsignedV2Encoded = Omit<
   readonly e: string;
 };
 
-type ReplayWireDocumentV2Encoded =
-  ReplayWireUnsignedV2Encoded & {
-    readonly x: string;
-  };
+type ReplayWireDocumentV2 = ReplayWireUnsignedV2Encoded & {
+  readonly x: string;
+};
 
 type ReplayWireUnsignedV1 = Omit<
   ReplayWireUnsignedV2,
@@ -142,13 +172,14 @@ type ReplayWireDocumentV1 = ReplayWireUnsignedV1 & {
 
 type ReplayWireUnsigned =
   | ReplayWireUnsignedV1
-  | ReplayWireUnsignedV2Encoded;
+  | ReplayWireUnsignedV2Encoded
+  | ReplayWireUnsignedV3Encoded;
 
 export function encodeReplayHash(
   payload: ReplayPayload,
 ): string {
   const unsigned = toWire(payload);
-  const document: ReplayWireDocumentV2 = {
+  const document: ReplayWireDocumentV3 = {
     ...unsigned,
     x: checksum(unsigned),
   };
@@ -248,6 +279,7 @@ export function decodeReplayHash(
 
   if (
     parsed.v !== 1 &&
+    parsed.v !== 2 &&
     parsed.v !== REPLAY_CODEC_VERSION
   ) {
     return {
@@ -259,7 +291,7 @@ export function decodeReplayHash(
 
   const sourceCodecVersion = parsed.v;
   let unsigned: ReplayWireUnsigned;
-  let normalized: ReplayWireUnsignedV2;
+  let normalized: ReplayWireUnsignedV3;
   let encodedEconomyPolicyVersion: string | null = null;
 
   if (sourceCodecVersion === 1) {
@@ -293,9 +325,11 @@ export function decodeReplayHash(
     normalized = {
       ...unsigned,
       e: ECONOMY_POLICY_VERSION,
+      k: 1,
+      p: 0,
       v: REPLAY_CODEC_VERSION,
     };
-  } else {
+  } else if (sourceCodecVersion === 2) {
     if (
       !hasExactKeys(parsed, [
         "c",
@@ -322,6 +356,48 @@ export function decodeReplayHash(
       i: parsed.i,
       l: parsed.l,
       m: parsed.m,
+      s: parsed.s,
+      v: 2,
+    };
+    encodedEconomyPolicyVersion = parsed.e;
+    normalized = {
+      ...unsigned,
+      e: ECONOMY_POLICY_VERSION,
+      k: 1,
+      p: 0,
+      v: REPLAY_CODEC_VERSION,
+    };
+  } else {
+    if (
+      !hasExactKeys(parsed, [
+        "c",
+        "d",
+        "e",
+        "h",
+        "i",
+        "k",
+        "l",
+        "m",
+        "p",
+        "s",
+        "v",
+        "x",
+      ]) ||
+      !isWireDocumentV3(parsed)
+    ) {
+      return { reason: "schema", status: "invalid" };
+    }
+
+    unsigned = {
+      c: parsed.c,
+      d: parsed.d,
+      e: parsed.e,
+      h: parsed.h,
+      i: parsed.i,
+      k: parsed.k,
+      l: parsed.l,
+      m: parsed.m,
+      p: parsed.p,
       s: parsed.s,
       v: REPLAY_CODEC_VERSION,
     };
@@ -369,7 +445,7 @@ export function decodeReplayHash(
 
 function toWire(
   payload: ReplayPayload,
-): ReplayWireUnsignedV2 {
+): ReplayWireUnsignedV3 {
   assertPayload(payload);
   const firstName = payload.identity.firstName;
   const identity =
@@ -394,19 +470,26 @@ function toWire(
 
   return {
     c: payload.contentVersion,
-    d: payload.challengeId,
+    d: payload.challengeId ?? "",
     e: payload.economyPolicyVersion,
     h: payload.stateHash.slice("fnv1a64:".length),
     i: identity,
+    k: payload.kind === "ordinary" ? 0 : 1,
     l: payload.choiceLog.map(encodeChoice),
     m: MODE_TO_CODE[payload.mode],
+    p:
+      payload.profile.preferredFoot === null
+        ? 0
+        : payload.profile.preferredFoot === "left"
+          ? 1
+          : 2,
     s: payload.seed,
     v: REPLAY_CODEC_VERSION,
   };
 }
 
 function fromWire(
-  wire: ReplayWireUnsignedV2,
+  wire: ReplayWireUnsignedV3,
 ): ReplayPayload | null {
   const position = REPLAY_POSITIONS[wire.i[2]];
   const mode = CODE_TO_MODE[wire.m];
@@ -437,12 +520,19 @@ function fromWire(
   });
 
   return Object.freeze({
-    challengeId: wire.d,
+    challengeId: wire.k === 1 ? wire.d : null,
     choiceLog: Object.freeze(choices),
     contentVersion: wire.c,
     economyPolicyVersion: wire.e,
     identity,
+    kind: wire.k === 1 ? "daily_challenge" : "ordinary",
     mode,
+    profile:
+      wire.p === 0
+        ? LEGACY_CAREER_PRESENTATION_PROFILE
+        : Object.freeze({
+            preferredFoot: wire.p === 1 ? "left" : "right",
+          }),
     seed: wire.s,
     stateHash: `fnv1a64:${wire.h}`,
   });
@@ -540,10 +630,13 @@ function expandOptionId(value: string): string | null {
 
 function assertPayload(payload: ReplayPayload): void {
   if (
-    !isBoundedString(payload.challengeId, 1, 120) ||
-    !/^[A-Za-z0-9:_-]+$/.test(payload.challengeId)
+    (payload.kind === "daily_challenge" &&
+      !isChallengeId(payload.challengeId)) ||
+    (payload.kind === "ordinary" && payload.challengeId !== null) ||
+    (payload.kind !== "daily_challenge" &&
+      payload.kind !== "ordinary")
   ) {
-    throw new RangeError("Replay challenge ID is invalid");
+    throw new RangeError("Replay kind and challenge ID are invalid");
   }
   if (payload.contentVersion !== CLASSIC_CONTENT_VERSION) {
     throw new RangeError(
@@ -566,6 +659,9 @@ function assertPayload(payload: ReplayPayload): void {
   if (!isIdentity(payload.identity)) {
     throw new RangeError("Replay identity is invalid");
   }
+  if (!isCareerPresentationProfile(payload.profile)) {
+    throw new RangeError("Replay presentation profile is invalid");
+  }
   if (
     !Array.isArray(payload.choiceLog) ||
     payload.choiceLog.length > REPLAY_MAX_CHOICES ||
@@ -578,14 +674,31 @@ function assertPayload(payload: ReplayPayload): void {
   }
 }
 
-function isWireDocumentV2(
+function isWireDocumentV3(
   value: Record<string, unknown>,
-): value is ReplayWireDocumentV2Encoded {
+): value is ReplayWireDocumentV3Encoded {
   return (
     value.v === REPLAY_CODEC_VERSION &&
     typeof value.e === "string" &&
     value.e.length >= 1 &&
     value.e.length <= 120 &&
+    (value.k === 0 || value.k === 1) &&
+    (value.p === 0 || value.p === 1 || value.p === 2) &&
+    ((value.k === 0 && value.d === "") ||
+      (value.k === 1 && isChallengeId(value.d))) &&
+    hasValidWireFields(value)
+  );
+}
+
+function isWireDocumentV2(
+  value: Record<string, unknown>,
+): value is ReplayWireDocumentV2 {
+  return (
+    value.v === 2 &&
+    typeof value.e === "string" &&
+    value.e.length >= 1 &&
+    value.e.length <= 120 &&
+    isChallengeId(value.d) &&
     hasValidWireFields(value)
   );
 }
@@ -593,7 +706,11 @@ function isWireDocumentV2(
 function isWireDocumentV1(
   value: Record<string, unknown>,
 ): value is ReplayWireDocumentV1 {
-  return value.v === 1 && hasValidWireFields(value);
+  return (
+    value.v === 1 &&
+    isChallengeId(value.d) &&
+    hasValidWireFields(value)
+  );
 }
 
 function hasValidWireFields(
@@ -601,8 +718,8 @@ function hasValidWireFields(
 ): boolean {
   return (
     typeof value.c === "string" &&
-    isBoundedString(value.d, 1, 120) &&
-    /^[A-Za-z0-9:_-]+$/.test(value.d) &&
+    typeof value.d === "string" &&
+    value.d.length <= 120 &&
     typeof value.h === "string" &&
     /^[0-9a-f]{16}$/.test(value.h) &&
     Array.isArray(value.i) &&
@@ -633,6 +750,13 @@ function hasValidWireFields(
     isBoundedString(value.s, 1, 200) &&
     typeof value.x === "string" &&
     /^[0-9a-f]{16}$/.test(value.x)
+  );
+}
+
+function isChallengeId(value: unknown): value is string {
+  return (
+    isBoundedString(value, 1, 120) &&
+    /^[A-Za-z0-9:_-]+$/.test(value)
   );
 }
 

@@ -17,7 +17,9 @@ describe("Classic summary presentation", () => {
       mode: "normal",
       seed: "phase-3:attacker-summary",
     });
-    const view = createSummaryPresentation(career);
+    const view = createSummaryPresentation(career, {
+      preferredFoot: "left",
+    });
 
     expect(view.metrics.map((metric) => metric.label)).toEqual([
       "出场",
@@ -47,6 +49,7 @@ describe("Classic summary presentation", () => {
       "模拟生涯分位",
     );
     expect(view.story.narrative).toContain("生涯总收入");
+    expect(view.identity.preferredFoot).toBe("左脚");
   });
 
   it("switches goalkeeper totals and club rows to clean sheets", () => {
@@ -76,5 +79,6 @@ describe("Classic summary presentation", () => {
       view.clubs.every((club) => club.stats.includes("零封")),
     ).toBe(true);
     expect(view.identity.name).toBe("守门员长名字");
+    expect(view.identity.preferredFoot).toBe("未记录");
   });
 });

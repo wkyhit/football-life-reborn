@@ -11,6 +11,10 @@ import { createCareerEconomyProjection } from "../domain/economy/careerEconomyPr
 import { ECONOMY_POLICY_VERSION } from "../domain/economy/economyPolicy";
 import { createCareerLedger } from "../domain/ledger";
 import {
+  LEGACY_CAREER_PRESENTATION_PROFILE,
+  createCareerPresentationProfile,
+} from "../presentation/profile";
+import {
   ARCHIVE_INDEX_STORAGE_KEY,
   archivePayloadStorageKey,
   createArchiveRepository,
@@ -62,12 +66,13 @@ describe("career transfer", () => {
         ),
         economyPolicyVersion: ECONOMY_POLICY_VERSION,
         ledger: createCareerLedger(source.career),
+        profile: { preferredFoot: "left" },
       },
       checksum: expect.stringMatching(/^fnv1a64:[0-9a-f]{16}$/),
       format: CAREER_TRANSFER_FORMAT,
       formatVersion: CAREER_TRANSFER_VERSION,
     });
-    expect(CAREER_TRANSFER_VERSION).toBe(2);
+    expect(CAREER_TRANSFER_VERSION).toBe(3);
 
     const parsed = parseCareerTransfer(raw);
     expect(parsed.status).toBe("ready");
@@ -80,6 +85,7 @@ describe("career transfer", () => {
       createdAt: source.entry.createdAt,
       displayName: source.entry.displayName,
       id: source.entry.id,
+      profile: { preferredFoot: "left" },
       updatedAt: source.entry.updatedAt,
     });
     expect(JSON.stringify(parsed.archive.career)).toBe(
@@ -95,7 +101,7 @@ describe("career transfer", () => {
       createCareerEconomyProjection(source.career),
     );
     expect(parsed).toMatchObject({
-      sourceFormatVersion: 2,
+      sourceFormatVersion: 3,
     });
 
     const targetStorage = new MemoryStorage();
@@ -132,6 +138,7 @@ describe("career transfer", () => {
     expect(JSON.stringify(loaded.career)).toBe(
       JSON.stringify(source.career),
     );
+    expect(loaded.profile).toEqual({ preferredFoot: "left" });
     expect(loaded.checkpoints).toEqual(
       createDecisionCheckpoints(source.career),
     );
@@ -168,8 +175,34 @@ describe("career transfer", () => {
           source.career,
         ),
         economyPolicyVersion: ECONOMY_POLICY_VERSION,
+        profile: LEGACY_CAREER_PRESENTATION_PROFILE,
       },
       sourceFormatVersion: 1,
+      status: "ready",
+    });
+  });
+
+  it("backfills a checksummed v2 transfer with an unknown preferred foot", () => {
+    const source = createArchivedCareer();
+    const current = JSON.parse(
+      serializeCareerTransfer({
+        career: source.career,
+        entry: source.entry,
+      }),
+    );
+    delete current.archive.profile;
+    current.formatVersion = 2;
+    current.checksum = deterministicHash({
+      archive: current.archive,
+      format: current.format,
+      formatVersion: 2,
+    });
+
+    expect(parseCareerTransfer(JSON.stringify(current))).toMatchObject({
+      archive: {
+        profile: LEGACY_CAREER_PRESENTATION_PROFILE,
+      },
+      sourceFormatVersion: 2,
       status: "ready",
     });
   });
@@ -486,6 +519,7 @@ function createArchivedCareer(): {
   const created = repository.create({
     career,
     displayName: "可携带生涯",
+    profile: createCareerPresentationProfile("left"),
   });
 
   if (!created.ok) {

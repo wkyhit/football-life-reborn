@@ -11,6 +11,7 @@ import {
 } from "../../domain/deterministicHash";
 import { ECONOMY_POLICY_VERSION } from "../../domain/economy/economyPolicy";
 import { deriveDailyChallenge } from "../challenges/daily";
+import { LEGACY_CAREER_PRESENTATION_PROFILE } from "../../presentation/profile";
 import {
   REPLAY_CODEC_VERSION,
   REPLAY_MAX_URL_LENGTH,
@@ -43,7 +44,7 @@ describe("replay hash codec", () => {
     );
     const hash = encodeReplayHash(payload);
 
-    expect(REPLAY_CODEC_VERSION).toBe(2);
+    expect(REPLAY_CODEC_VERSION).toBe(3);
     expect(payload.economyPolicyVersion).toBe(
       ECONOMY_POLICY_VERSION,
     );
@@ -51,7 +52,7 @@ describe("replay hash codec", () => {
     expect(hash.slice("#r=".length)).not.toContain("=");
     expect(decodeReplayHash(hash)).toEqual({
       payload,
-      sourceCodecVersion: 2,
+      sourceCodecVersion: 3,
       status: "ready",
     });
 
@@ -77,11 +78,16 @@ describe("replay hash codec", () => {
         seed: DAILY.seed,
       }),
     );
-    const v2Hash = encodeReplayHash(payload);
+    const v3Hash = encodeReplayHash(payload);
     const document = JSON.parse(
-      decodeBase64Url(v2Hash.slice("#r=".length)),
+      decodeBase64Url(v3Hash.slice("#r=".length)),
     ) as Record<string, unknown>;
-    const { e: _economy, ...withoutEconomy } = document;
+    const {
+      e: _economy,
+      k: _kind,
+      p: _profile,
+      ...withoutEconomy
+    } = document;
     const legacy = withChecksum({
       ...withoutEconomy,
       v: 1,
@@ -91,8 +97,67 @@ describe("replay hash codec", () => {
     )}`;
 
     expect(decodeReplayHash(legacyHash)).toEqual({
-      payload,
+      payload: {
+        ...payload,
+        kind: "daily_challenge",
+        profile: LEGACY_CAREER_PRESENTATION_PROFILE,
+      },
       sourceCodecVersion: 1,
+      status: "ready",
+    });
+  });
+
+  it("backfills an exact v2 replay as a daily challenge with unknown profile", () => {
+    const payload = createPayload(
+      playClassicCareer({
+        identity: {
+          lastName: "二代",
+          nationalityFifaCode: "CHN",
+          position: "CM",
+          preferredNumber: 8,
+        },
+        mode: "normal",
+        seed: DAILY.seed,
+      }),
+    );
+    const document = JSON.parse(
+      decodeBase64Url(encodeReplayHash(payload).slice("#r=".length)),
+    ) as Record<string, unknown>;
+    const { k: _kind, p: _profile, ...withoutV3 } = document;
+    const legacy = withChecksum({ ...withoutV3, v: 2 });
+    const hash = `#r=${encodeBase64Url(JSON.stringify(legacy))}`;
+
+    expect(decodeReplayHash(hash)).toEqual({
+      payload: {
+        ...payload,
+        kind: "daily_challenge",
+        profile: LEGACY_CAREER_PRESENTATION_PROFILE,
+      },
+      sourceCodecVersion: 2,
+      status: "ready",
+    });
+  });
+
+  it("round-trips an ordinary career and preferred foot without a challenge identity", () => {
+    const career = playClassicCareer({
+      identity: {
+        lastName: "普通局",
+        nationalityFifaCode: "CHN",
+        position: "RW",
+        preferredNumber: 7,
+      },
+      mode: "express",
+      seed: "issue-23:ordinary-replay",
+    });
+    const payload = createPayload(career, {
+      challengeId: null,
+      kind: "ordinary",
+      profile: { preferredFoot: "right" },
+    });
+
+    expect(decodeReplayHash(encodeReplayHash(payload))).toEqual({
+      payload,
+      sourceCodecVersion: 3,
       status: "ready",
     });
   });
@@ -283,7 +348,9 @@ function createPayload(
     contentVersion: career.contentVersion,
     economyPolicyVersion: ECONOMY_POLICY_VERSION,
     identity: career.identity,
+    kind: "daily_challenge",
     mode: career.mode,
+    profile: { preferredFoot: "left" },
     seed: career.seed,
     stateHash: deterministicHash(career),
     ...overrides,

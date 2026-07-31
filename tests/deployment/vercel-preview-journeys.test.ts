@@ -72,7 +72,7 @@ describe("Vercel Preview journey contract", () => {
     const summary = readFileSync(ENHANCED_SUMMARY, "utf8");
 
     expect(summary).toContain(
-      'className="min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-enhanced-focus"\n        tabIndex={0}',
+      'className="min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-enhanced-focus scroll-pb-6"\n        data-enhanced-summary-scroll=""\n        tabIndex={0}',
     );
     expect(summary).toContain('role="group"');
     expect(summary).toContain(

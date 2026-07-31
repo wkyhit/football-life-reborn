@@ -209,17 +209,17 @@ function CareerHeader({
             <span className="text-xs font-bold leading-none text-enhanced-trophy">
               能力
             </span>
-            <strong className="mt-0.5 text-xl font-black leading-none tabular-nums">
+            <strong className="mt-[2px] text-xl font-black leading-none tabular-nums">
               {header.overall}
             </strong>
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-1.5 py-0.5 text-xs font-bold text-enhanced-ink-2">
+              <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-[6px] py-[2px] text-xs font-bold text-enhanced-ink-2">
                 {header.countryFlag} {header.countryCode}
               </span>
-              <span className="rounded-[6px] border border-enhanced-pitch/20 bg-enhanced-pitch/10 px-1.5 py-0.5 text-xs font-bold text-enhanced-pitch">
+              <span className="rounded-[6px] border border-enhanced-pitch/20 bg-enhanced-pitch/10 px-[6px] py-[2px] text-xs font-bold text-enhanced-pitch">
                 #{header.number} {header.position}
               </span>
             </div>
@@ -326,7 +326,7 @@ function CareerHeader({
                           ? `累计收入：${totalIncome.full}`
                           : undefined
                       }
-                      className="mt-0.5 break-words text-sm font-bold leading-tight tabular-nums"
+                      className="mt-[2px] break-words text-sm font-bold leading-tight tabular-nums"
                       data-currency={
                         label === "累计收入"
                           ? totalIncome?.currency
@@ -365,7 +365,7 @@ function HeaderMetric({
   readonly value: string;
 }) {
   return (
-    <dl className={`min-w-0 px-2 py-1.5 text-center ${className}`}>
+    <dl className={`min-w-0 px-2 py-[6px] text-center ${className}`}>
       <dt className="text-xs font-bold text-enhanced-supporting">
         {label}
       </dt>
@@ -375,7 +375,7 @@ function HeaderMetric({
             ? undefined
             : `${label}：${fullValue}`
         }
-        className="mt-0.5 min-w-0 break-words text-xs font-bold leading-tight tabular-nums"
+        className="mt-[2px] min-w-0 break-words text-xs font-bold leading-tight tabular-nums"
         data-currency={currency}
         title={fullValue}
       >

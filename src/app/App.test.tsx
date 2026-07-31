@@ -123,6 +123,7 @@ describe("Classic navigation", () => {
         preferredNumber: 9,
       },
       mode: "normal",
+      profile: { preferredFoot: "left" },
       seed: "phase-1-default",
     });
     expect(raw).not.toContain('"state"');
@@ -274,7 +275,7 @@ describe("Classic navigation", () => {
     ).toMatchObject({
       economyPolicyVersion:
         "2026-07-31-economy-v1",
-      schemaVersion: 2,
+      schemaVersion: 3,
     });
     expect(
       localStorage.getItem(

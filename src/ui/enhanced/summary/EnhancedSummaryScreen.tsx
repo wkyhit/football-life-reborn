@@ -27,6 +27,7 @@ type EnhancedSummaryScreenProps = {
   readonly onShare: () => void;
   readonly onStartNewCareer?: () => void;
   readonly replayCopyMessage?: string | null;
+  readonly replayUrl?: string;
   readonly view: SummaryPresentation;
 };
 
@@ -40,6 +41,7 @@ export function EnhancedSummaryScreen({
   onShare,
   onStartNewCareer,
   replayCopyMessage,
+  replayUrl,
   view,
 }: EnhancedSummaryScreenProps) {
   const replayCopySucceeded =
@@ -73,7 +75,7 @@ export function EnhancedSummaryScreen({
       />
 
       <article
-        className="min-h-0 flex-1 scroll-pb-6 overflow-y-auto overscroll-contain outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-enhanced-focus"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-enhanced-focus scroll-pb-6"
         data-enhanced-summary-scroll=""
         tabIndex={0}
       >
@@ -105,6 +107,9 @@ export function EnhancedSummaryScreen({
               </h1>
               <p className="mt-3 max-w-[58ch] text-base leading-relaxed text-enhanced-supporting">
                 {view.seasonCount} 个赛季已经写入同一份确定性生涯记录。
+              </p>
+              <p className="mt-2 text-sm font-bold text-enhanced-ink-2">
+                惯用脚 · {view.identity.preferredFoot}
               </p>
             </div>
 
@@ -213,6 +218,63 @@ export function EnhancedSummaryScreen({
                       : replayCopyFailed
                         ? "重试复制回放链接"
                         : "复制挑战回放链接"}
+                  </EnhancedAction>
+                ) : null}
+              </div>
+              {replayCopyMessage ? (
+                <p
+                  aria-live="polite"
+                  className={[
+                    "mt-3 text-sm font-bold",
+                    replayCopyFailed
+                      ? "text-enhanced-alert"
+                      : "text-enhanced-pitch",
+                  ].join(" ")}
+                  role="status"
+                >
+                  {replayCopyMessage}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
+          {!challenge && replayUrl ? (
+            <section
+              aria-label="本局回放"
+              className="border-b border-enhanced-line py-6"
+              data-enhanced-summary-record="replay"
+            >
+              <h2 className="text-lg font-bold">本局回放</h2>
+              <p className="mt-2 text-sm leading-relaxed text-enhanced-supporting">
+                此链接只读重建本局选择、最终状态与展示身份，不读取本机存档。
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <label className="min-w-0 text-xs text-enhanced-supporting">
+                  回放链接
+                  <input
+                    className="mt-2 h-11 w-full min-w-0 border border-enhanced-line bg-enhanced-surface px-3 font-enhanced-mono text-xs text-enhanced-ink-2"
+                    data-enhanced-field=""
+                    data-field-state="success"
+                    readOnly
+                    value={replayUrl}
+                  />
+                </label>
+                {onCopyReplay ? (
+                  <EnhancedAction
+                    onClick={onCopyReplay}
+                    state={
+                      replayCopySucceeded
+                        ? "success"
+                        : replayCopyFailed
+                          ? "error"
+                          : "default"
+                    }
+                  >
+                    {replayCopySucceeded
+                      ? "已复制"
+                      : replayCopyFailed
+                        ? "重试复制本局回放"
+                        : "复制本局回放"}
                   </EnhancedAction>
                 ) : null}
               </div>

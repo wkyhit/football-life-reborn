@@ -21,6 +21,12 @@ import {
   type CareerEconomyProjection,
 } from "../domain/economy/careerEconomyProjection";
 import { ECONOMY_POLICY_VERSION } from "../domain/economy/economyPolicy";
+import {
+  LEGACY_CAREER_PRESENTATION_PROFILE,
+  isCareerPresentationProfile,
+  normalizeCareerPresentationProfile,
+  type CareerPresentationProfile,
+} from "../presentation/profile";
 import type {
   ArchiveRepository,
   ArchiveStorageLike,
@@ -29,7 +35,7 @@ import type {
 
 export const CAREER_TRANSFER_FORMAT =
   "football-life-reborn/career-archive" as const;
-export const CAREER_TRANSFER_VERSION = 2 as const;
+export const CAREER_TRANSFER_VERSION = 3 as const;
 export const CAREER_TRANSFER_QUARANTINE_PREFIX =
   "football-life-reborn:career-transfer:quarantine:" as const;
 
@@ -43,36 +49,44 @@ export type CareerTransferArchive = {
     typeof ECONOMY_POLICY_VERSION;
   readonly id: string;
   readonly ledger: readonly CareerLedgerEntry[];
+  readonly profile: CareerPresentationProfile;
   readonly updatedAt: string;
 };
 
 type CareerTransferArchiveV1 = Omit<
   CareerTransferArchive,
-  "economy" | "economyPolicyVersion"
+  "economy" | "economyPolicyVersion" | "profile"
 >;
 
 type CareerTransferArchiveV2Encoded = Omit<
+  CareerTransferArchive,
+  "economyPolicyVersion" | "profile"
+> & {
+  readonly economyPolicyVersion: string;
+};
+
+type CareerTransferArchiveV3Encoded = Omit<
   CareerTransferArchive,
   "economyPolicyVersion"
 > & {
   readonly economyPolicyVersion: string;
 };
 
-type CareerTransferUnsignedV2 = {
+type CareerTransferUnsignedV3 = {
   readonly archive: CareerTransferArchive;
   readonly format: typeof CAREER_TRANSFER_FORMAT;
   readonly formatVersion: typeof CAREER_TRANSFER_VERSION;
 };
 
-type CareerTransferDocumentV2 =
-  CareerTransferUnsignedV2 & {
+type CareerTransferDocumentV3 =
+  CareerTransferUnsignedV3 & {
     readonly checksum: string;
   };
 
 export type CareerTransferParseResult =
   | {
       readonly archive: CareerTransferArchive;
-      readonly sourceFormatVersion: 1 | 2;
+      readonly sourceFormatVersion: 1 | 2 | 3;
       readonly status: "ready";
     }
   | {
@@ -147,7 +161,7 @@ export function serializeCareerTransfer(input: {
   readonly career: ClassicCareerState;
   readonly entry: CareerArchiveEntry;
 }): string {
-  const unsigned: CareerTransferUnsignedV2 = {
+  const unsigned: CareerTransferUnsignedV3 = {
     archive: {
       career: input.career,
       checkpoints: deriveTransferCheckpoints(input.career),
@@ -157,12 +171,13 @@ export function serializeCareerTransfer(input: {
       economyPolicyVersion: ECONOMY_POLICY_VERSION,
       id: input.entry.id,
       ledger: deriveTransferLedger(input.career),
+      profile: input.entry.profile,
       updatedAt: input.entry.updatedAt,
     },
     format: CAREER_TRANSFER_FORMAT,
     formatVersion: CAREER_TRANSFER_VERSION,
   };
-  const document: CareerTransferDocumentV2 = {
+  const document: CareerTransferDocumentV3 = {
     ...unsigned,
     checksum: checksum(unsigned),
   };
@@ -191,6 +206,7 @@ export function parseCareerTransfer(
 
   if (
     parsed.formatVersion !== 1 &&
+    parsed.formatVersion !== 2 &&
     parsed.formatVersion !== CAREER_TRANSFER_VERSION
   ) {
     return {
@@ -213,6 +229,7 @@ export function parseCareerTransfer(
   }
 
   let archive:
+    | CareerTransferArchiveV3Encoded
     | CareerTransferArchiveV2Encoded
     | CareerTransferArchiveV1;
 
@@ -221,8 +238,13 @@ export function parseCareerTransfer(
       return { reason: "invalid_schema", status: "invalid" };
     }
     archive = parsed.archive;
-  } else {
+  } else if (parsed.formatVersion === 2) {
     if (!isTransferArchiveV2(parsed.archive)) {
+      return { reason: "invalid_schema", status: "invalid" };
+    }
+    archive = parsed.archive;
+  } else {
+    if (!isTransferArchiveV3(parsed.archive)) {
       return { reason: "invalid_schema", status: "invalid" };
     }
     archive = parsed.archive;
@@ -326,7 +348,7 @@ export function parseCareerTransfer(
   }
 
   if (
-    parsed.formatVersion === 2 &&
+    (parsed.formatVersion === 2 || parsed.formatVersion === 3) &&
     stableStringify(economy) !==
     stableStringify((archive as CareerTransferArchive).economy)
   ) {
@@ -340,6 +362,12 @@ export function parseCareerTransfer(
       economy,
       economyPolicyVersion: ECONOMY_POLICY_VERSION,
       ledger,
+      profile:
+        parsed.formatVersion === 3
+          ? normalizeCareerPresentationProfile(
+              (archive as CareerTransferArchiveV3Encoded).profile,
+            )
+          : LEGACY_CAREER_PRESENTATION_PROFILE,
     },
     sourceFormatVersion: parsed.formatVersion,
     status: "ready",
@@ -396,6 +424,7 @@ export function importCareerTransfer(
     createdAt: archive.createdAt,
     displayName: archive.displayName,
     id: archive.id,
+    profile: archive.profile,
     updatedAt: archive.updatedAt,
   });
 
@@ -484,6 +513,32 @@ function isTransferArchiveV2(
     typeof career.mode === "string" &&
     typeof career.seed === "string"
   );
+}
+
+function isTransferArchiveV3(
+  value: unknown,
+): value is CareerTransferArchiveV3Encoded {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "career",
+      "checkpoints",
+      "createdAt",
+      "displayName",
+      "economy",
+      "economyPolicyVersion",
+      "id",
+      "ledger",
+      "profile",
+      "updatedAt",
+    ]) ||
+    !isCareerPresentationProfile(value.profile)
+  ) {
+    return false;
+  }
+
+  const { profile: _profile, ...legacyShape } = value;
+  return isTransferArchiveV2(legacyShape);
 }
 
 function isTransferArchiveV1(

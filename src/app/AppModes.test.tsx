@@ -235,7 +235,9 @@ describe("UI mode shells", () => {
   it("does not silently resume an unrelated saved Seed and persists an explicit resume", async () => {
     const career = completedCareer("issue-23:saved-resume");
     expect(
-      createClassicSessionRepository(localStorage).save(career),
+      createClassicSessionRepository(localStorage).save(career, {
+        preferredFoot: "right",
+      }),
     ).toEqual({ ok: true });
     window.history.replaceState(
       {},
@@ -267,11 +269,15 @@ describe("UI mode shells", () => {
         name: "Seed测试",
       }),
     ).toBeInTheDocument();
+    expect(screen.getByText("惯用脚 · 右脚")).toBeInTheDocument();
     expect(
       new URLSearchParams(window.location.search).get("seed"),
     ).toBe("issue-23:saved-resume");
     expect(localStorage.getItem(ARCHIVE_INDEX_STORAGE_KEY)).toContain(
       "issue-23:saved-resume",
+    );
+    expect(localStorage.getItem(ARCHIVE_INDEX_STORAGE_KEY)).toContain(
+      '"preferredFoot":"right"',
     );
   });
 

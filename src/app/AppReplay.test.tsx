@@ -39,6 +39,22 @@ const HASH = encodeReplayHash(
     challengeId: DAILY.id,
   }),
 );
+const ORDINARY_CAREER = playClassicCareer({
+  identity: {
+    lastName: "普通回放",
+    nationalityFifaCode: "CHN",
+    position: "CM",
+    preferredNumber: 8,
+  },
+  mode: "express",
+  seed: "issue-23:ordinary-storage-free",
+});
+const ORDINARY_HASH = encodeReplayHash(
+  createReplayPayload({
+    career: ORDINARY_CAREER,
+    profile: { preferredFoot: "right" },
+  }),
+);
 
 describe("App replay route", () => {
   beforeEach(() => {
@@ -97,6 +113,27 @@ describe("App replay route", () => {
     expect(
       document.querySelector("[data-replay-route='error']"),
     ).not.toBeNull();
+    expect(storageSpies.every((spy) => spy.mock.calls.length === 0)).toBe(
+      true,
+    );
+  });
+
+  it("renders an exact ordinary replay with its preferred foot and no challenge identity while storage is disabled", async () => {
+    window.history.replaceState({}, "", `/${ORDINARY_HASH}`);
+    const storageSpies = disableStorage();
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: "普通回放" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("惯用脚 · 右脚")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/挑战进度/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "复制本局回放" }),
+    ).toBeInTheDocument();
     expect(storageSpies.every((spy) => spy.mock.calls.length === 0)).toBe(
       true,
     );

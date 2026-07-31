@@ -183,6 +183,7 @@ function denseSummary(): SummaryPresentation {
       name: "八字名字正好上限",
       number: 10,
       position: "中锋",
+      preferredFoot: "未记录",
     },
     maxMarketValue: 150_000_000,
     maxOverall: 97,

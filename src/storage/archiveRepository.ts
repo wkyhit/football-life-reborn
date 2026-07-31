@@ -21,13 +21,21 @@ import type {
   CareerTotals,
   RetirementReason,
 } from "../domain/summary";
+import {
+  LEGACY_CAREER_PRESENTATION_PROFILE,
+  isCareerPresentationProfile,
+  normalizeCareerPresentationProfile,
+  type CareerPresentationProfile,
+} from "../presentation/profile";
 
-export const ARCHIVE_SCHEMA_VERSION = 2 as const;
+export const ARCHIVE_SCHEMA_VERSION = 3 as const;
 export const ARCHIVE_CAPACITY = 20 as const;
 export const ARCHIVE_INDEX_STORAGE_KEY =
   "football-life-reborn:archive:index:v2" as const;
 export const ARCHIVE_PAYLOAD_STORAGE_PREFIX =
   "football-life-reborn:archive:career:v2:" as const;
+export const ARCHIVE_V2_BACKUP_STORAGE_KEY =
+  "football-life-reborn:archive:v2-backup" as const;
 export const LEGACY_ARCHIVE_INDEX_STORAGE_KEY =
   "football-life-reborn:archive:index:v1" as const;
 export const LEGACY_ARCHIVE_PAYLOAD_STORAGE_PREFIX =
@@ -51,6 +59,7 @@ export type CareerArchiveEntry = {
   readonly id: string;
   readonly identity: ClassicIdentity;
   readonly mode: PacingMode;
+  readonly profile: CareerPresentationProfile;
   readonly progress: {
     readonly age: number;
     readonly choiceCount: number;
@@ -73,17 +82,22 @@ export type CareerArchiveEntry = {
   readonly updatedAt: string;
 };
 
-type ArchiveIndexEnvelopeV2 = {
+type ArchiveIndexEnvelopeV3 = {
   readonly entries: readonly CareerArchiveEntry[];
   readonly schemaVersion: typeof ARCHIVE_SCHEMA_VERSION;
 };
 
 type LegacyCareerArchiveEntry = Omit<
   CareerArchiveEntry,
-  "economyPolicyVersion" | "totalIncome"
+  "economyPolicyVersion" | "profile" | "totalIncome"
 >;
 
-type ArchivePayloadEnvelopeV2 = {
+type CareerArchiveEntryV2 = Omit<
+  CareerArchiveEntry,
+  "profile"
+>;
+
+type ArchivePayloadEnvelopeV3 = {
   readonly career: ClassicCareerState;
   readonly checkpoints: readonly DecisionCheckpoint[];
   readonly economy: CareerEconomyProjection;
@@ -91,6 +105,7 @@ type ArchivePayloadEnvelopeV2 = {
     typeof ECONOMY_POLICY_VERSION;
   readonly id: string;
   readonly ledger: readonly CareerLedgerEntry[];
+  readonly profile: CareerPresentationProfile;
   readonly schemaVersion: typeof ARCHIVE_SCHEMA_VERSION;
 };
 
@@ -154,7 +169,8 @@ export type ArchiveLoadResult =
         typeof ECONOMY_POLICY_VERSION;
       readonly entry: CareerArchiveEntry;
       readonly ledger: readonly CareerLedgerEntry[];
-      readonly sourceSchemaVersion: 1 | 2;
+      readonly profile: CareerPresentationProfile;
+      readonly sourceSchemaVersion: 1 | 2 | 3;
       readonly status: "ready";
     }
   | { readonly status: "missing" }
@@ -199,6 +215,7 @@ export type ArchiveRepository = {
     readonly createdAt?: string;
     readonly displayName: string;
     readonly id?: string;
+    readonly profile?: CareerPresentationProfile;
     readonly updatedAt?: string;
   }) => ArchiveCreateResult;
   readonly delete: (id: string) => ArchiveDeleteResult;
@@ -214,6 +231,7 @@ export type ArchiveRepository = {
   readonly update: (
     id: string,
     career: ClassicCareerState,
+    profile?: CareerPresentationProfile,
   ) => ArchiveMutationResult;
 };
 
@@ -231,6 +249,7 @@ type IndexReadResult =
   | {
       readonly entries: readonly CareerArchiveEntry[];
       readonly ok: true;
+      readonly sourceSchemaVersion: 1 | 2 | 3 | null;
     }
   | Exclude<ArchiveListResult, { readonly ok: true }>;
 
@@ -330,9 +349,14 @@ export function createArchiveRepository(
         createdAt,
         displayName,
         id,
+        profile: normalizeCareerPresentationProfile(input.profile),
         updatedAt,
       });
-      const payloadRaw = serializePayload(id, input.career);
+      const payloadRaw = serializePayload(
+        id,
+        input.career,
+        entry.profile,
+      );
       const nextEntries = sortEntries([
         ...index.entries,
         entry,
@@ -340,6 +364,7 @@ export function createArchiveRepository(
       const payloadKey = archivePayloadStorageKey(id);
 
       try {
+        ensureV2BackupForIndex(storage, index);
         storage.setItem(payloadKey, payloadRaw);
         storage.setItem(
           ARCHIVE_INDEX_STORAGE_KEY,
@@ -374,11 +399,17 @@ export function createArchiveRepository(
       }
 
       const payloadKey = archivePayloadStorageKey(id);
+      let indexRawBefore: string | null;
       let payloadRaw: string | null;
+      let primaryPayloadRawBefore: string | null;
       let undoPayloadRaw: string;
 
       try {
-        payloadRaw = storage.getItem(payloadKey);
+        indexRawBefore = storage.getItem(
+          ARCHIVE_INDEX_STORAGE_KEY,
+        );
+        primaryPayloadRawBefore = storage.getItem(payloadKey);
+        payloadRaw = primaryPayloadRawBefore;
 
         if (payloadRaw === null) {
           payloadRaw = storage.getItem(
@@ -403,6 +434,7 @@ export function createArchiveRepository(
       );
 
       try {
+        ensureV2BackupForIndex(storage, index);
         storage.setItem(
           ARCHIVE_INDEX_STORAGE_KEY,
           serializeIndex(nextEntries),
@@ -410,11 +442,23 @@ export function createArchiveRepository(
         storage.removeItem(payloadKey);
       } catch (error) {
         try {
-          storage.setItem(
-            ARCHIVE_INDEX_STORAGE_KEY,
-            serializeIndex(index.entries),
-          );
-          storage.setItem(payloadKey, payloadRaw);
+          if (indexRawBefore === null) {
+            storage.removeItem(ARCHIVE_INDEX_STORAGE_KEY);
+          } else {
+            storage.setItem(
+              ARCHIVE_INDEX_STORAGE_KEY,
+              indexRawBefore,
+            );
+          }
+
+          if (primaryPayloadRawBefore === null) {
+            storage.removeItem(payloadKey);
+          } else {
+            storage.setItem(
+              payloadKey,
+              primaryPayloadRawBefore,
+            );
+          }
         } catch {
           // The original storage error remains the actionable result.
         }
@@ -498,6 +542,7 @@ export function createArchiveRepository(
       if (
         !isRecord(parsed) ||
         (parsed.schemaVersion !== 1 &&
+          parsed.schemaVersion !== 2 &&
           parsed.schemaVersion !== ARCHIVE_SCHEMA_VERSION) ||
         parsed.id !== id ||
         !isRecord(parsed.career) ||
@@ -512,13 +557,24 @@ export function createArchiveRepository(
       }
 
       if (
-        parsed.schemaVersion === 2 &&
+        (parsed.schemaVersion === 2 || parsed.schemaVersion === 3) &&
         (!isRecord(parsed.economy) ||
           parsed.economyPolicyVersion !==
             ECONOMY_POLICY_VERSION)
       ) {
         return {
           detail: `Archive payload does not match schema version 2: ${id}`,
+          raw,
+          status: "corrupt",
+        };
+      }
+
+      if (
+        parsed.schemaVersion === 3 &&
+        !isCareerPresentationProfile(parsed.profile)
+      ) {
+        return {
+          detail: `Archive payload does not match schema version 3: ${id}`,
           raw,
           status: "corrupt",
         };
@@ -585,12 +641,29 @@ export function createArchiveRepository(
       }
 
       if (
-        parsed.schemaVersion === 2 &&
+        (parsed.schemaVersion === 2 || parsed.schemaVersion === 3) &&
         stableStringify(economy) !==
         stableStringify(parsed.economy)
       ) {
         return {
           detail: `Archive economy does not match career: ${id}`,
+          raw,
+          status: "corrupt",
+        };
+      }
+
+      const profile =
+        parsed.schemaVersion === 3
+          ? normalizeCareerPresentationProfile(parsed.profile)
+          : LEGACY_CAREER_PRESENTATION_PROFILE;
+
+      if (
+        parsed.schemaVersion === 3 &&
+        stableStringify(profile) !==
+          stableStringify(entry.profile)
+      ) {
+        return {
+          detail: `Archive profile does not match index: ${id}`,
           raw,
           status: "corrupt",
         };
@@ -603,6 +676,7 @@ export function createArchiveRepository(
         economyPolicyVersion: ECONOMY_POLICY_VERSION,
         entry,
         ledger,
+        profile,
         sourceSchemaVersion: parsed.schemaVersion,
         status: "ready",
       };
@@ -641,6 +715,7 @@ export function createArchiveRepository(
       );
 
       try {
+        ensureV2BackupForIndex(storage, index);
         storage.setItem(
           ARCHIVE_INDEX_STORAGE_KEY,
           serializeIndex(sortEntries(nextEntries)),
@@ -690,6 +765,7 @@ export function createArchiveRepository(
       ]);
 
       try {
+        ensureV2BackupForIndex(storage, index);
         storage.setItem(payloadKey, deleted.payloadRaw);
         storage.setItem(
           ARCHIVE_INDEX_STORAGE_KEY,
@@ -709,7 +785,7 @@ export function createArchiveRepository(
       return { entry: deleted.entry, ok: true };
     },
 
-    update(id, career) {
+    update(id, career, profile) {
       const index = readRepositoryIndex();
 
       if (!index.ok) {
@@ -729,6 +805,9 @@ export function createArchiveRepository(
         createdAt: currentEntry.createdAt,
         displayName: currentEntry.displayName,
         id,
+        profile: normalizeCareerPresentationProfile(
+          profile ?? currentEntry.profile,
+        ),
         updatedAt: now(),
       });
       const nextEntries = sortEntries(
@@ -741,7 +820,11 @@ export function createArchiveRepository(
 
       try {
         previousPayload = storage.getItem(payloadKey);
-        storage.setItem(payloadKey, serializePayload(id, career));
+        ensureV2BackupForIndex(storage, index);
+        storage.setItem(
+          payloadKey,
+          serializePayload(id, career, updatedEntry.profile),
+        );
         storage.setItem(
           ARCHIVE_INDEX_STORAGE_KEY,
           serializeIndex(nextEntries),
@@ -770,6 +853,7 @@ function createEntry(input: {
   readonly createdAt: string;
   readonly displayName: string;
   readonly id: string;
+  readonly profile: CareerPresentationProfile;
   readonly updatedAt: string;
 }): CareerArchiveEntry {
   const { career } = input;
@@ -784,6 +868,7 @@ function createEntry(input: {
     id: input.id,
     identity: { ...career.identity },
     mode: career.mode,
+    profile: input.profile,
     progress: {
       age: career.playerAge,
       choiceCount: career.choiceLog.length,
@@ -832,7 +917,7 @@ function readIndex(
   }
 
   if (raw === null) {
-    return { entries: [], ok: true };
+    return { entries: [], ok: true, sourceSchemaVersion: null };
   }
 
   let parsed: unknown;
@@ -861,14 +946,27 @@ function readIndex(
     legacyCache.entries = null;
     legacyCache.raw = null;
 
-    if (!parsed.entries.every(isArchiveEntry)) {
+    if (!parsed.entries.every(isArchiveEntryV3)) {
+      return {
+        detail: "Archive index does not match schema version 3",
+        ok: false,
+        reason: "corrupt_index",
+      };
+    }
+    entries = parsed.entries as CareerArchiveEntry[];
+  } else if (parsed.schemaVersion === 2) {
+    if (!parsed.entries.every(isArchiveEntryV2)) {
       return {
         detail: "Archive index does not match schema version 2",
         ok: false,
         reason: "corrupt_index",
       };
     }
-    entries = parsed.entries as CareerArchiveEntry[];
+
+    entries = parsed.entries.map((entry) => ({
+      ...(entry as CareerArchiveEntryV2),
+      profile: LEGACY_CAREER_PRESENTATION_PROFILE,
+    }));
   } else if (parsed.schemaVersion === 1) {
     if (!parsed.entries.every(isLegacyArchiveEntry)) {
       return {
@@ -901,6 +999,7 @@ function readIndex(
         entries.push({
           ...(legacyEntry as LegacyCareerArchiveEntry),
           economyPolicyVersion: ECONOMY_POLICY_VERSION,
+          profile: LEGACY_CAREER_PRESENTATION_PROFILE,
           totalIncome: economy.economy.totalIncome,
         });
       }
@@ -931,6 +1030,7 @@ function readIndex(
   return {
     entries,
     ok: true,
+    sourceSchemaVersion: parsed.schemaVersion as 1 | 2 | 3,
   };
 }
 
@@ -992,7 +1092,7 @@ function readLegacyArchiveEconomy(
 function serializeIndex(
   entries: readonly CareerArchiveEntry[],
 ): string {
-  const envelope: ArchiveIndexEnvelopeV2 = {
+  const envelope: ArchiveIndexEnvelopeV3 = {
     entries,
     schemaVersion: ARCHIVE_SCHEMA_VERSION,
   };
@@ -1003,14 +1103,16 @@ function serializeIndex(
 function serializePayload(
   id: string,
   career: ClassicCareerState,
+  profile: CareerPresentationProfile,
 ): string {
-  const envelope: ArchivePayloadEnvelopeV2 = {
+  const envelope: ArchivePayloadEnvelopeV3 = {
     career,
     checkpoints: createDecisionCheckpoints(career),
     economy: createCareerEconomyProjection(career),
     economyPolicyVersion: ECONOMY_POLICY_VERSION,
     id,
     ledger: createCareerLedger(career),
+    profile,
     schemaVersion: ARCHIVE_SCHEMA_VERSION,
   };
 
@@ -1032,10 +1134,89 @@ function normalizeDeletedArchivePayload(
     return serializePayload(
       id,
       parsed.career as unknown as ClassicCareerState,
+      LEGACY_CAREER_PRESENTATION_PROFILE,
+    );
+  }
+
+  if (
+    isRecord(parsed) &&
+    parsed.schemaVersion === 2 &&
+    parsed.id === id &&
+    isRecord(parsed.career)
+  ) {
+    return serializePayload(
+      id,
+      parsed.career as unknown as ClassicCareerState,
+      LEGACY_CAREER_PRESENTATION_PROFILE,
     );
   }
 
   return raw;
+}
+
+function ensureV2Backup(storage: ArchiveStorageLike): void {
+  const indexRaw = storage.getItem(ARCHIVE_INDEX_STORAGE_KEY);
+
+  if (indexRaw === null) {
+    return;
+  }
+
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(indexRaw);
+  } catch {
+    return;
+  }
+
+  if (
+    !isRecord(parsed) ||
+    parsed.schemaVersion !== 2 ||
+    !Array.isArray(parsed.entries)
+  ) {
+    return;
+  }
+
+  if (storage.getItem(ARCHIVE_V2_BACKUP_STORAGE_KEY) !== null) {
+    return;
+  }
+
+  const payloads: Record<string, string> = {};
+
+  for (const entry of parsed.entries) {
+    if (!isRecord(entry) || typeof entry.id !== "string") {
+      throw new Error("Cannot back up an invalid v2 archive index");
+    }
+
+    const key = archivePayloadStorageKey(entry.id);
+    const payloadRaw = storage.getItem(key);
+
+    if (payloadRaw === null) {
+      throw new Error(
+        `Cannot back up missing v2 archive payload: ${entry.id}`,
+      );
+    }
+
+    payloads[key] = payloadRaw;
+  }
+
+  storage.setItem(
+    ARCHIVE_V2_BACKUP_STORAGE_KEY,
+    JSON.stringify({
+      indexRaw,
+      payloads,
+      sourceSchemaVersion: 2,
+    }),
+  );
+}
+
+function ensureV2BackupForIndex(
+  storage: ArchiveStorageLike,
+  index: Extract<IndexReadResult, { readonly ok: true }>,
+): void {
+  if (index.sourceSchemaVersion === 2) {
+    ensureV2Backup(storage);
+  }
 }
 
 function sortEntries(
@@ -1073,7 +1254,7 @@ function isArchiveId(value: string): boolean {
   return /^[A-Za-z0-9_-]{1,80}$/.test(value);
 }
 
-function isArchiveEntry(
+function isArchiveEntryV3(
   value: unknown,
 ): value is CareerArchiveEntry {
   return (
@@ -1086,12 +1267,37 @@ function isArchiveEntry(
     isArchiveId(value.id) &&
     isRecord(value.identity) &&
     typeof value.mode === "string" &&
+    isCareerPresentationProfile(value.profile) &&
     isRecord(value.progress) &&
     typeof value.seed === "string" &&
     (value.status === "in_progress" ||
       value.status === "retired") &&
     (value.summaryPreview === null ||
       isRecord(value.summaryPreview)) &&
+    typeof value.totalIncome === "number" &&
+    Number.isSafeInteger(value.totalIncome) &&
+    value.totalIncome >= 0 &&
+    typeof value.updatedAt === "string"
+  );
+}
+
+function isArchiveEntryV2(
+  value: unknown,
+): value is CareerArchiveEntryV2 {
+  return (
+    isRecord(value) &&
+    typeof value.contentVersion === "string" &&
+    typeof value.createdAt === "string" &&
+    typeof value.displayName === "string" &&
+    value.economyPolicyVersion === ECONOMY_POLICY_VERSION &&
+    typeof value.id === "string" &&
+    isArchiveId(value.id) &&
+    isRecord(value.identity) &&
+    typeof value.mode === "string" &&
+    isRecord(value.progress) &&
+    typeof value.seed === "string" &&
+    (value.status === "in_progress" || value.status === "retired") &&
+    (value.summaryPreview === null || isRecord(value.summaryPreview)) &&
     typeof value.totalIncome === "number" &&
     Number.isSafeInteger(value.totalIncome) &&
     value.totalIncome >= 0 &&
