@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyClassicChoice,
+  replayClassicCareer,
   startClassicCareer,
 } from "../../domain/classicEngine";
+import { CLASSIC_GOLDEN_FIXTURES } from "../../../tests/golden/fixtures";
 import { createCareerPresentation } from "./careerPresentation";
 
 describe("Classic career presentation", () => {
@@ -82,5 +84,72 @@ describe("Classic career presentation", () => {
     ).toEqual([
       { age: committed.currentDecision?.age, kind: "current" },
     ]);
+  });
+
+  it("presents a career event with specific labels and exact consequences", () => {
+    const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+      ({ id }) => id === "matrix-long-support-high",
+    );
+
+    if (fixture === undefined) {
+      throw new Error("Missing season-load golden fixture");
+    }
+
+    const eventChoiceIndex = fixture.choices.findIndex(
+      ({ optionId }) =>
+        optionId === "event:season_load:accept",
+    );
+    const career = replayClassicCareer({
+      choices: fixture.choices.slice(0, eventChoiceIndex),
+      contentVersion: fixture.contentVersion,
+      identity: fixture.identity,
+      mode: fixture.mode,
+      seed: fixture.seed,
+    });
+    const presentation = createCareerPresentation({
+      career,
+      isRevealing: false,
+      visibleSeasonCount: career.seasons.length,
+    });
+
+    if (
+      presentation.panel.kind !== "decision" ||
+      career.currentDecision?.event?.eventKey !== "season_load"
+    ) {
+      throw new Error("Expected a season-load decision");
+    }
+
+    const accept = presentation.panel.options.find(
+      ({ id }) => id === "event:season_load:accept",
+    );
+    const expected =
+      career.currentDecision.event.variantKey === "double_session"
+        ? {
+            label: "接受双倍训练",
+            negativeProbability: 0.35,
+            positiveProbability: 0.65,
+          }
+        : {
+            label: "承担更多负荷",
+            negativeProbability: 0.3,
+            positiveProbability: 0.7,
+          };
+
+    expect(accept).toMatchObject({
+      outcomePreviews: [
+        {
+          outcomeKind: "positive",
+          probability: expected.positiveProbability,
+          text: "成为绝对主力",
+        },
+        {
+          outcomeKind: "negative",
+          probability: expected.negativeProbability,
+          text: "降为替补",
+        },
+      ],
+      title: expected.label,
+    });
+    expect(accept?.subtitle).not.toBe(accept?.title);
   });
 });

@@ -106,6 +106,26 @@ export const CLASSIC_INJURIES = [
 export type InjuryType = (typeof CLASSIC_INJURIES)[number]["type"];
 export type ForcedCareerEventOutcome = "positive" | "negative";
 export type CareerEventOutcomeKind = ForcedCareerEventOutcome;
+export type CareerEventPreviewTone =
+  | "negative"
+  | "neutral"
+  | "positive"
+  | "warning";
+export type CareerEventOutcomePreview = {
+  readonly outcomeKind?: CareerEventOutcomeKind;
+  readonly probability?: number;
+  readonly text: string;
+  readonly tone: CareerEventPreviewTone;
+};
+export type CareerEventOptionNarrative = {
+  readonly label: string;
+  readonly previews: readonly CareerEventOutcomePreview[];
+};
+export type CareerEventNarrative = {
+  readonly description: string;
+  readonly option: CareerEventOptionNarrative | null;
+  readonly title: string;
+};
 export type ClubTrophy =
   | "league"
   | "cup"
@@ -116,6 +136,21 @@ export type NationalTrophy =
   | "national_continental"
   | "world_cup";
 export type CareerTrophy = ClubTrophy | NationalTrophy;
+
+export const CAREER_EVENT_PROBABILITIES = Object.freeze({
+  decisivePenaltyPositive: 0.5,
+  giantTattooPositive: 0.7,
+  injuryAtPeakPlayPositive: 0.8,
+  injuryAtPeakRecoverPositive: 0.3,
+  mysteriousSubstancePositive: 0.75,
+  personalCoachPositive: 0.5,
+  personalCoachNutritionPositive: 0.6,
+  positionCompetitionPositive: 0.5,
+  seasonLoadDoubleSessionPositive: 0.65,
+  seasonLoadPositive: 0.7,
+  trainingExtraPositive: 0.7,
+  trainingExtraPreseasonPositive: 0.65,
+});
 
 export type CareerEventPlan = {
   readonly completedEventAges: readonly number[];
@@ -217,6 +252,571 @@ export const CAREER_EVENT_WEIGHTS: Partial<
 };
 export const CAREER_INJURY_CHANCE = 0.02;
 export const MAX_CAREER_INJURIES = 2;
+
+const CAREER_EVENT_COPY: Readonly<
+  Record<
+    CareerEventKey,
+    { readonly description: string; readonly title: string }
+  >
+> = {
+  club_crisis: {
+    description: "俱乐部正经历动荡。你准备怎么面对？",
+    title: "俱乐部危机",
+  },
+  club_national_team_conflict: {
+    description: "俱乐部和国家队的赛程撞在了一起。",
+    title: "征召冲突",
+  },
+  club_priority: {
+    description: "赛程太密集了，只能把精力放在一条战线。",
+    title: "赛季取舍",
+  },
+  controversial_statement: {
+    description: "一句话把你推上了风口浪尖。",
+    title: "争议发言",
+  },
+  decisive_penalty: {
+    description: "决定冠军的点球就在你脚下。踢哪边？",
+    title: "决胜点球",
+  },
+  fan_backlash: {
+    description: "看台上的质疑声越来越大。",
+    title: "球迷倒戈",
+  },
+  finish_high_school: {
+    description: "你还有机会完成高中学业。",
+    title: "回到课堂",
+  },
+  foreign_grandfather: {
+    description: "另一支国家队向你发出了邀请。",
+    title: "血缘选择",
+  },
+  giant_tattoo: {
+    description: "有人提议把信念永久留在皮肤上。",
+    title: "巨幅纹身",
+  },
+  injury: {
+    description: "伤病打断了你的节奏，只能耐心恢复。",
+    title: "意外伤病",
+  },
+  injury_at_peak: {
+    description: "最重要的比赛就在眼前，但你的身体亮起红灯。",
+    title: "带伤上阵",
+  },
+  mysterious_substance: {
+    description: "有人递来一瓶成分不明的补剂。",
+    title: "神秘补剂",
+  },
+  personal_coach: {
+    description: "一位私人教练愿意为你制定专属计划。",
+    title: "私人教练",
+  },
+  position_change: {
+    description: "教练认为换个位置会打开新的可能。",
+    title: "位置改造",
+  },
+  position_competition: {
+    description: "新援到来，你的位置不再稳固。",
+    title: "位置竞争",
+  },
+  return_home: {
+    description: "家乡球队希望你回去成为旗帜。",
+    title: "回到故乡",
+  },
+  rival_offer: {
+    description: "死敌送来了一份很难拒绝的合同。",
+    title: "死敌邀约",
+  },
+  season_load: {
+    description: "教练组希望你承担更多比赛和训练任务。",
+    title: "赛季负荷",
+  },
+  tax_trouble: {
+    description: "场外的税务问题正在变得棘手。",
+    title: "税务风波",
+  },
+  training_extra: {
+    description: "训练结束后，教练问你要不要再加一组。",
+    title: "额外训练",
+  },
+  triumphant_return: {
+    description: "最初的俱乐部希望功成名就的你回家。",
+    title: "荣归故里",
+  },
+  unexpected_prospect: {
+    description: "一位天赋惊人的年轻人来到了更衣室。",
+    title: "后起之秀",
+  },
+};
+
+const CAREER_EVENT_VARIANT_COPY: Readonly<
+  Record<
+    CareerEventVariant,
+    { readonly description: string; readonly title: string }
+  >
+> = {
+  double_session: {
+    description: "教练组希望你把训练量提高到双倍。",
+    title: "双倍训练",
+  },
+  nutrition_plan: {
+    description: "私人团队提出了一套严格的营养计划。",
+    title: "营养计划",
+  },
+  preseason_camp: {
+    description: "季前集训结束前，教练安排了最后一轮加练。",
+    title: "季前集训",
+  },
+};
+
+const CAREER_EVENT_OPTION_LABELS: Readonly<
+  Record<CareerEventKey, Readonly<Record<string, string>>>
+> = {
+  club_crisis: {
+    stay_and_fight: "留下共渡危机",
+  },
+  club_national_team_conflict: {
+    comply: "服从俱乐部",
+    go_anyway: "前往国家队",
+  },
+  club_priority: {
+    prioritize_continental: "优先洲际赛事",
+    prioritize_league: "优先联赛",
+  },
+  controversial_statement: {
+    apologize: "公开道歉",
+  },
+  decisive_penalty: {
+    left: "踢向左边",
+    right: "踢向右边",
+  },
+  fan_backlash: {
+    stay_and_fight: "留下回应质疑",
+  },
+  finish_high_school: {
+    accept: "完成高中学业",
+    reject: "专注足球",
+  },
+  foreign_grandfather: {
+    keep_national_team: "留在当前国家队",
+    switch_national_team: "更换国家队",
+  },
+  giant_tattoo: {
+    accept: "纹上巨幅纹身",
+    reject: "拒绝纹身",
+  },
+  injury: {
+    continue: "开始康复",
+  },
+  injury_at_peak: {
+    play_injured: "带伤出战",
+    recover: "安心恢复",
+  },
+  mysterious_substance: {
+    consume: "喝下补剂",
+    reject: "拒绝不明补剂",
+  },
+  personal_coach: {
+    accept: "聘请私人教练",
+    reject: "继续团队训练",
+  },
+  position_change: {
+    accept: "接受位置改造",
+    reject: "坚持原位置",
+  },
+  position_competition: {
+    compete: "正面竞争",
+  },
+  return_home: {
+    stay_abroad: "继续留洋",
+  },
+  rival_offer: {
+    accept: "接受死敌邀约",
+    reject: "拒绝死敌邀约",
+  },
+  season_load: {
+    accept: "承担更多负荷",
+    stay_calm: "维持当前负荷",
+  },
+  tax_trouble: {
+    stay_and_fight: "留队处理风波",
+  },
+  training_extra: {
+    accept: "留下加练",
+    reject: "按计划结束训练",
+  },
+  triumphant_return: {},
+  unexpected_prospect: {
+    mentor: "主动指导新人",
+  },
+};
+
+export function selectCareerEventNarrative(input: {
+  readonly eventKey: CareerEventKey;
+  readonly injuryType?: InjuryType | undefined;
+  readonly optionKey?: string | undefined;
+  readonly targetClubTrophy?: ClubTrophy | undefined;
+  readonly targetTrophy?: CareerTrophy | undefined;
+  readonly variantKey?: CareerEventVariant | undefined;
+}): CareerEventNarrative {
+  assertValidNarrativeVariant(input.eventKey, input.variantKey);
+  const copy =
+    input.variantKey === undefined
+      ? CAREER_EVENT_COPY[input.eventKey]
+      : CAREER_EVENT_VARIANT_COPY[input.variantKey];
+
+  const optionKey = input.optionKey;
+
+  if (optionKey === undefined) {
+    return {
+      ...copy,
+      option: null,
+    };
+  }
+
+  assertValidOption(input.eventKey, optionKey);
+  const baseLabel =
+    CAREER_EVENT_OPTION_LABELS[input.eventKey][optionKey];
+
+  if (baseLabel === undefined) {
+    throw new RangeError(
+      `Missing narrative for ${input.eventKey}:${optionKey}`,
+    );
+  }
+  const optionInput = {
+    ...input,
+    optionKey,
+  };
+
+  return {
+    ...copy,
+    option: {
+      label: variantOptionLabel(optionInput, baseLabel),
+      previews: eventOutcomePreviews(optionInput),
+    },
+  };
+}
+
+function variantOptionLabel(
+  input: {
+    readonly eventKey: CareerEventKey;
+    readonly optionKey: string;
+    readonly variantKey?: CareerEventVariant | undefined;
+  },
+  baseLabel: string,
+): string {
+  if (
+    input.eventKey === "training_extra" &&
+    input.optionKey === "accept" &&
+    input.variantKey === "preseason_camp"
+  ) {
+    return "完成季前加练";
+  }
+
+  if (
+    input.eventKey === "personal_coach" &&
+    input.optionKey === "accept" &&
+    input.variantKey === "nutrition_plan"
+  ) {
+    return "执行营养计划";
+  }
+
+  if (
+    input.eventKey === "season_load" &&
+    input.optionKey === "accept" &&
+    input.variantKey === "double_session"
+  ) {
+    return "接受双倍训练";
+  }
+
+  return baseLabel;
+}
+
+function eventOutcomePreviews(input: {
+  readonly eventKey: CareerEventKey;
+  readonly injuryType?: InjuryType | undefined;
+  readonly optionKey: string;
+  readonly targetClubTrophy?: ClubTrophy | undefined;
+  readonly targetTrophy?: CareerTrophy | undefined;
+  readonly variantKey?: CareerEventVariant | undefined;
+}): readonly CareerEventOutcomePreview[] {
+  const key = `${input.eventKey}:${input.optionKey}`;
+
+  switch (key) {
+    case "training_extra:accept": {
+      const variant = input.variantKey === "preseason_camp";
+      return probabilisticPreviews(
+        variant
+          ? CAREER_EVENT_PROBABILITIES.trainingExtraPreseasonPositive
+          : CAREER_EVENT_PROBABILITIES.trainingExtraPositive,
+        variant ? "总评立即 +4" : "总评立即 +3",
+        variant ? "总评立即 -3" : "总评立即 -2",
+      );
+    }
+    case "training_extra:reject":
+      return neutralPreview("总评与角色保持不变");
+    case "personal_coach:accept": {
+      const variant = input.variantKey === "nutrition_plan";
+      return probabilisticPreviews(
+        variant
+          ? CAREER_EVENT_PROBABILITIES.personalCoachNutritionPositive
+          : CAREER_EVENT_PROBABILITIES.personalCoachPositive,
+        variant ? "永久总评 +3" : "永久总评 +2",
+        "永久总评 -2",
+      );
+    }
+    case "personal_coach:reject":
+      return neutralPreview("沿用现有成长计划");
+    case "mysterious_substance:consume":
+      return probabilisticPreviews(
+        CAREER_EVENT_PROBABILITIES.mysteriousSubstancePositive,
+        "总评立即 +5",
+        "遭遇停赛，总评不变",
+      );
+    case "mysterious_substance:reject":
+      return neutralPreview("避开停赛风险，能力保持不变");
+    case "season_load:accept":
+      return probabilisticPreviews(
+        input.variantKey === "double_session"
+          ? CAREER_EVENT_PROBABILITIES
+              .seasonLoadDoubleSessionPositive
+          : CAREER_EVENT_PROBABILITIES.seasonLoadPositive,
+        "成为绝对主力",
+        "降为替补",
+      );
+    case "season_load:stay_calm":
+      return deterministicPreviews([
+        {
+          text: "阵容角色下降一级",
+          tone: "negative",
+        },
+      ]);
+    case "position_change:accept":
+      return deterministicPreviews([
+        {
+          text: "成为绝对主力",
+          tone: "positive",
+        },
+        {
+          text: "总评先 -2，周期结束后恢复 +2",
+          tone: "warning",
+        },
+      ]);
+    case "position_change:reject":
+      return deterministicPreviews([
+        {
+          outcomeKind: "negative",
+          text: "阵容角色下降一级",
+          tone: "negative",
+        },
+      ]);
+    case "position_competition:compete":
+      return probabilisticPreviews(
+        CAREER_EVENT_PROBABILITIES.positionCompetitionPositive,
+        "成为绝对主力",
+        "降为边缘轮换",
+      );
+    case "unexpected_prospect:mentor":
+      return deterministicPreviews([
+        {
+          text: "阵容角色下降一级",
+          tone: "negative",
+        },
+        {
+          text: "本周期所有俱乐部赛事夺冠概率 ×2",
+          tone: "positive",
+        },
+      ]);
+    case "club_priority:prioritize_league":
+      return deterministicPreviews([
+        {
+          text: "联赛夺冠概率 ×2",
+          tone: "positive",
+        },
+        {
+          text: "顶级洲际赛事夺冠概率 ×0.5",
+          tone: "negative",
+        },
+      ]);
+    case "club_priority:prioritize_continental":
+      return deterministicPreviews([
+        {
+          text: "顶级洲际赛事夺冠概率 ×2",
+          tone: "positive",
+        },
+        {
+          text: "联赛夺冠概率 ×0.5",
+          tone: "negative",
+        },
+      ]);
+    case "rival_offer:accept":
+      return neutralPreview("加盟报价俱乐部，角色按新环境结算");
+    case "rival_offer:reject":
+      return neutralPreview("留在当前俱乐部，赛季状态不变");
+    case "club_crisis:stay_and_fight":
+      return deterministicPreviews([
+        {
+          outcomeKind: "negative",
+          text: "本周期所有俱乐部赛事夺冠概率降至 10%",
+          tone: "negative",
+        },
+      ]);
+    case "fan_backlash:stay_and_fight":
+      return deterministicPreviews([
+        {
+          outcomeKind: "negative",
+          text: "总评立即 -2，周期结束后恢复 +2",
+          tone: "warning",
+        },
+      ]);
+    case "return_home:stay_abroad":
+      return deterministicPreviews([
+        {
+          outcomeKind: "negative",
+          text: "总评立即 -5，周期结束后恢复 +5",
+          tone: "warning",
+        },
+      ]);
+    case "giant_tattoo:accept":
+      return probabilisticPreviews(
+        CAREER_EVENT_PROBABILITIES.giantTattooPositive,
+        "永久总评 +2",
+        "降为替补",
+      );
+    case "giant_tattoo:reject":
+      return neutralPreview("总评与角色保持不变");
+    case "tax_trouble:stay_and_fight":
+      return deterministicPreviews([
+        {
+          outcomeKind: "negative",
+          text: "总评立即 -3，周期结束后恢复 +3",
+          tone: "warning",
+        },
+      ]);
+    case "foreign_grandfather:switch_national_team":
+      return deterministicPreviews([
+        {
+          text: "切换到受邀国家队",
+          tone: "positive",
+        },
+      ]);
+    case "foreign_grandfather:keep_national_team":
+      return neutralPreview("保留当前国家队资格");
+    case "finish_high_school:accept":
+      return deterministicPreviews([
+        {
+          text: "永久总评 +1",
+          tone: "positive",
+        },
+        {
+          text: "阵容角色下降一级",
+          tone: "negative",
+        },
+      ]);
+    case "finish_high_school:reject":
+      return neutralPreview("总评与角色保持不变");
+    case "controversial_statement:apologize":
+      return deterministicPreviews([
+        {
+          outcomeKind: "negative",
+          text: "阵容角色下降一级",
+          tone: "negative",
+        },
+      ]);
+    case "club_national_team_conflict:go_anyway":
+      return deterministicPreviews([
+        {
+          text: "强制参加目标国家队赛事",
+          tone: "positive",
+        },
+        {
+          text: "俱乐部角色降为替补",
+          tone: "negative",
+        },
+      ]);
+    case "club_national_team_conflict:comply":
+      return deterministicPreviews([
+        {
+          text: "缺席目标国家队赛事",
+          tone: "negative",
+        },
+      ]);
+    case "injury_at_peak:play_injured":
+      return probabilisticPreviews(
+        CAREER_EVENT_PROBABILITIES.injuryAtPeakPlayPositive,
+        "总评 -1，但赢得目标冠军",
+        "总评 -1，并错失目标冠军",
+      );
+    case "injury_at_peak:recover":
+      return probabilisticPreviews(
+        CAREER_EVENT_PROBABILITIES.injuryAtPeakRecoverPositive,
+        "安心恢复并赢得目标冠军",
+        "安心恢复但错失目标冠军",
+      );
+    case "injury:continue": {
+      const overallDelta = injuryOverallDelta(
+        input.injuryType ?? "hamstring",
+      );
+      return deterministicPreviews([
+        {
+          outcomeKind: "negative",
+          text: `总评 ${overallDelta}，角色降为替补`,
+          tone: "negative",
+        },
+      ]);
+    }
+    case "decisive_penalty:left":
+    case "decisive_penalty:right":
+      return probabilisticPreviews(
+        CAREER_EVENT_PROBABILITIES.decisivePenaltyPositive,
+        "命中点球并赢得目标冠军",
+        "罚失点球并错失目标冠军",
+      );
+    default:
+      throw new RangeError(`Missing outcome preview for ${key}`);
+  }
+}
+
+function probabilisticPreviews(
+  positiveProbability: number,
+  positiveText: string,
+  negativeText: string,
+): readonly CareerEventOutcomePreview[] {
+  const negativeProbability =
+    Math.round((1 - positiveProbability) * 100) / 100;
+
+  return [
+    {
+      outcomeKind: "positive",
+      probability: positiveProbability,
+      text: positiveText,
+      tone: "positive",
+    },
+    {
+      outcomeKind: "negative",
+      probability: negativeProbability,
+      text: negativeText,
+      tone: "negative",
+    },
+  ];
+}
+
+function deterministicPreviews(
+  previews: readonly CareerEventOutcomePreview[],
+): readonly CareerEventOutcomePreview[] {
+  return previews;
+}
+
+function neutralPreview(
+  text: string,
+): readonly CareerEventOutcomePreview[] {
+  return [
+    {
+      text,
+      tone: "neutral",
+    },
+  ];
+}
 
 export function createCareerEventPlan(input: {
   readonly mode: PacingMode;
@@ -546,7 +1146,10 @@ export function applyCareerEventChoice(input: {
       const variant =
         input.variantKey === "preseason_camp";
       const positive = outcome(
-        variant ? 0.65 : 0.7,
+        variant
+          ? CAREER_EVENT_PROBABILITIES
+              .trainingExtraPreseasonPositive
+          : CAREER_EVENT_PROBABILITIES.trainingExtraPositive,
         "positive",
       );
       modifiers.immediateOverallDelta = positive
@@ -563,7 +1166,10 @@ export function applyCareerEventChoice(input: {
       const variant =
         input.variantKey === "nutrition_plan";
       const positive = outcome(
-        variant ? 0.6 : 0.5,
+        variant
+          ? CAREER_EVENT_PROBABILITIES
+              .personalCoachNutritionPositive
+          : CAREER_EVENT_PROBABILITIES.personalCoachPositive,
         "positive",
       );
       modifiers.permanentOverallDelta = positive
@@ -575,7 +1181,11 @@ export function applyCareerEventChoice(input: {
       break;
     }
     case "mysterious_substance:consume": {
-      const negative = outcome(0.25, "negative");
+      const negative = outcome(
+        1 -
+          CAREER_EVENT_PROBABILITIES.mysteriousSubstancePositive,
+        "negative",
+      );
       outcomeKind = negative ? "negative" : "positive";
       modifiers.immediateOverallDelta = negative ? 0 : 5;
       modifiers.suspended = negative;
@@ -583,7 +1193,10 @@ export function applyCareerEventChoice(input: {
     }
     case "season_load:accept": {
       const positive = outcome(
-        input.variantKey === "double_session" ? 0.65 : 0.7,
+        input.variantKey === "double_session"
+          ? CAREER_EVENT_PROBABILITIES
+              .seasonLoadDoubleSessionPositive
+          : CAREER_EVENT_PROBABILITIES.seasonLoadPositive,
         "positive",
       );
       modifiers.roleOverride = positive
@@ -605,7 +1218,10 @@ export function applyCareerEventChoice(input: {
       outcomeKind = "negative";
       break;
     case "position_competition:compete": {
-      const positive = outcome(0.5, "positive");
+      const positive = outcome(
+        CAREER_EVENT_PROBABILITIES.positionCompetitionPositive,
+        "positive",
+      );
       modifiers.roleOverride = positive
         ? "starter"
         : "low_rotation";
@@ -644,7 +1260,10 @@ export function applyCareerEventChoice(input: {
       outcomeKind = "negative";
       break;
     case "giant_tattoo:accept": {
-      const positive = outcome(0.7, "positive");
+      const positive = outcome(
+        CAREER_EVENT_PROBABILITIES.giantTattooPositive,
+        "positive",
+      );
       outcomeKind = positive ? "positive" : "negative";
 
       if (positive) {
@@ -675,13 +1294,19 @@ export function applyCareerEventChoice(input: {
       modifiers.nationalTournamentParticipation = "skip";
       break;
     case "injury_at_peak:play_injured": {
-      const positive = outcome(0.8, "positive");
+      const positive = outcome(
+        CAREER_EVENT_PROBABILITIES.injuryAtPeakPlayPositive,
+        "positive",
+      );
       outcomeKind = positive ? "positive" : "negative";
       modifiers.immediateOverallDelta = -1;
       break;
     }
     case "injury_at_peak:recover": {
-      const positive = outcome(0.3, "positive");
+      const positive = outcome(
+        CAREER_EVENT_PROBABILITIES.injuryAtPeakRecoverPositive,
+        "positive",
+      );
       outcomeKind = positive ? "positive" : "negative";
       break;
     }
@@ -694,7 +1319,10 @@ export function applyCareerEventChoice(input: {
       break;
     case "decisive_penalty:left":
     case "decisive_penalty:right": {
-      const positive = outcome(0.5, "positive");
+      const positive = outcome(
+        CAREER_EVENT_PROBABILITIES.decisivePenaltyPositive,
+        "positive",
+      );
       outcomeKind = positive ? "positive" : "negative";
       break;
     }
@@ -794,6 +1422,20 @@ function variantsForEvent(
   }
 
   return [];
+}
+
+function assertValidNarrativeVariant(
+  eventKey: CareerEventKey,
+  variantKey: CareerEventVariant | undefined,
+): void {
+  if (
+    variantKey !== undefined &&
+    !variantsForEvent(eventKey).includes(variantKey)
+  ) {
+    throw new RangeError(
+      `Unsupported variant ${variantKey} for ${eventKey}`,
+    );
+  }
 }
 
 function injuryOverallDelta(injuryType: InjuryType): number {

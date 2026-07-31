@@ -4,7 +4,10 @@ import type {
   ClassicDecision,
   ClassicDecisionOption,
 } from "../../domain/classicEngine";
-import type { CareerEventKey } from "../../domain/careerEvents";
+import {
+  selectCareerEventNarrative,
+  type CareerEventOutcomePreview,
+} from "../../domain/careerEvents";
 import {
   CLASSIC_CATALOG,
   type Club,
@@ -30,6 +33,7 @@ export type CareerClubPresentation = {
 export type CareerDecisionOptionPresentation = {
   readonly club: CareerClubPresentation | null;
   readonly id: string;
+  readonly outcomePreviews: readonly CareerEventOutcomePreview[];
   readonly role: string;
   readonly roleTone:
     | "danger"
@@ -166,122 +170,6 @@ const DECISION_COPY: Readonly<
   },
 };
 
-const EVENT_COPY: Readonly<
-  Record<CareerEventKey, { readonly description: string; readonly title: string }>
-> = {
-  club_crisis: {
-    description: "俱乐部正经历动荡。你准备怎么面对？",
-    title: "俱乐部危机",
-  },
-  club_national_team_conflict: {
-    description: "俱乐部和国家队的赛程撞在了一起。",
-    title: "征召冲突",
-  },
-  club_priority: {
-    description: "赛程太密集了，只能把精力放在一条战线。",
-    title: "赛季取舍",
-  },
-  controversial_statement: {
-    description: "一句话把你推上了风口浪尖。",
-    title: "争议发言",
-  },
-  decisive_penalty: {
-    description: "决定冠军的点球就在你脚下。踢哪边？",
-    title: "决胜点球",
-  },
-  fan_backlash: {
-    description: "看台上的质疑声越来越大。",
-    title: "球迷倒戈",
-  },
-  finish_high_school: {
-    description: "你还有机会完成高中学业。",
-    title: "回到课堂",
-  },
-  foreign_grandfather: {
-    description: "另一支国家队向你发出了邀请。",
-    title: "血缘选择",
-  },
-  giant_tattoo: {
-    description: "有人提议把信念永久留在皮肤上。",
-    title: "巨幅纹身",
-  },
-  injury: {
-    description: "伤病打断了你的节奏，只能耐心恢复。",
-    title: "意外伤病",
-  },
-  injury_at_peak: {
-    description: "最重要的比赛就在眼前，但你的身体亮起红灯。",
-    title: "带伤上阵",
-  },
-  mysterious_substance: {
-    description: "有人递来一瓶成分不明的补剂。",
-    title: "神秘补剂",
-  },
-  personal_coach: {
-    description: "一位私人教练愿意为你制定专属计划。",
-    title: "私人教练",
-  },
-  position_change: {
-    description: "教练认为换个位置会打开新的可能。",
-    title: "位置改造",
-  },
-  position_competition: {
-    description: "新援到来，你的位置不再稳固。",
-    title: "位置竞争",
-  },
-  return_home: {
-    description: "家乡球队希望你回去成为旗帜。",
-    title: "回到故乡",
-  },
-  rival_offer: {
-    description: "死敌送来了一份很难拒绝的合同。",
-    title: "死敌邀约",
-  },
-  season_load: {
-    description: "教练组希望你承担更多比赛和训练任务。",
-    title: "赛季负荷",
-  },
-  tax_trouble: {
-    description: "场外的税务问题正在变得棘手。",
-    title: "税务风波",
-  },
-  training_extra: {
-    description: "训练结束后，教练问你要不要再加一组。",
-    title: "额外训练",
-  },
-  triumphant_return: {
-    description: "最初的俱乐部希望功成名就的你回家。",
-    title: "荣归故里",
-  },
-  unexpected_prospect: {
-    description: "一位天赋惊人的年轻人来到了更衣室。",
-    title: "后起之秀",
-  },
-};
-
-const EVENT_OPTION_LABELS: Readonly<Record<string, string>> = {
-  accept: "接受",
-  apologize: "公开道歉",
-  comply: "服从俱乐部",
-  compete: "正面竞争",
-  consume: "喝下补剂",
-  continue: "专心康复",
-  go_anyway: "前往国家队",
-  keep_national_team: "留在当前国家队",
-  left: "踢向左边",
-  mentor: "主动带他训练",
-  play_injured: "带伤出战",
-  prioritize_continental: "优先洲际赛事",
-  prioritize_league: "优先联赛",
-  recover: "安心恢复",
-  reject: "拒绝",
-  right: "踢向右边",
-  stay_abroad: "继续留洋",
-  stay_and_fight: "留下来战斗",
-  stay_calm: "保持冷静",
-  switch_national_team: "更换国家队",
-};
-
 export function createCareerPresentation({
   career,
   isRevealing,
@@ -387,7 +275,13 @@ function decisionPresentation(
 
   const copy =
     decision.type === "career_event" && decision.event
-      ? EVENT_COPY[decision.event.eventKey]
+      ? selectCareerEventNarrative({
+          eventKey: decision.event.eventKey,
+          injuryType: decision.event.injuryType,
+          targetClubTrophy: decision.event.targetClubTrophy,
+          targetTrophy: decision.event.targetTrophy,
+          variantKey: decision.event.variantKey,
+        })
       : DECISION_COPY[
           decision.type as Exclude<
             ClassicDecision["type"],
@@ -439,10 +333,25 @@ function optionPresentation(
           overall: career.overall,
           roleGroup: roleGroupForPosition(career.identity.position),
         });
+  const eventOption =
+    decision.type === "career_event" &&
+    decision.event !== undefined &&
+    option.optionKey !== undefined
+      ? selectCareerEventNarrative({
+          eventKey: decision.event.eventKey,
+          injuryType: decision.event.injuryType,
+          optionKey: option.optionKey,
+          targetClubTrophy: decision.event.targetClubTrophy,
+          targetTrophy: decision.event.targetTrophy,
+          variantKey: decision.event.variantKey,
+        }).option
+      : null;
+  const outcomePreviews = eventOption?.previews ?? [];
 
   return {
     club: club === null ? null : clubPresentation(club),
     id: option.id,
+    outcomePreviews,
     role: role === null ? "" : roleLabel(role),
     roleTone: role === null ? "positive" : roleTone(role),
     stars:
@@ -451,11 +360,15 @@ function optionPresentation(
         : "★".repeat(club.internationalReputation) || "—",
     subtitle:
       club === null
-        ? option.optionKey === undefined
-          ? ""
-          : EVENT_OPTION_LABELS[option.optionKey] ?? option.optionKey
+        ? formatOutcomePreviews(outcomePreviews)
         : clubSubtitle(club),
-    title: optionTitle(career, decision, option, club),
+    title: optionTitle(
+      career,
+      decision,
+      option,
+      club,
+      eventOption?.label ?? null,
+    ),
   };
 }
 
@@ -464,6 +377,7 @@ function optionTitle(
   decision: ClassicDecision,
   option: ClassicDecisionOption,
   club: Club | null,
+  eventOptionLabel: string | null,
 ): string {
   if (option.kind === "retire") {
     return "现在退役";
@@ -490,11 +404,23 @@ function optionTitle(
     return `加盟 ${club.nameZh}`;
   }
 
-  if (option.optionKey !== undefined) {
-    return EVENT_OPTION_LABELS[option.optionKey] ?? option.label;
+  if (eventOptionLabel !== null) {
+    return eventOptionLabel;
   }
 
   return option.label;
+}
+
+function formatOutcomePreviews(
+  previews: readonly CareerEventOutcomePreview[],
+): string {
+  return previews
+    .map((preview) =>
+      preview.probability === undefined
+        ? preview.text
+        : `${Math.round(preview.probability * 100)}% ${preview.text}`,
+    )
+    .join(" / ");
 }
 
 function seasonPresentation(

@@ -343,6 +343,7 @@ function clubOption(
   return {
     club,
     id,
+    outcomePreviews: [],
     role,
     roleTone,
     stars,

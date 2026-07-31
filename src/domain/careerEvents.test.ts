@@ -4,6 +4,7 @@ import { createClassicRngState } from "./classicRng";
 import {
   CAREER_EVENT_KEYS,
   CAREER_EVENT_OPTIONS,
+  CAREER_EVENT_PROBABILITIES,
   CAREER_EVENT_VARIANTS,
   CAREER_EVENT_WEIGHTS,
   CAREER_INJURY_CHANCE,
@@ -16,6 +17,7 @@ import {
   createCareerEventPlan,
   eligibleCareerEventKeys,
   nextCareerEventSlot,
+  selectCareerEventNarrative,
   selectCareerEvent,
   suspensionSeasonsForEvent,
 } from "./careerEvents";
@@ -194,6 +196,127 @@ describe("Classic career-event catalog", () => {
       injury_at_peak: ["play_injured", "recover"],
       injury: ["continue"],
       decisive_penalty: ["left", "right"],
+    });
+  });
+
+  it("gives every event and variant distinct option copy with exact outcome previews", () => {
+    const probabilisticOptions = new Map([
+      ["training_extra:accept", [0.7, 0.3]],
+      ["personal_coach:accept", [0.5, 0.5]],
+      ["mysterious_substance:consume", [0.75, 0.25]],
+      ["season_load:accept", [0.7, 0.3]],
+      ["position_competition:compete", [0.5, 0.5]],
+      ["giant_tattoo:accept", [0.7, 0.3]],
+      ["injury_at_peak:play_injured", [0.8, 0.2]],
+      ["injury_at_peak:recover", [0.3, 0.7]],
+      ["decisive_penalty:left", [0.5, 0.5]],
+      ["decisive_penalty:right", [0.5, 0.5]],
+    ]);
+
+    expect(CAREER_EVENT_PROBABILITIES).toEqual({
+      decisivePenaltyPositive: 0.5,
+      giantTattooPositive: 0.7,
+      injuryAtPeakPlayPositive: 0.8,
+      injuryAtPeakRecoverPositive: 0.3,
+      mysteriousSubstancePositive: 0.75,
+      personalCoachPositive: 0.5,
+      personalCoachNutritionPositive: 0.6,
+      positionCompetitionPositive: 0.5,
+      seasonLoadDoubleSessionPositive: 0.65,
+      seasonLoadPositive: 0.7,
+      trainingExtraPositive: 0.7,
+      trainingExtraPreseasonPositive: 0.65,
+    });
+
+    for (const eventKey of CAREER_EVENT_KEYS) {
+      const event = selectCareerEventNarrative({ eventKey });
+
+      expect(event.title).not.toBe("");
+      expect(event.description).not.toBe("");
+
+      for (const optionKey of CAREER_EVENT_OPTIONS[eventKey]) {
+        const option = selectCareerEventNarrative({
+          eventKey,
+          optionKey,
+        }).option;
+        const key = `${eventKey}:${optionKey}`;
+
+        expect(option, key).not.toBeNull();
+        expect(option!.label, key).not.toBe(event.title);
+        expect(option!.previews.length, key).toBeGreaterThan(0);
+        expect(
+          option!.previews.every(
+            (preview) =>
+              preview.text.length > 0 &&
+              preview.text !== option!.label,
+          ),
+          key,
+        ).toBe(true);
+
+        const probabilities = option!.previews.map(
+          ({ probability }) => probability,
+        );
+        const expectedProbabilities = probabilisticOptions.get(key);
+
+        if (expectedProbabilities === undefined) {
+          expect(probabilities, key).toEqual(
+            probabilities.map(() => undefined),
+          );
+        } else {
+          expect(probabilities, key).toEqual(
+            expectedProbabilities,
+          );
+          expect(
+            probabilities.reduce<number>(
+              (total, probability) =>
+                total + (probability ?? 0),
+              0,
+            ),
+            key,
+          ).toBeCloseTo(1);
+          expect(
+            option!.previews.map(({ outcomeKind }) => outcomeKind),
+            key,
+          ).toEqual(["positive", "negative"]);
+        }
+      }
+    }
+
+    expect(
+      selectCareerEventNarrative({
+        eventKey: "training_extra",
+        optionKey: "accept",
+        variantKey: "preseason_camp",
+      }),
+    ).toMatchObject({
+      option: {
+        label: "完成季前加练",
+        previews: [
+          { outcomeKind: "positive", probability: 0.65 },
+          { outcomeKind: "negative", probability: 0.35 },
+        ],
+      },
+      title: "季前集训",
+    });
+    expect(
+      selectCareerEventNarrative({
+        eventKey: "personal_coach",
+        optionKey: "accept",
+        variantKey: "nutrition_plan",
+      }).option?.previews.map(({ probability }) => probability),
+    ).toEqual([0.6, 0.4]);
+    expect(
+      selectCareerEventNarrative({
+        eventKey: "season_load",
+        optionKey: "accept",
+        variantKey: "double_session",
+      }).option,
+    ).toMatchObject({
+      label: "接受双倍训练",
+      previews: [
+        { outcomeKind: "positive", probability: 0.65 },
+        { outcomeKind: "negative", probability: 0.35 },
+      ],
     });
   });
 });
