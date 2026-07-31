@@ -224,8 +224,8 @@ function CountryButton({
       aria-pressed={selected}
       className={
         selected
-          ? "flex min-h-14 items-center gap-2 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 p-2.5 text-left"
-          : "flex min-h-14 items-center gap-2 rounded-[10px] border border-enhanced-line bg-enhanced-surface p-2.5 text-left"
+          ? "flex min-h-14 items-center gap-2 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 p-3 text-left"
+          : "flex min-h-14 items-center gap-2 rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left"
       }
       data-country-confederation={country.confederation}
       data-enhanced-country={country.fifaCode}

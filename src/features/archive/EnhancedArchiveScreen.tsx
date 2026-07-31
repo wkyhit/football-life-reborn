@@ -455,11 +455,11 @@ export function EnhancedArchiveScreen({
                         {entry.displayName}
                       </h2>
                       {entry.id === activeArchiveId ? (
-                        <span className="rounded-full bg-enhanced-pitch/10 px-2 py-0.5 text-xs font-bold text-enhanced-pitch">
+                        <span className="rounded-full bg-enhanced-pitch/10 px-2 py-1 text-xs font-bold text-enhanced-pitch">
                           当前
                         </span>
                       ) : null}
-                      <span className="rounded-full border border-enhanced-line px-2 py-0.5 text-xs font-bold text-enhanced-supporting">
+                      <span className="rounded-full border border-enhanced-line px-2 py-1 text-xs font-bold text-enhanced-supporting">
                         {entry.status === "retired"
                           ? "已退役"
                           : "进行中"}
@@ -1090,14 +1090,14 @@ function CurveCard({
                   className="border-t border-enhanced-line-soft"
                   key={point.age}
                 >
-                  <td className="py-1.5">{point.age}</td>
-                  <td className="py-1.5 text-right">
+                  <td className="py-2">{point.age}</td>
+                  <td className="py-2 text-right">
                     {formatCurveValue(point.left, marketValue)}
                   </td>
-                  <td className="py-1.5 text-right">
+                  <td className="py-2 text-right">
                     {formatCurveValue(point.right, marketValue)}
                   </td>
-                  <td className="py-1.5 text-right text-enhanced-pitch">
+                  <td className="py-2 text-right text-enhanced-pitch">
                     {formatCurveValue(point.delta, marketValue)}
                   </td>
                 </tr>

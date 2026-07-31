@@ -49,7 +49,7 @@ export function ChallengeProgressPanel({
         </span>
       </div>
 
-      <ul className="mt-2.5 space-y-2">
+      <ul className="mt-3 space-y-2">
         {progress.rules.map((rule) => (
           <li
             className="grid grid-cols-[18px_minmax(0,1fr)_auto] items-start gap-x-2"
@@ -59,7 +59,7 @@ export function ChallengeProgressPanel({
           >
             <span
               aria-hidden="true"
-              className={`mt-0.5 font-enhanced-mono text-sm ${ruleStateClass(rule.state)}`}
+              className={`mt-1 font-enhanced-mono text-sm ${ruleStateClass(rule.state)}`}
             >
               {ruleStateMark(rule.state)}
             </span>
@@ -67,11 +67,11 @@ export function ChallengeProgressPanel({
               <span className="block text-sm font-bold">
                 {rule.label}
               </span>
-              <span className="mt-0.5 block text-xs leading-relaxed text-enhanced-supporting">
+              <span className="mt-1 block text-xs leading-relaxed text-enhanced-supporting">
                 {rule.detail}
               </span>
             </span>
-            <span className="pt-0.5 font-enhanced-mono text-xs font-bold tabular-nums text-enhanced-ink-2">
+            <span className="pt-1 font-enhanced-mono text-xs font-bold tabular-nums text-enhanced-ink-2">
               {rule.current} / {rule.target}
             </span>
           </li>

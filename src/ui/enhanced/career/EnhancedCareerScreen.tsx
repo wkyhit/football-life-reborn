@@ -101,21 +101,21 @@ function CareerHeader({
           <span className="text-xs font-bold leading-none text-enhanced-trophy">
             能力
           </span>
-          <strong className="mt-0.5 text-2xl font-black leading-none tabular-nums">
+          <strong className="mt-1 text-2xl font-black leading-none tabular-nums">
             {header.overall}
           </strong>
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-1.5 py-0.5 text-xs font-bold text-enhanced-ink-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-2 py-1 text-xs font-bold text-enhanced-ink-2">
               {header.countryFlag} {header.countryCode}
             </span>
-            <span className="rounded-[6px] border border-enhanced-pitch/20 bg-enhanced-pitch/10 px-1.5 py-0.5 text-xs font-bold text-enhanced-pitch">
+            <span className="rounded-[6px] border border-enhanced-pitch/20 bg-enhanced-pitch/10 px-2 py-1 text-xs font-bold text-enhanced-pitch">
               #{header.number} {header.position}
             </span>
           </div>
-          <div className="mt-1.5 flex min-w-0 items-center gap-2">
+          <div className="mt-2 flex min-w-0 items-center gap-2">
             {header.club ? (
               <ClubIdentity club={header.club} size={22} />
             ) : null}
@@ -150,7 +150,7 @@ function CareerHeader({
               <dt className="text-xs font-bold text-enhanced-supporting">
                 {label}
               </dt>
-              <dd className="mt-0.5 text-base font-extrabold tabular-nums lg:text-lg">
+              <dd className="mt-1 text-base font-extrabold tabular-nums lg:text-lg">
                 {value}
               </dd>
             </div>
@@ -199,7 +199,7 @@ function CareerTimeline({
       </div>
 
       <div className="overflow-hidden rounded-[10px] border border-enhanced-line bg-enhanced-canvas/10">
-        <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-enhanced-line px-2.5 py-2 text-xs font-bold text-enhanced-supporting">
+        <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-enhanced-line px-3 py-2 text-xs font-bold text-enhanced-supporting">
           <span>岁</span>
           <span>俱乐部</span>
           <span className="text-center">能力</span>
@@ -212,7 +212,7 @@ function CareerTimeline({
           {view.timeline.map((row) => (
             <TimelineRow key={row.age} row={row} />
           ))}
-          <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 bg-enhanced-surface px-2.5 py-2">
+          <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 bg-enhanced-surface px-3 py-2">
             <span className="text-center text-sm">
               {view.nationalTeam.countryFlag}
             </span>
@@ -242,7 +242,7 @@ function TimelineRow({
   readonly row: CareerTimelineRowPresentation;
 }) {
   const gridClass =
-    "grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 px-2.5 py-2";
+    "grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 px-3 py-2";
 
   if (row.kind === "current") {
     return (
@@ -308,7 +308,7 @@ function TimelineRow({
         </span>
       </span>
       <span className="text-center">
-        <span className="inline-block min-w-8 rounded-[6px] border border-enhanced-trophy/35 bg-enhanced-surface px-1 py-0.5 text-xs font-black tabular-nums text-enhanced-trophy">
+        <span className="inline-block min-w-8 rounded-[6px] border border-enhanced-trophy/35 bg-enhanced-surface px-1 py-1 text-xs font-black tabular-nums text-enhanced-trophy">
           {row.overall}
         </span>
       </span>
@@ -355,7 +355,7 @@ function DecisionRail({
 }) {
   const { panel } = view;
   const railClass =
-    "min-h-0 max-h-[48dvh] overflow-y-auto overscroll-contain border-t border-enhanced-line bg-enhanced-surface px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:px-6 lg:h-full lg:max-h-none lg:w-[380px] lg:rounded-[16px] lg:border lg:p-5";
+    "min-h-0 max-h-[48dvh] overflow-y-auto overscroll-contain border-t border-enhanced-line bg-enhanced-surface px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-4 sm:px-6 lg:h-full lg:max-h-none lg:w-[380px] lg:rounded-[16px] lg:border lg:p-5";
   const simulating = panel.kind === "simulating";
   const labelledBy =
     panel.kind === "event_result"
@@ -412,7 +412,7 @@ function DecisionRail({
             MILESTONE · {panel.age} 岁 · {panel.club.shortName}
           </p>
           <h2
-            className="mt-1.5 text-[22px] font-extrabold leading-tight"
+            className="mt-2 text-[22px] font-extrabold leading-tight"
             id="enhanced-milestone-heading"
           >
             {panel.title}
@@ -437,7 +437,7 @@ function DecisionRail({
             DECISION RAIL · {panel.age} 岁
           </p>
           <h2
-            className="mt-1.5 text-[22px] font-extrabold leading-tight"
+            className="mt-2 text-[22px] font-extrabold leading-tight"
             id="enhanced-decision-heading"
           >
             {panel.title}
@@ -445,7 +445,7 @@ function DecisionRail({
           <p className="mt-2 text-[13px] leading-[1.7] text-enhanced-supporting">
             {panel.description}
           </p>
-          <div className="mt-4 space-y-2.5">
+          <div className="mt-4 space-y-3">
             {panel.options.map((option) => (
               <DecisionOption
                 key={option.id}
@@ -471,7 +471,7 @@ function DecisionOption({
 }) {
   return (
     <button
-      className="block min-h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left outline-none transition-[transform,opacity] hover:border-enhanced-pitch/40 hover:bg-enhanced-pitch/[0.06] focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:translate-y-px motion-reduce:transform-none motion-reduce:transition-opacity"
+      className="block min-h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left outline-none transition-[transform,opacity] focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:translate-y-px motion-reduce:transform-none motion-reduce:transition-opacity"
       onClick={onChoose}
       type="button"
     >
@@ -493,7 +493,7 @@ function DecisionOption({
             {option.title}
           </span>
           <span
-            className={`mt-0.5 block text-xs text-enhanced-supporting ${
+            className={`mt-1 block text-xs text-enhanced-supporting ${
               option.club ? "truncate" : "whitespace-normal leading-4"
             }`}
           >

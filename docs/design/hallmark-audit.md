@@ -300,3 +300,85 @@ The redesign should preserve the workbench geometry and deterministic
 information hierarchy, then bring setup, summary/share, archive,
 branching, replay, recovery, loading, error, and install surfaces into
 one approved system.
+
+## Final release audit
+
+Audit date: `2026-07-31`
+
+Runner: `ego-browser`
+
+Mode: post-redesign release audit. The pre-redesign report above remains
+unchanged as the historical baseline; this section records the released
+Enhanced result.
+
+Summary — 0 critical · 0 major · 0 minor
+
+Verdict — the complete Enhanced application now shares one approved
+playful night-match-ledger system without changing its deterministic
+product or the frozen Classic compatibility surface.
+
+Pre-emit critique — P5 H5 E4 S5 R5 V4
+
+Slop test — 58 / 58 ✓
+
+The machine-readable gate-by-gate answers and concrete evidence are in
+`.hallmark/release.json`.
+
+### Finding closure
+
+- All five critical findings closed: every Enhanced route now owns its
+  presentation, summary is an Index-First record, replay failures use
+  the recovery document family, lazy boundaries have state-matched
+  loading surfaces, and the three bundled font roles are locked.
+- All twelve major findings closed: route code consumes named tokens;
+  repeated eyebrow/card/glass/shadow defaults were removed; challenge
+  actions are one-line affordances; navigation, install, copy, error,
+  success, disabled, loading, and input states use one component voice;
+  and internal identifiers are presented through product labels.
+- Both minor findings closed: archive and comparison now use ledger
+  rhythm, full-width record structure, and route-specific density
+  instead of equal card padding or an accidental desktop void.
+
+### Rendered acceptance
+
+- `ego-browser` task space `24` captured and reviewed every required
+  Enhanced surface. All 19 inventory entries remain `approved`.
+- Six representative route states were scanned at every integer width
+  from 320 through 1920 CSS px: 9,606 rendered viewports, zero document
+  horizontal overflow, zero heading overflow, and zero wrapped
+  one-line action labels.
+- At exactly 1280×800, the landing measures 32 px start padding and
+  48 px end padding (1.5×); its primary action ends at 505.875 px and
+  remains visible without scrolling.
+- At a 640×415 CSS viewport with device scale factor 2, the user journey
+  completed from landing through nationality, identity, position, and
+  into the workbench with zero horizontal overflow. This is the pinned
+  200 percent zoom proof.
+- The application AX subtree has zero unnamed buttons, links, inputs,
+  or selects. Actual keyboard Tab focus computed to a 2 px focus-token
+  outline at 1 px offset on a 44 px action.
+- Body, control, and focus contrast measured 7.68:1, 4.4:1, and 12.4:1.
+  Reduced motion remains opacity-only at 150 ms with spatial transform
+  disabled.
+
+Classic compatibility — byte-identical screenshot and unchanged
+deterministic/storage contracts remain the release boundary. The final
+regression commands verify that boundary rather than regenerating it.
+
+### Final regression
+
+- `npm run lint`: pass.
+- `npm run typecheck`: pass.
+- `npm test -- --reporter=dot`: 52 files, 285 tests, all pass.
+- `npm run test:golden -- --reporter=dot`: 40 Classic golden tests,
+  all pass.
+- `npm run test:property -- --reporter=dot`: the 10,000-seed invariant
+  suite passes.
+- `npm run test:budget`: production build and 13 artifact-budget tests
+  pass, including the frozen Classic screenshot digest. Final gzip
+  sizes are 114.31 KiB initial JavaScript, 13.87 KiB CSS, and 6.23 KiB
+  Enhanced onboarding.
+- Playwright Chromium commands were intentionally not run for this
+  acceptance. Per the delivery constraint, all browser, responsive,
+  keyboard, zoom, AX-tree, visual, and deployment checks use
+  `ego-browser`.

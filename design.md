@@ -110,7 +110,10 @@ Stamp:
 
 Accent occupies at most 3% of a normal viewport and 5% in a task-dense rail. Warning and error are semantic signals, not decorative accents. A selected, positive, warning, or error state always carries text, an icon, a check, or an ARIA state in addition to colour.
 
-Focus uses a two-ring treatment: a 2 px paper separator plus a 3 px focus outer ring. This keeps the indicator visible against both the dark canvas and the green primary-action fill.
+Focus reserves a transparent 2 px outline at rest, then swaps it to the
+focus token at a 1 px offset without changing geometry. A 1 px paper
+box-shadow separates that outline from either a dark canvas or the green
+primary-action fill.
 
 ## 5. Typography
 

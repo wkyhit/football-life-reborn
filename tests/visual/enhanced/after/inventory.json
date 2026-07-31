@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-31T04:49:25Z",
+  "generatedAt": "2026-07-31T05:12:00Z",
   "baselineCommit": "76c98b8a3974aa8db955177d6bf632c70e0f1f88",
   "runner": "ego-browser",
   "taskSpaceId": 24,
-  "slice": 5,
+  "slice": 6,
   "status": "approved",
   "viewportWidths": [
     320,
@@ -16,6 +16,21 @@
   ],
   "assertions": {
     "documentHorizontalOverflowPx": 0,
+    "continuousWidthSweep": {
+      "minimumWidth": 320,
+      "maximumWidth": 1920,
+      "step": 1,
+      "widthsPerRoute": 1601,
+      "routes": [
+        "landing",
+        "setup-nationality",
+        "archive",
+        "career-workbench",
+        "career-challenge",
+        "summary"
+      ],
+      "maximumHorizontalOverflowPx": 0
+    },
     "minimumInteractiveTargetPx": 44,
     "sharedActionLabelWhiteSpace": "nowrap",
     "setupProgress": [
@@ -55,7 +70,24 @@
       "completion": true,
       "horizontalOverflow": 0
     },
+    "fold1280x800": {
+      "primaryActionVisible": true,
+      "paddingBlockStartPx": 32,
+      "paddingBlockEndPx": 48,
+      "paddingRatio": 1.5,
+      "horizontalOverflow": 0
+    },
     "keyboardOnly": true,
+    "accessibilityTree": {
+      "runner": "ego-browser CDP Accessibility",
+      "unnamedInteractiveElements": 0
+    },
+    "focusRing": {
+      "keyboardFocused": true,
+      "outlineCssPixels": 2,
+      "outlineOffsetCssPixels": 1,
+      "contrast": 12.4
+    },
     "mobileFocusZoom": {
       "fontCssPixels": 16,
       "horizontalOffset": 0,
@@ -90,6 +122,7 @@
         "tests/visual/enhanced/after/landing-375x812.png",
         "tests/visual/enhanced/after/landing-414x896.png",
         "tests/visual/enhanced/after/landing-768x1024.png",
+        "tests/visual/enhanced/after/landing-1280x800.png",
         "tests/visual/enhanced/after/landing-1280x830.png",
         "tests/visual/enhanced/after/landing-1440x900.png"
       ]
@@ -279,7 +312,8 @@
         "src/ui/enhanced/summary/EnhancedSummaryScreen.tsx"
       ],
       "evidence": [
-        "tests/visual/enhanced/after/interaction-states-390x844.png"
+        "tests/visual/enhanced/after/interaction-states-390x844.png",
+        "tests/visual/enhanced/after/focus-ring-390x844.png"
       ]
     },
     {

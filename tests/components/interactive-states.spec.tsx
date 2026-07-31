@@ -348,8 +348,8 @@ describe("Enhanced focus and motion contract", () => {
   });
 });
 
-describe("ego-browser Slice 5 acceptance", () => {
-  it("persists responsive, zoom, keyboard, contrast, target, and motion evidence", () => {
+describe("ego-browser final acceptance", () => {
+  it("persists final responsive, zoom, keyboard, contrast, target, and motion evidence", () => {
     const inventory = JSON.parse(
       readFileSync(AFTER_INVENTORY_PATH, "utf8"),
     ) as {
@@ -392,7 +392,7 @@ describe("ego-browser Slice 5 acceptance", () => {
 
     expect(inventory).toMatchObject({
       runner: "ego-browser",
-      slice: 5,
+      slice: 6,
     });
     expect(inventory.acceptance?.widths).toEqual(
       [320, 375, 414, 768, 1280, 1440].map((width) => ({

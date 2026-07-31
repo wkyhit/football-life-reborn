@@ -38,6 +38,11 @@ export function EnhancedLandingScreen({
   const [challenges] = useState(
     () => dailyChallenges ?? getDailyChallenges(),
   );
+  const [describedFamily, setDescribedFamily] = useState(
+    () => challenges[0]!.family,
+  );
+  const describedDefinition =
+    challengeDefinition(describedFamily);
 
   return (
     <main
@@ -66,7 +71,7 @@ export function EnhancedLandingScreen({
       />
 
       {/* Hallmark · genre: playful · macrostructure: Narrative Workflow · theme: custom (tuned) · design-system: design.md · designed-as-app */}
-      <section className="mx-auto flex min-h-0 w-full max-w-[var(--shell-max)] flex-1 flex-col px-4 py-8 sm:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-12 lg:px-8 lg:py-10">
+      <section className="mx-auto flex min-h-0 w-full max-w-[var(--shell-max)] flex-1 flex-col px-4 pt-6 pb-8 sm:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-12 lg:px-8 lg:pt-8 lg:pb-12">
         <div className="flex flex-col justify-between border-b border-enhanced-line pb-8 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-12">
           <div>
             <p className="font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-pitch">
@@ -91,7 +96,7 @@ export function EnhancedLandingScreen({
                 <dd className="text-xl font-extrabold tabular-nums">
                   {value}
                 </dd>
-                <dt className="mt-0.5 text-xs font-bold text-enhanced-supporting">
+                <dt className="mt-1 text-xs font-bold text-enhanced-supporting">
                   {label}
                 </dt>
               </div>
@@ -153,13 +158,13 @@ export function EnhancedLandingScreen({
                       {selected ? (
                         <span
                           aria-hidden="true"
-                          className="ml-1.5"
+                          className="ml-2"
                         >
                           ✓
                         </span>
                       ) : null}
                     </span>
-                    <span className="mt-0.5 block text-xs">
+                    <span className="mt-1 block text-xs">
                       {detail}
                       {selected ? " · 已选择" : ""}
                     </span>
@@ -194,24 +199,28 @@ export function EnhancedLandingScreen({
                     challenge.family,
                   );
 
+                  const descriptionId = `daily-challenge-${challenge.id}-description`;
+
                   return (
-                    <button
-                      aria-label={`开始${definition.title}挑战`}
-                      className="group min-h-14 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/[0.05] px-3 py-2 text-left outline-none transition-[transform,opacity] hover:border-enhanced-pitch/50 focus-visible:ring-2 focus-visible:ring-enhanced-focus active:translate-y-px"
+                    <article
+                      className="rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/[0.05]"
+                      data-daily-challenge-record=""
                       key={challenge.id}
-                      onClick={() =>
-                        onBeginChallenge(challenge, mode)
-                      }
-                      type="button"
                     >
-                      <span className="flex items-center justify-between gap-3">
-                        <span>
-                          <span className="block text-[13px] font-extrabold text-enhanced-strong">
-                            {definition.title}
-                          </span>
-                          <span className="mt-0.5 block line-clamp-1 text-xs text-enhanced-supporting">
-                            {definition.description}
-                          </span>
+                      <button
+                        aria-describedby={descriptionId}
+                        aria-label={`开始${definition.title}挑战`}
+                        className="flex min-h-11 w-full items-center justify-between gap-3 px-3 text-left"
+                        onClick={() =>
+                          onBeginChallenge(challenge, mode)
+                        }
+                        onFocus={() =>
+                          setDescribedFamily(challenge.family)
+                        }
+                        type="button"
+                      >
+                        <span className="min-w-0 truncate text-[13px] font-extrabold text-enhanced-strong">
+                          {definition.title}
                         </span>
                         <span
                           aria-hidden="true"
@@ -219,11 +228,20 @@ export function EnhancedLandingScreen({
                         >
                           ›
                         </span>
+                      </button>
+                      <span className="sr-only" id={descriptionId}>
+                        {definition.description}
                       </span>
-                    </button>
+                    </article>
                   );
                 })}
               </div>
+              <p
+                className="mt-2 min-h-4 line-clamp-1 text-xs leading-4 text-enhanced-supporting"
+                data-daily-challenge-description=""
+              >
+                {describedDefinition.description}
+              </p>
             </section>
           ) : null}
 

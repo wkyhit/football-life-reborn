@@ -1,3 +1,12 @@
+/*
+ * Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4
+ * macrostructure: Narrative Workflow / Workbench / Index-First
+ * contrast: pass (40–41)
+ * nav: N7 · footer: Ft5 · slop: pass (42–45)
+ * honest: pass (46) · chrome: pass (47) · tokens: pass (48)
+ * responsive: pass (49) · icons: pass (30)
+ * mobile: pass (34, 49, 50–57)
+ */
 @import "../tokens.css";
 @import "./ui/classic/tokens.css";
 @import "tailwindcss";
@@ -98,11 +107,22 @@
   font-variant-numeric: tabular-nums;
 }
 
+[data-enhanced-shell] :is(h1, h2, h3, h4, h5, h6) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+[data-enhanced-shell]
+  :where(button, a, input, select, textarea) {
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+}
+
 [data-enhanced-shell]
   :where(button, a, input, select, textarea):focus-visible {
-  outline: 2px solid var(--color-paper);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 5px var(--color-focus);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 1px var(--color-paper);
   transition: none;
 }
 

@@ -13,6 +13,8 @@ career archive, validated import/export, copy-first migration,
 decision-boundary parallel lives, branch comparison, and a causal ledger.
 Phase 6 adds three deterministic daily challenges, live rule progress,
 challenge result cards, and storage-independent replay links.
+Phase 7 gives the complete Enhanced application one Hallmark-governed
+visual system while preserving the Classic and simulation contracts.
 
 ## Phase 1 scope
 
@@ -115,6 +117,33 @@ from ordinary careers. Completed challenge paths can be copied as compact
 [`docs/challenges-and-replay.md`](docs/challenges-and-replay.md) for the
 rules, replay schema, version policy, privacy properties, and
 non-competitive product boundary.
+
+## Enhanced and Classic UI contract
+
+Enhanced is governed by the approved root [design.md](./design.md).
+[tokens.css](./tokens.css) is its canonical runtime token source and
+[tokens.json](./tokens.json) is the portable DTCG export. The system uses
+three route families — Narrative Workflow / Workbench / Index-First —
+with one playful night-match-ledger voice across setup, career, archive,
+summary/share, branching, challenge, replay, recovery, and global states.
+
+Enhanced presentation changes remain additive:
+
+- route ownership, factual information architecture, engine/controller
+  behavior, deterministic replay, storage formats, and share-card
+  semantics do not change with the visual system;
+- page and component styling consumes named colour, typography, spacing,
+  radius, duration, and motion roles from the root system;
+- every interactive primitive exposes semantic default, hover,
+  focus-visible, active, disabled, loading, error, and success behavior;
+- the machine-readable release verdict lives at
+  `.hallmark/release.json`, with reviewed `ego-browser` evidence under
+  `tests/visual/enhanced/after/`.
+
+Classic is the frozen compatibility baseline. Files under
+`src/ui/classic/**`, Classic reference screenshots, the
+`2026-07-30-classic-v1` engine/content contract, and serialized career
+formats do not consume Enhanced tokens and must remain unchanged.
 
 ## UI modes and deployment
 
