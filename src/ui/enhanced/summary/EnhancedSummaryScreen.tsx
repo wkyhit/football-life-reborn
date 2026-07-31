@@ -71,7 +71,8 @@ export function EnhancedSummaryScreen({
       />
 
       <article
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-enhanced-focus"
+        className="min-h-0 flex-1 scroll-pb-6 overflow-y-auto overscroll-contain outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-enhanced-focus"
+        data-enhanced-summary-scroll=""
         tabIndex={0}
       >
         <div className="mx-auto w-full max-w-[var(--shell-max)] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
@@ -254,7 +255,10 @@ export function EnhancedSummaryScreen({
           <HonorRecords honors={view.honors} />
           <ClubRecords view={view} />
 
-          <section className="border-y border-enhanced-line py-5">
+          <section
+            className="scroll-mb-6 border-y border-enhanced-line py-5"
+            data-summary-last-record=""
+          >
             <p className="font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-supporting">
               Deterministic seed
             </p>
@@ -268,7 +272,10 @@ export function EnhancedSummaryScreen({
         </div>
       </article>
 
-      <footer className="shrink-0 border-t border-enhanced-line bg-enhanced-canvas px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:px-6 lg:px-8">
+      <footer
+        className="shrink-0 border-t border-enhanced-line bg-enhanced-canvas px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:px-6 lg:px-8"
+        data-enhanced-summary-footer=""
+      >
         <div className="mx-auto grid w-full max-w-[var(--shell-max)] grid-cols-2 gap-3">
           <EnhancedAction
             className="min-h-12 w-full"

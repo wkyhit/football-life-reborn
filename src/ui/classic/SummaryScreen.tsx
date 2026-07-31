@@ -135,7 +135,10 @@ export function SummaryScreen({
           ) : null}
           <SummaryHonors honors={view.honors} />
           <SummaryClubs view={view} />
-          <div className="mt-4 border-t border-zinc-800 pt-3 text-center text-[10px] text-zinc-600">
+          <div
+            className="mt-4 border-t border-zinc-800 pt-3 text-center text-[10px] text-zinc-600"
+            data-summary-last-record=""
+          >
             足球生涯模拟器 · {view.seasonCount} 个赛季
           </div>
         </article>

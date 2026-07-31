@@ -72,7 +72,10 @@ export function EnhancedLandingScreen({
 
       {/* Hallmark · genre: playful · macrostructure: Narrative Workflow · theme: custom (tuned) · design-system: design.md · designed-as-app */}
       <section className="mx-auto flex min-h-0 w-full max-w-[var(--shell-max)] flex-1 flex-col px-4 pt-6 pb-8 sm:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-12 lg:px-8 lg:pt-8 lg:pb-12">
-        <div className="flex flex-col justify-between border-b border-enhanced-line pb-8 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-12">
+        <div
+          className="order-2 flex flex-col justify-between border-b border-enhanced-line pb-8 lg:order-1 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-12"
+          data-enhanced-landing-story=""
+        >
           <div>
             <p className="font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-pitch">
               FOOTBALL LIFE · ENHANCED
@@ -112,7 +115,10 @@ export function EnhancedLandingScreen({
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-col py-8 lg:overflow-y-auto lg:py-3">
+        <div
+          className="order-1 flex min-h-0 flex-col py-8 lg:order-2 lg:overflow-y-auto lg:py-3"
+          data-enhanced-entry-rail=""
+        >
           {hasResume ? (
             <EnhancedAction
               className="mb-6 min-h-14 w-full justify-between px-4 text-left"
@@ -174,25 +180,62 @@ export function EnhancedLandingScreen({
             </div>
           </fieldset>
 
+          <div
+            className="mt-5 border-t border-enhanced-line pt-4"
+            data-enhanced-ordinary-entry=""
+          >
+            <p className="mb-2 font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-supporting">
+              ORDINARY CAREER
+            </p>
+            <div className="grid gap-2">
+              <EnhancedAction
+                className="min-h-12 w-full"
+                onClick={() => onBegin(mode)}
+                tone="primary"
+              >
+                开始普通生涯
+              </EnhancedAction>
+              <EnhancedAction
+                className="min-h-12 w-full"
+                onClick={() => onRandom(mode)}
+              >
+                随机球员
+              </EnhancedAction>
+            </div>
+          </div>
+
           {onBeginChallenge ? (
-            <section
-              aria-labelledby="daily-challenges-heading"
-              className="mt-5"
+            <details
+              className="group mt-5 border-t border-enhanced-line pt-1"
+              data-enhanced-challenge-discovery=""
             >
-              <div className="flex items-end justify-between gap-3">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-extrabold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-enhanced-focus">
+                <span>发现今日挑战</span>
+                <span className="flex items-center gap-3">
+                  <time
+                    className="font-enhanced-mono text-xs font-normal tabular-nums text-enhanced-supporting"
+                    dateTime={challenges[0]?.calendarDate}
+                  >
+                    {challenges[0]?.calendarDate}
+                  </time>
+                  <span
+                    aria-hidden="true"
+                    className="text-enhanced-pitch transition-transform group-open:rotate-90"
+                  >
+                    ›
+                  </span>
+                </span>
+              </summary>
+              <section
+                aria-labelledby="daily-challenges-heading"
+                className="pt-2"
+              >
                 <h2
-                  className="text-[13px] font-extrabold"
+                  className="sr-only"
                   id="daily-challenges-heading"
                 >
                   今日挑战
                 </h2>
-                <time
-                  className="font-enhanced-mono text-xs tabular-nums text-enhanced-supporting"
-                  dateTime={challenges[0]?.calendarDate}
-                >
-                  {challenges[0]?.calendarDate}
-                </time>
-              </div>
               <div className="mt-2 grid gap-2">
                 {challenges.map((challenge) => {
                   const definition = challengeDefinition(
@@ -242,29 +285,9 @@ export function EnhancedLandingScreen({
               >
                 {describedDefinition.description}
               </p>
-            </section>
+              </section>
+            </details>
           ) : null}
-
-          <div className="mt-5 border-t border-enhanced-line pt-4">
-            <p className="mb-2 font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-supporting">
-              ORDINARY CAREER
-            </p>
-            <div className="grid gap-2">
-              <EnhancedAction
-                className="min-h-12 w-full"
-                onClick={() => onBegin(mode)}
-                tone="primary"
-              >
-                开始普通生涯
-              </EnhancedAction>
-              <EnhancedAction
-                className="min-h-12 w-full"
-                onClick={() => onRandom(mode)}
-              >
-                随机球员
-              </EnhancedAction>
-            </div>
-          </div>
 
           <div className="mt-5">
             <EnhancedInstallSurface />

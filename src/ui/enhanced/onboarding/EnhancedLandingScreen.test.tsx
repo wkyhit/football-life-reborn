@@ -15,8 +15,8 @@ import { EnhancedLandingScreen } from "./EnhancedLandingScreen";
 describe("Enhanced daily challenge landing", () => {
   afterEach(cleanup);
 
-  it("anchors the overflowing entry rail below the app bar", () => {
-    render(
+  it("puts the entry rail before the decorative story on short screens", () => {
+    const { container } = render(
       <EnhancedLandingScreen
         hasResume
         onBegin={() => undefined}
@@ -28,19 +28,28 @@ describe("Enhanced daily challenge landing", () => {
     const resume = screen.getByRole("button", {
       name: "继续上次生涯",
     });
-    const entryRail = resume.parentElement;
+    const entryRail = container.querySelector(
+      "[data-enhanced-entry-rail]",
+    );
+    const story = container.querySelector(
+      "[data-enhanced-landing-story]",
+    );
 
     expect(entryRail).not.toBeNull();
     expect(entryRail).toHaveClass(
       "flex",
       "min-h-0",
       "flex-col",
+      "order-1",
+      "lg:order-2",
       "lg:overflow-y-auto",
     );
     expect(entryRail).not.toHaveClass("justify-center");
+    expect(entryRail).toContainElement(resume);
+    expect(story).toHaveClass("order-2", "lg:order-1");
   });
 
-  it("offers all three daily challenges and keeps an explicit ordinary-career path", async () => {
+  it("orders resume and ordinary entry before collapsed challenge discovery", async () => {
     const challenges = DAILY_CHALLENGE_FAMILIES.map(
       (family) =>
         deriveDailyChallenge({
@@ -55,7 +64,7 @@ describe("Enhanced daily challenge landing", () => {
     render(
       <EnhancedLandingScreen
         dailyChallenges={challenges}
-        hasResume={false}
+        hasResume
         onBegin={onBegin}
         onBeginChallenge={onBeginChallenge}
         onRandom={() => undefined}
@@ -63,37 +72,55 @@ describe("Enhanced daily challenge landing", () => {
       />,
     );
 
+    const resume = screen.getByRole("button", {
+      name: "继续上次生涯",
+    });
+    const ordinary = screen.getByRole("button", {
+      name: "开始普通生涯",
+    });
+    const discovery = document.querySelector<HTMLDetailsElement>(
+      "[data-enhanced-challenge-discovery]",
+    );
+
+    expect(discovery).not.toBeNull();
+    expect(discovery).not.toHaveAttribute("open");
     expect(
-      screen.getByRole("heading", {
-        name: "今日挑战",
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("2026-07-30")).toBeInTheDocument();
+      resume.compareDocumentPosition(ordinary) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(
-      screen.getByRole("button", {
-        name: "开始一人一城挑战",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: "开始亚洲之光挑战",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", {
-        name: "开始门将传奇挑战",
-      }),
-    ).toBeInTheDocument();
+      ordinary.compareDocumentPosition(discovery!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    const firstChallenge = screen.getByRole("button", {
+      hidden: true,
+      name: "开始一人一城挑战",
+    });
+    expect(firstChallenge).not.toBeVisible();
 
     const user = userEvent.setup();
     await user.click(
       screen.getByRole("button", { name: "沉浸" }),
     );
     await user.click(
-      screen.getByRole("button", {
-        name: "开始一人一城挑战",
-      }),
+      screen.getByText("发现今日挑战", { selector: "summary *" }),
     );
+    expect(discovery).toHaveAttribute("open");
+    expect(screen.getByText("2026-07-30")).toBeVisible();
+    expect(firstChallenge).toBeVisible();
+    expect(
+      screen.getByRole("button", {
+        name: "开始亚洲之光挑战",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", {
+        name: "开始门将传奇挑战",
+      }),
+    ).toBeVisible();
+
+    await user.click(firstChallenge);
     expect(onBeginChallenge).toHaveBeenCalledWith(
       challenges[0],
       "long",
