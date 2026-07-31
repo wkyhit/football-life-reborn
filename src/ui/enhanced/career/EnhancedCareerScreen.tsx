@@ -18,7 +18,6 @@ import {
 import {
   CareerDecisionEconomyDetails,
   CareerEventResultNarrative,
-  CareerMilestoneNarrative,
   CareerRecentEventResult,
   CareerSeasonEconomy,
   CareerSeasonNarrative,
@@ -27,6 +26,7 @@ import { useDecisionFocusRestore } from "../../shared/useDecisionFocusRestore";
 import { useReducedMotion } from "../../shared/useReducedMotion";
 import { ClubIdentity } from "../../classic/components/ClubIdentity";
 import { EnhancedAppBar } from "../components/EnhancedAppBar";
+import { CareerKeyEventDialog } from "./CareerKeyEventDialog";
 import { useTimelineFollow } from "./useTimelineFollow";
 
 type EnhancedCareerScreenProps = {
@@ -35,6 +35,7 @@ type EnhancedCareerScreenProps = {
     decisionId: string,
     optionId: string,
   ) => boolean | void;
+  readonly onContinueReveal?: () => void;
   readonly onOpenArchive?: () => void;
   readonly statusMessage?: string | null;
   readonly view: CareerPresentation;
@@ -52,6 +53,7 @@ const MINIMUM_CHOICE_RECEIPT_MS = 150;
 export function EnhancedCareerScreen({
   challenge,
   onChoose,
+  onContinueReveal,
   onOpenArchive,
   statusMessage,
   view,
@@ -165,6 +167,12 @@ export function EnhancedCareerScreen({
           {...(challenge === undefined ? {} : { challenge })}
         />
       </div>
+      {view.panel.kind === "milestone" ? (
+        <CareerKeyEventDialog
+          onContinue={onContinueReveal ?? (() => undefined)}
+          panel={view.panel}
+        />
+      ) : null}
     </main>
   );
 }
@@ -565,7 +573,7 @@ function DecisionRail({
   const { panel } = view;
   const decisionFocusRef =
     useDecisionFocusRestore<HTMLElement>(
-      panel.kind === "decision"
+      panel.kind === "decision" && choiceReceipt === null
         ? panel.decisionId
         : null,
     );
@@ -575,9 +583,7 @@ function DecisionRail({
   const labelledBy =
     panel.kind === "event_result"
       ? "enhanced-event-result-heading"
-      : panel.kind === "milestone"
-        ? "enhanced-milestone-heading"
-        : panel.kind === "decision"
+      : panel.kind === "decision"
           ? "enhanced-decision-heading"
           : undefined;
 
@@ -652,27 +658,14 @@ function DecisionRail({
           />
         </div>
       ) : panel.kind === "milestone" ? (
-        <div
-          className="enhanced-reveal-enter"
-          data-enhanced-milestone-reveal=""
+        <p
+          aria-atomic="true"
+          aria-live="polite"
+          className="flex items-center gap-2 text-sm font-bold text-enhanced-trophy"
+          role="status"
         >
-          <p className="text-xs font-bold tracking-[0.10em] text-enhanced-trophy">
-            MILESTONE · {panel.age} 岁 · {panel.club.shortName}
-          </p>
-          <h2
-            className="mt-2 text-[22px] font-extrabold leading-tight"
-            id="enhanced-milestone-heading"
-          >
-            {panel.title}
-          </h2>
-          <CareerMilestoneNarrative
-            honors={panel.honors}
-            nationalTournaments={panel.nationalTournaments}
-            statuses={panel.statuses}
-            tierChange={panel.tierChange}
-            variant="enhanced"
-          />
-        </div>
+          关键事件等待确认
+        </p>
       ) : (
         <>
           {view.recentEventResult ? (

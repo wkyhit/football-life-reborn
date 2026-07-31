@@ -681,6 +681,7 @@ function CareerExperience({
 }: CareerExperienceProps) {
   const reducedMotion = useReducedMotion();
   const reveal = useSeasonReveal(initialCareer, {
+    holdMilestones: uiMode === "enhanced",
     reducedMotion,
   });
   const [replayCopyMessage, setReplayCopyMessage] =
@@ -932,6 +933,7 @@ function CareerExperience({
     recentEventContractResult:
       reveal.recentEventContractResult,
     recentEventResult: reveal.recentEventResult,
+    revealBaselineCareer: reveal.revealBaselineCareer,
     visibleSeasonCount: reveal.visibleSeasonCount,
   });
 
@@ -983,6 +985,7 @@ function CareerExperience({
                 },
               })}
           onChoose={onChoose}
+          onContinueReveal={reveal.acknowledgeActiveItem}
           onOpenArchive={() =>
             onOpenArchive(reveal.committedCareer)
           }

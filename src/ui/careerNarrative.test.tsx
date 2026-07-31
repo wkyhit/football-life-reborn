@@ -385,7 +385,7 @@ describe("complete career narrative rendering", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "赛季里程碑",
+        name: "16 岁赛季里程碑",
       }),
     ).toBeVisible();
     expect(

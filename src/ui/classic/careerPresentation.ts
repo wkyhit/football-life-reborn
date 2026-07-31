@@ -228,6 +228,7 @@ type CareerPresentationInput = {
   readonly isRevealing: boolean;
   readonly recentEventContractResult?: CareerEconomyChoiceResult | null;
   readonly recentEventResult?: ClassicDecisionResult | null;
+  readonly revealBaselineCareer?: ClassicCareerState | null;
   readonly visibleSeasonCount: number;
 };
 
@@ -330,6 +331,7 @@ export function createCareerPresentation({
   isRevealing,
   recentEventContractResult = null,
   recentEventResult = null,
+  revealBaselineCareer = null,
   visibleSeasonCount,
 }: CareerPresentationInput): CareerPresentation {
   const country = requireCountry(career.nationalityFifaCode);
@@ -352,8 +354,15 @@ export function createCareerPresentation({
   const headerSeason = isRevealing
     ? latestVisibleSeason
     : undefined;
+  const headerBaseline = isRevealing
+    ? revealBaselineCareer
+    : null;
   const currentClubId =
-    headerSeason?.teamId ?? career.currentClubId;
+    headerSeason !== undefined
+      ? headerSeason.teamId
+      : headerBaseline !== null
+        ? headerBaseline.currentClubId
+        : career.currentClubId;
   const headerClub =
     currentClubId === null
       ? null
@@ -421,13 +430,22 @@ export function createCareerPresentation({
               : economy.totalIncome,
           },
     header: {
-      age: headerSeason?.age ?? career.playerAge,
+      age:
+        headerSeason?.age ??
+        headerBaseline?.playerAge ??
+        career.playerAge,
       club: headerClub,
       countryCode: country.fifaCode,
       countryFlag: countryFlag(country),
-      marketValue: headerSeason?.marketValue ?? career.marketValue,
+      marketValue:
+        headerSeason?.marketValue ??
+        headerBaseline?.marketValue ??
+        career.marketValue,
       number: career.identity.preferredNumber,
-      overall: headerSeason?.overall ?? career.overall,
+      overall:
+        headerSeason?.overall ??
+        headerBaseline?.overall ??
+        career.overall,
       position: positionLabel(career.identity.position),
     },
     nationalTeam: {

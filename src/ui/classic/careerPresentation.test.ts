@@ -178,11 +178,16 @@ describe("Classic career presentation", () => {
     const immediate = createCareerPresentation({
       career: committed,
       isRevealing: true,
+      revealBaselineCareer: initial,
       visibleSeasonCount: 0,
     });
 
-    expect(immediate.header.age).toBe(committed.playerAge);
-    expect(immediate.header.overall).toBe(committed.overall);
+    expect(immediate.header).toMatchObject({
+      age: initial.playerAge,
+      club: null,
+      marketValue: initial.marketValue,
+      overall: initial.overall,
+    });
     expect(immediate.totals).toEqual({
       appearances: 0,
       assists: 0,
