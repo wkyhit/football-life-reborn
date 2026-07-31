@@ -87,6 +87,41 @@ Apply the rules in this order:
 `saudi-pro-league` is a policy key approved by Issue #18. It does not
 add or mutate clubs in the frozen Classic catalog.
 
+## Career projection and ledger
+
+`createCareerEconomyProjection(career)` is the only contract and income
+calculation entry point. It starts from the career's frozen identity,
+mode, seed, content version, and choice log; replays the existing
+football engine; and rejects a supplied state that the choice log
+cannot reproduce. The replay is read-only and does not add an economy
+field to the football core state.
+
+The lifecycle is:
+
+- an academy choice, permanent transfer, free-agent signing, accepted
+  event transfer, or permanent post-loan move signs a destination
+  contract at one exact annual salary;
+- an explicit stay retains the existing contract and salary;
+- a loan, including a repeated post-loan placement, retains the parent
+  contract and records no destination salary;
+- a non-renewal ends the old contract before free-agent option quotes
+  are produced;
+- a suspended season keeps the explanatory annual salary but settles
+  income at ¥0;
+- retirement ends any remaining contract and adds no season or income.
+
+The projection returns one `CareerContract`, one ordered
+`CareerSeasonSalary` row per completed football season, the accumulated
+`totalIncome`, and an ordered economy ledger. Salary ledger entries
+reference the same season-salary objects used by the projection.
+Consumers must not recalculate income as current salary × season count.
+
+Current decision options are projected through `optionQuotes`.
+Deterministic club choices are `exact`; event-dependent club choices
+are marked `estimated` until the choice result is committed; stays and
+loans are `contract_unchanged`; retirement is `no_contract`. The
+committed replay always records one exact `contract_signed` entry.
+
 ## Verification and change process
 
 `src/domain/economy/economyPolicy.test.ts` freezes:
@@ -98,6 +133,12 @@ add or mutate clubs in the frozen Classic catalog.
   mutation;
 - 10,000 fixed inputs with digest
   `fnv1a64:4e0f8d3cd8d607a8`.
+
+`src/domain/economy/careerEconomyProjection.test.ts` additionally
+freezes academy, permanent transfer, stay, repeated loan, post-loan,
+free-agent, suspension, retirement, event-dependent quote, branch
+prefix, corrupt-state rejection, and idempotent replay behavior across
+all 36 golden career fixtures.
 
 Do not edit this policy version in place after release. A rule change
 requires a new policy version, exact-vector and migration fixtures, an
