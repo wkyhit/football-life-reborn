@@ -84,7 +84,7 @@ describe("useSeasonReveal", () => {
     vi.useFakeTimers();
     const { before, transition } = milestoneTransition();
     const { result } = renderHook(() =>
-      useSeasonReveal(before),
+      useSeasonReveal(before, { holdMilestones: true }),
     );
 
     act(() => {
@@ -151,6 +151,14 @@ describe("useSeasonReveal", () => {
     act(() => {
       vi.advanceTimersByTime(1_700);
     });
+    expect(result.current.activeItem).toMatchObject({
+      kind: "milestone",
+    });
+    expect(result.current.isRevealing).toBe(true);
+
+    act(() => {
+      result.current.acknowledgeActiveItem();
+    });
     expect(result.current.activeItem).toBeNull();
     expect(result.current.isRevealing).toBe(false);
     expect(result.current.recentEventResult).toBe(
@@ -215,28 +223,101 @@ describe("useSeasonReveal", () => {
     });
   });
 
-  it("finishes immediately for reduced motion and cancels its timer on unmount", () => {
+  it("removes motion without skipping milestone information", () => {
     vi.useFakeTimers();
     const { before, transition } = milestoneTransition();
     const immediate = renderHook(() =>
-      useSeasonReveal(before, { reducedMotion: true }),
+      useSeasonReveal(before, {
+        holdMilestones: true,
+        reducedMotion: true,
+      }),
     );
 
     act(() => {
       immediate.result.current.commitTransition(transition);
     });
+
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
+
     expect(immediate.result.current.visibleSeasonCount).toBe(
       transition.career.seasons.length,
     );
-    expect(immediate.result.current.isRevealing).toBe(false);
-    expect(immediate.result.current.activeItem).toBeNull();
+    expect(immediate.result.current.isRevealing).toBe(true);
+    expect(immediate.result.current.activeItem?.kind).toBe(
+      "milestone",
+    );
     expect(immediate.result.current.recentEventResult).toBe(
       transition.result,
     );
-    expect(immediate.result.current.announcement).toContain(
-      "成为绝对主力",
-    );
+
+    act(() => {
+      immediate.result.current.acknowledgeActiveItem();
+    });
+    expect(immediate.result.current.isRevealing).toBe(false);
     immediate.unmount();
+  });
+
+  it("advances one key milestone for repeated synchronous acknowledgement", () => {
+    vi.useFakeTimers();
+    const initial = startCareer("issue-23:double-milestone");
+    const decision = initial.currentDecision!;
+    const resolved = applyClassicChoiceWithResult(initial, {
+      decisionId: decision.id,
+      decisionType: decision.type,
+      optionId: decision.options[0]!.id,
+    });
+    const transition = {
+      ...resolved,
+      career: {
+        ...resolved.career,
+        seasons: resolved.career.seasons.map((season) => ({
+          ...season,
+          trophies: ["league" as const],
+        })),
+      },
+    };
+    const { result } = renderHook(() =>
+      useSeasonReveal(initial, { holdMilestones: true }),
+    );
+
+    act(() => {
+      result.current.commitTransition(transition);
+    });
+    act(() => {
+      vi.advanceTimersByTime(550);
+    });
+    act(() => {
+      vi.advanceTimersByTime(550);
+    });
+    expect(result.current.activeItem).toMatchObject({
+      kind: "milestone",
+      seasonIndex: 0,
+    });
+
+    act(() => {
+      result.current.acknowledgeActiveItem();
+      result.current.acknowledgeActiveItem();
+    });
+    expect(result.current.activeItem).toMatchObject({
+      kind: "milestone",
+      seasonIndex: 1,
+    });
+
+    act(() => {
+      result.current.acknowledgeActiveItem();
+    });
+    expect(result.current.activeItem).toBeNull();
+    expect(result.current.isRevealing).toBe(false);
+  });
+
+  it("cancels its active timer on replacement and unmount", () => {
+    vi.useFakeTimers();
+    const { before, transition } = milestoneTransition();
 
     const timed = renderHook(() => useSeasonReveal(before));
     act(() => {

@@ -84,17 +84,20 @@ export type CareerDecisionContractPresentation =
       readonly certainty: "estimated" | "exact";
       readonly kind: "new_contract";
       readonly label: string;
+      readonly tone: "positive";
     }
   | {
       readonly annualSalary: number;
       readonly kind: "contract_unchanged";
       readonly label: string;
       readonly reason: "career_choice" | "loan" | "stay";
+      readonly tone: "neutral";
     }
   | {
       readonly kind: "no_contract";
       readonly label: string;
       readonly reason: "free_agent" | "retire";
+      readonly tone: "warning";
     };
 
 export type CareerDecisionPanelPresentation =
@@ -146,16 +149,25 @@ export type CareerSeasonStatusPresentation =
   | {
       readonly kind: "relegation";
       readonly label: string;
+      readonly tone: "negative";
     }
   | {
       readonly kind: "suspension";
       readonly label: string;
+      readonly tone: "warning";
     };
 
 export type CareerTierChangePresentation = {
   readonly from: 1 | 2;
   readonly label: string;
   readonly to: 1 | 2;
+  readonly tone: "negative" | "positive";
+};
+
+export type CareerCurrencyPresentation = {
+  readonly compact: string;
+  readonly currency: "CNY" | "EUR";
+  readonly full: string;
 };
 
 export type CareerTimelineRowPresentation =
@@ -228,6 +240,7 @@ type CareerPresentationInput = {
   readonly isRevealing: boolean;
   readonly recentEventContractResult?: CareerEconomyChoiceResult | null;
   readonly recentEventResult?: ClassicDecisionResult | null;
+  readonly revealBaselineCareer?: ClassicCareerState | null;
   readonly visibleSeasonCount: number;
 };
 
@@ -330,6 +343,7 @@ export function createCareerPresentation({
   isRevealing,
   recentEventContractResult = null,
   recentEventResult = null,
+  revealBaselineCareer = null,
   visibleSeasonCount,
 }: CareerPresentationInput): CareerPresentation {
   const country = requireCountry(career.nationalityFifaCode);
@@ -352,8 +366,15 @@ export function createCareerPresentation({
   const headerSeason = isRevealing
     ? latestVisibleSeason
     : undefined;
+  const headerBaseline = isRevealing
+    ? revealBaselineCareer
+    : null;
   const currentClubId =
-    headerSeason?.teamId ?? career.currentClubId;
+    headerSeason !== undefined
+      ? headerSeason.teamId
+      : headerBaseline !== null
+        ? headerBaseline.currentClubId
+        : career.currentClubId;
   const headerClub =
     currentClubId === null
       ? null
@@ -383,8 +404,11 @@ export function createCareerPresentation({
   const seasonsByAge = new Map(
     visibleSeasons.map((season) => [season.age, season]),
   );
-  const timeline = Array.from({ length: 24 }, (_, index) => {
-    const age = 16 + index;
+  const timelineAges = createTimelineAgeRange({
+    currentDecisionAge,
+    lastRevealedAge: latestVisibleSeason?.age,
+  });
+  const timeline = timelineAges.map((age) => {
     const season = seasonsByAge.get(age);
 
     if (season !== undefined) {
@@ -418,13 +442,22 @@ export function createCareerPresentation({
               : economy.totalIncome,
           },
     header: {
-      age: headerSeason?.age ?? career.playerAge,
+      age:
+        headerSeason?.age ??
+        headerBaseline?.playerAge ??
+        career.playerAge,
       club: headerClub,
       countryCode: country.fifaCode,
       countryFlag: countryFlag(country),
-      marketValue: headerSeason?.marketValue ?? career.marketValue,
+      marketValue:
+        headerSeason?.marketValue ??
+        headerBaseline?.marketValue ??
+        career.marketValue,
       number: career.identity.preferredNumber,
-      overall: headerSeason?.overall ?? career.overall,
+      overall:
+        headerSeason?.overall ??
+        headerBaseline?.overall ??
+        career.overall,
       position: positionLabel(career.identity.position),
     },
     nationalTeam: {
@@ -456,6 +489,22 @@ export function createCareerPresentation({
       ),
     },
   };
+}
+
+function createTimelineAgeRange(input: {
+  readonly currentDecisionAge: number | undefined;
+  readonly lastRevealedAge: number | undefined;
+}): readonly number[] {
+  const endAge = Math.max(
+    39,
+    input.lastRevealedAge ?? 16,
+    input.currentDecisionAge ?? 16,
+  );
+
+  return Array.from(
+    { length: endAge - 16 + 1 },
+    (_, index) => 16 + index,
+  );
 }
 
 function revealPanelPresentation(input: {
@@ -698,6 +747,7 @@ function contractPresentation(
           ? "预计年薪"
           : "年薪"
       } ${formatYuan(quote.quote.annualSalary)}`,
+      tone: "positive",
     };
   }
 
@@ -711,6 +761,7 @@ function contractPresentation(
           : "合同不变"
       } · 年薪 ${formatYuan(quote.contract.annualSalary)}`,
       reason: quote.reason,
+      tone: "neutral",
     };
   }
 
@@ -721,6 +772,7 @@ function contractPresentation(
         ? "退役后停止收入"
         : "本选项不签新合同",
     reason: quote.reason,
+    tone: "warning",
   };
 }
 
@@ -801,17 +853,75 @@ function tryCreateEconomyProjection(
 export function formatMarketValue(
   valueEuro: number,
 ): string {
-  if (valueEuro >= 100_000_000) {
-    return `€${trimDecimal(valueEuro / 100_000_000)}亿`;
-  }
-
-  return `€${trimDecimal(valueEuro / 10_000)}万`;
+  return createMarketValuePresentation(valueEuro).compact;
 }
 
-function trimDecimal(value: number): string {
-  return Number.isInteger(value)
-    ? String(value)
-    : value.toFixed(1);
+export function createMarketValuePresentation(
+  valueEuro: number,
+): CareerCurrencyPresentation {
+  assertCurrencyValue(valueEuro, "Euro");
+  const full = `€${valueEuro.toLocaleString("en-US")}`;
+
+  if (valueEuro >= 100_000_000) {
+    return {
+      compact: `€${formatCompactMagnitude(valueEuro / 100_000_000)}亿`,
+      currency: "EUR",
+      full,
+    };
+  }
+
+  if (valueEuro >= 10_000) {
+    return {
+      compact: `€${formatCompactMagnitude(valueEuro / 10_000)}万`,
+      currency: "EUR",
+      full,
+    };
+  }
+
+  return { compact: full, currency: "EUR", full };
+}
+
+export function createYuanPresentation(
+  valueYuan: number,
+): CareerCurrencyPresentation {
+  assertCurrencyValue(valueYuan, "Yuan");
+  const full = formatYuan(valueYuan);
+
+  if (valueYuan >= 100_000_000) {
+    return {
+      compact: `¥${formatCompactMagnitude(valueYuan / 100_000_000)}亿`,
+      currency: "CNY",
+      full,
+    };
+  }
+
+  if (valueYuan >= 10_000) {
+    return {
+      compact: `¥${formatCompactMagnitude(valueYuan / 10_000)}万`,
+      currency: "CNY",
+      full,
+    };
+  }
+
+  return { compact: full, currency: "CNY", full };
+}
+
+function formatCompactMagnitude(value: number): string {
+  return value.toLocaleString("en-US", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 0,
+  });
+}
+
+function assertCurrencyValue(
+  value: number,
+  currency: "Euro" | "Yuan",
+): void {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new RangeError(
+      `${currency} value must be a non-negative safe integer: ${value}`,
+    );
+  }
 }
 
 function optionTitle(
@@ -872,6 +982,10 @@ function seasonPresentation(
               ? "进入顶级联赛"
               : "进入次级联赛",
           to: season.competitionTier,
+          tone:
+            season.competitionTier === 1
+              ? ("positive" as const)
+              : ("negative" as const),
         }
       : null;
 
@@ -918,6 +1032,7 @@ function seasonPresentation(
             {
               kind: "suspension" as const,
               label: "停赛",
+              tone: "warning" as const,
             },
           ]
         : []),
@@ -926,6 +1041,7 @@ function seasonPresentation(
             {
               kind: "relegation" as const,
               label: "降入次级联赛",
+              tone: "negative" as const,
             },
           ]
         : []),

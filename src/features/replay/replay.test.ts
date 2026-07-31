@@ -37,6 +37,25 @@ const GOLDEN_FIXTURES = [
 ] as const;
 
 describe("challenge replay", () => {
+  it("creates an ordinary replay with presentation profile outside the state hash", () => {
+    const original = replayFixture(GOLDEN_FIXTURES[0]);
+    const payload = createReplayPayload({
+      career: original,
+      profile: { preferredFoot: "right" },
+    });
+
+    expect(payload).toMatchObject({
+      challengeId: null,
+      kind: "ordinary",
+      profile: { preferredFoot: "right" },
+      stateHash: deterministicHash(original),
+    });
+    expect(replayChallengePayload(payload)).toMatchObject({
+      career: original,
+      status: "ready",
+    });
+  });
+
   it.each(GOLDEN_FIXTURES)(
     "reconstructs golden fixture $id through public reducer actions",
     (fixture) => {

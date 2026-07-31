@@ -1,5 +1,6 @@
 import {
   cleanup,
+  fireEvent,
   render,
   screen,
   within,
@@ -39,14 +40,9 @@ const SEASON_LABELS = [
 afterEach(cleanup);
 
 describe("complete career narrative rendering", () => {
-  it.each([
-    ["classic", "ST"],
-    ["classic", "GK"],
-    ["enhanced", "ST"],
-    ["enhanced", "GK"],
-  ] as const)(
-    "labels market value, salary, and income for a %s %s career",
-    (variant, position) => {
+  it.each(["ST", "GK"] as const)(
+    "preserves the visible Classic economy facts for a %s career",
+    (position) => {
       const view = committedEconomyView(position);
       const season = view.timeline.find(
         (row) => row.kind === "season",
@@ -60,26 +56,13 @@ describe("complete career narrative rendering", () => {
         throw new Error("Expected presented economy facts");
       }
 
-      const rendered =
-        variant === "classic"
-          ? render(
-              <CareerScreen
-                onChoose={vi.fn()}
-                view={view}
-              />,
-            )
-          : render(
-              <EnhancedCareerScreen
-                onChoose={vi.fn()}
-                view={view}
-              />,
-            );
+      const rendered = render(
+        <CareerScreen onChoose={vi.fn()} view={view} />,
+      );
       const header =
         rendered.container.querySelector<HTMLElement>(
-        variant === "classic"
-          ? "[data-classic-career-header]"
-          : "[data-enhanced-career-header]",
-      );
+          "[data-classic-career-header]",
+        );
       const seasonRow =
         rendered.container.querySelector<HTMLElement>(
           `[data-career-season-row="${season.age}"]`,
@@ -123,6 +106,98 @@ describe("complete career narrative rendering", () => {
     },
   );
 
+  it.each(["ST", "GK"] as const)(
+    "keeps Enhanced market value and salary scannable while disclosing income and season story for a %s career",
+    (position) => {
+      const view = committedEconomyView(position);
+      const season = view.timeline.find(
+        (row) => row.kind === "season",
+      );
+
+      if (
+        view.economy === null ||
+        season?.kind !== "season" ||
+        season.economy === null
+      ) {
+        throw new Error("Expected presented economy facts");
+      }
+
+      const rendered = render(
+        <EnhancedCareerScreen onChoose={vi.fn()} view={view} />,
+      );
+      const header = rendered.container.querySelector<HTMLElement>(
+        "[data-enhanced-career-header]",
+      );
+      const seasonRow = rendered.container.querySelector<HTMLElement>(
+        `[data-career-season-row="${season.age}"]`,
+      );
+
+      if (header === null || seasonRow === null) {
+        throw new Error("Expected Enhanced economy surfaces");
+      }
+
+      expect(
+        within(header).getByLabelText(
+          `身价：€${view.header.marketValue.toLocaleString("en-US")}`,
+        ),
+      ).toBeVisible();
+      expect(
+        within(header).getByLabelText(
+          `年薪：${formatYuan(view.economy.annualSalary)}`,
+        ),
+      ).toBeVisible();
+      const careerDetails = header.querySelector(
+        "[data-enhanced-career-economy-details]",
+      );
+
+      if (!(careerDetails instanceof HTMLDetailsElement)) {
+        throw new Error("Expected career economy disclosure");
+      }
+
+      expect(
+        within(careerDetails).getByText("累计收入"),
+      ).not.toBeVisible();
+      fireEvent.click(within(careerDetails).getByText("生涯收入与明细"));
+      expect(
+        within(careerDetails).getByLabelText(
+          `累计收入：${formatYuan(view.economy.totalIncome)}`,
+        ),
+      ).toBeVisible();
+
+      expect(
+        within(seasonRow).getByLabelText(
+          `身价：€${season.marketValue.toLocaleString("en-US")}`,
+        ),
+      ).toBeVisible();
+      expect(
+        within(seasonRow).getByLabelText(
+          `年薪：${formatYuan(season.economy.annualSalary)}`,
+        ),
+      ).toBeVisible();
+      const seasonDetails = seasonRow.querySelector(
+        "[data-enhanced-season-details]",
+      );
+
+      if (!(seasonDetails instanceof HTMLDetailsElement)) {
+        throw new Error("Expected season detail disclosure");
+      }
+
+      expect(
+        within(seasonDetails).getByText("收入"),
+      ).not.toBeVisible();
+      fireEvent.click(
+        within(seasonDetails).getByText("收入与赛季故事"),
+      );
+      expect(
+        within(seasonDetails).getByLabelText(
+          `收入：${formatYuan(season.economy.income)}`,
+        ),
+      ).toBeVisible();
+
+      rendered.unmount();
+    },
+  );
+
   it.each(["classic", "enhanced"] as const)(
     "renders the five-layer contract choice card in %s",
     (variant) => {
@@ -155,11 +230,28 @@ describe("complete career narrative rendering", () => {
       const option = screen.getByRole("button", {
         name: /加盟 阿森纳/,
       });
-      const card = within(option);
+      const cardRoot =
+        variant === "enhanced"
+          ? option.closest("[data-enhanced-decision-card]")
+          : option;
+
+      if (!(cardRoot instanceof HTMLElement)) {
+        throw new Error("Expected decision card");
+      }
+
+      const card = within(cardRoot);
 
       expect(card.getByText("英超")).toBeVisible();
       expect(card.getByText(arsenal.role)).toBeVisible();
       expect(card.getByText(arsenal.stars)).toBeVisible();
+
+      if (variant === "enhanced") {
+        expect(
+          card.getByText("年薪 ¥20,000"),
+        ).not.toBeVisible();
+        fireEvent.click(card.getByText("合同与完整故事"));
+      }
+
       expect(
         card.getByText("年薪 ¥20,000"),
       ).toBeVisible();
@@ -168,6 +260,11 @@ describe("complete career narrative rendering", () => {
           "荣誉机会：联赛 · 国内杯赛 · 洲际赛事",
         ),
       ).toBeVisible();
+      expect(
+        card.getByText("年薪 ¥20,000").closest(
+          "[data-semantic-tone]",
+        ),
+      ).toHaveAttribute("data-semantic-tone", "positive");
 
       rendered.unmount();
     },
@@ -194,7 +291,21 @@ describe("complete career narrative rendering", () => {
       const option = screen.getByRole("button", {
         name: /接受双倍训练|承担更多负荷/,
       });
-      const card = within(option);
+      const cardRoot =
+        variant === "enhanced"
+          ? option.closest("[data-enhanced-decision-card]")
+          : option;
+
+      if (!(cardRoot instanceof HTMLElement)) {
+        throw new Error("Expected event decision card");
+      }
+
+      const card = within(cardRoot);
+
+      if (variant === "enhanced") {
+        expect(card.getByText(/^正向 · \d+%$/)).not.toBeVisible();
+        fireEvent.click(card.getByText("合同与完整故事"));
+      }
 
       expect(
         card.getByText(/^正向 · \d+%$/),
@@ -227,13 +338,31 @@ describe("complete career narrative rendering", () => {
         );
       }
 
+      const retireButton = screen.getByRole("button", {
+        name: /现在退役/,
+      });
+      const retireRoot =
+        variant === "enhanced"
+          ? retireButton.closest("[data-enhanced-decision-card]")
+          : retireButton;
+
+      if (!(retireRoot instanceof HTMLElement)) {
+        throw new Error("Expected retirement card");
+      }
+
+      const retireCard = within(retireRoot);
+
+      if (variant === "enhanced") {
+        fireEvent.click(
+          retireCard.getByText("合同与完整故事"),
+        );
+      }
+
+      const noContract = retireCard.getByText("退役后停止收入");
+      expect(noContract).toBeVisible();
       expect(
-        within(
-          screen.getByRole("button", {
-            name: /现在退役/,
-          }),
-        ).getByText("退役后停止收入"),
-      ).toBeVisible();
+        noContract.closest("[data-semantic-tone]"),
+      ).toHaveAttribute("data-semantic-tone", "warning");
     },
   );
 
@@ -270,11 +399,28 @@ describe("complete career narrative rendering", () => {
                 view={view}
               />,
             );
-      const option = within(
-        screen.getByRole("button", {
-          name: new RegExp(rivalOffer.title),
-        }),
-      );
+      const optionButton = screen.getByRole("button", {
+        name: new RegExp(rivalOffer.title),
+      });
+      const optionRoot =
+        variant === "enhanced"
+          ? optionButton.closest("[data-enhanced-decision-card]")
+          : optionButton;
+
+      if (!(optionRoot instanceof HTMLElement)) {
+        throw new Error("Expected rival decision card");
+      }
+
+      const option = within(optionRoot);
+
+      if (variant === "enhanced") {
+        expect(
+          option.getByText(
+            "加盟报价俱乐部，角色按新环境结算",
+          ),
+        ).not.toBeVisible();
+        fireEvent.click(option.getByText("合同与完整故事"));
+      }
 
       expect(
         option.getByText(rivalOffer.club.subtitle),
@@ -345,6 +491,20 @@ describe("complete career narrative rendering", () => {
     );
 
     for (const label of SEASON_LABELS) {
+      expect(screen.getByText(label)).not.toBeVisible();
+    }
+    for (const details of enhanced.container.querySelectorAll(
+      "[data-enhanced-season-details]",
+    )) {
+      const summary = details.querySelector("summary");
+
+      if (summary === null) {
+        throw new Error("Expected season details summary");
+      }
+
+      fireEvent.click(summary);
+    }
+    for (const label of SEASON_LABELS) {
       expect(screen.getByText(label)).toBeVisible();
     }
     expect(
@@ -354,7 +514,41 @@ describe("complete career narrative rendering", () => {
     ).toHaveLength(4);
   });
 
-  it("renders the same milestone hold with mode-specific motion", () => {
+  it("maps structured suspension, relegation, and tier-change tones without reading labels", () => {
+    const rendered = render(
+      <EnhancedCareerScreen
+        onChoose={vi.fn()}
+        view={completeNarrativeView()}
+      />,
+    );
+
+    for (const details of rendered.container.querySelectorAll(
+      "[data-enhanced-season-details]",
+    )) {
+      const summary = details.querySelector("summary");
+      if (summary !== null) {
+        fireEvent.click(summary);
+      }
+    }
+
+    expect(
+      screen
+        .getByText("停赛")
+        .closest("[data-semantic-tone]"),
+    ).toHaveAttribute("data-semantic-tone", "warning");
+    expect(
+      screen
+        .getByText("降入次级联赛")
+        .closest("[data-semantic-tone]"),
+    ).toHaveAttribute("data-semantic-tone", "negative");
+    expect(
+      screen
+        .getByText("进入次级联赛")
+        .closest("[data-semantic-tone]"),
+    ).toHaveAttribute("data-semantic-tone", "negative");
+  });
+
+  it("renders the same milestone hold with mode-specific motion", async () => {
     const view = completeNarrativeView({
       dwellMs: 1_700,
       kind: "milestone",
@@ -365,7 +559,7 @@ describe("complete career narrative rendering", () => {
     );
 
     expect(
-      screen.getByRole("heading", {
+      await screen.findByRole("heading", {
         name: "赛季里程碑",
       }),
     ).toBeVisible();
@@ -384,8 +578,8 @@ describe("complete career narrative rendering", () => {
     );
 
     expect(
-      screen.getByRole("heading", {
-        name: "赛季里程碑",
+      await screen.findByRole("heading", {
+        name: "16 岁赛季里程碑",
       }),
     ).toBeVisible();
     expect(

@@ -124,6 +124,11 @@
   --shell-max: 76rem;
   --rail-width: 23.75rem;
   --control-size: 2.75rem;
+  --career-disclosure-width: 18rem;
+  --career-timeline-min-short: 10rem;
+  --career-timeline-min-mobile: 13.75rem;
+  --career-rail-min-height: 11.5rem;
+  --career-rail-max-height: 14rem;
 
   --z-base: 1;
   --z-raised: 10;

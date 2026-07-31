@@ -1,4 +1,6 @@
 import type { ClassicCareerState } from "../../domain/classicEngine";
+import type { CareerPresentationProfile } from "../../presentation/profile";
+import type { ReplayKind } from "./codec";
 import {
   parseDailyChallengeSeed,
   type DailyChallenge,
@@ -18,7 +20,9 @@ export type ReplayRouteResult =
     }
   | {
       readonly career: ClassicCareerState;
-      readonly challenge: DailyChallenge;
+      readonly challenge: DailyChallenge | null;
+      readonly kind: ReplayKind;
+      readonly profile: CareerPresentationProfile;
       readonly status: "ready";
     }
   | {
@@ -77,13 +81,15 @@ export function resolveReplayRoute(
     }
   }
 
-  const challenge = parseDailyChallengeSeed(
-    decoded.payload.seed,
-  );
+  const challenge =
+    decoded.payload.kind === "daily_challenge"
+      ? parseDailyChallengeSeed(decoded.payload.seed)
+      : null;
 
   if (
-    challenge === null ||
-    challenge.id !== decoded.payload.challengeId
+    decoded.payload.kind === "daily_challenge" &&
+    (challenge === null ||
+      challenge.id !== decoded.payload.challengeId)
   ) {
     return routeError(
       "incompatible",
@@ -119,6 +125,8 @@ export function resolveReplayRoute(
   return Object.freeze({
     career: replayed.career,
     challenge,
+    kind: decoded.payload.kind,
+    profile: decoded.payload.profile,
     status: "ready",
   });
 }

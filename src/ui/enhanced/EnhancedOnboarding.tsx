@@ -165,7 +165,7 @@ function EnhancedIdentityScreen({
     >
       {/* Hallmark · genre: playful · macrostructure: Narrative Workflow · theme: custom (tuned) · design-system: design.md · designed-as-app */}
       <EnhancedStepHeader
-        description="姓名、号码和惯用脚只定义你的身份，不改变模拟数值"
+        description="姓名、号码与惯用脚仅作身份展示"
         step={2}
         title="确认球员身份"
       />
@@ -297,7 +297,7 @@ function EnhancedPositionScreen({
     >
       {/* Hallmark · genre: playful · macrostructure: Narrative Workflow · theme: custom (tuned) · design-system: design.md · designed-as-app */}
       <EnhancedStepHeader
-        description="位置决定赛季数据结构、竞争方式和奖项资格"
+        description="位置决定赛季数据与奖项资格"
         step={3}
         title="选择场上位置"
       />

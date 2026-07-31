@@ -25,7 +25,9 @@ type EnhancedSummaryScreenProps = {
   readonly onOpenArchive?: () => void;
   readonly onRestart: () => void;
   readonly onShare: () => void;
+  readonly onStartNewCareer?: () => void;
   readonly replayCopyMessage?: string | null;
+  readonly replayUrl?: string;
   readonly view: SummaryPresentation;
 };
 
@@ -37,7 +39,9 @@ export function EnhancedSummaryScreen({
   onOpenArchive,
   onRestart,
   onShare,
+  onStartNewCareer,
   replayCopyMessage,
+  replayUrl,
   view,
 }: EnhancedSummaryScreenProps) {
   const replayCopySucceeded =
@@ -71,7 +75,8 @@ export function EnhancedSummaryScreen({
       />
 
       <article
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-enhanced-focus"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-enhanced-focus scroll-pb-6"
+        data-enhanced-summary-scroll=""
         tabIndex={0}
       >
         <div className="mx-auto w-full max-w-[var(--shell-max)] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
@@ -102,6 +107,9 @@ export function EnhancedSummaryScreen({
               </h1>
               <p className="mt-3 max-w-[58ch] text-base leading-relaxed text-enhanced-supporting">
                 {view.seasonCount} 个赛季已经写入同一份确定性生涯记录。
+              </p>
+              <p className="mt-2 text-sm font-bold text-enhanced-ink-2">
+                惯用脚 · {view.identity.preferredFoot}
               </p>
             </div>
 
@@ -230,6 +238,63 @@ export function EnhancedSummaryScreen({
             </section>
           ) : null}
 
+          {!challenge && replayUrl ? (
+            <section
+              aria-label="本局回放"
+              className="border-b border-enhanced-line py-6"
+              data-enhanced-summary-record="replay"
+            >
+              <h2 className="text-lg font-bold">本局回放</h2>
+              <p className="mt-2 text-sm leading-relaxed text-enhanced-supporting">
+                此链接只读重建本局选择、最终状态与展示身份，不读取本机存档。
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <label className="min-w-0 text-xs text-enhanced-supporting">
+                  回放链接
+                  <input
+                    className="mt-2 h-11 w-full min-w-0 border border-enhanced-line bg-enhanced-surface px-3 font-enhanced-mono text-xs text-enhanced-ink-2"
+                    data-enhanced-field=""
+                    data-field-state="success"
+                    readOnly
+                    value={replayUrl}
+                  />
+                </label>
+                {onCopyReplay ? (
+                  <EnhancedAction
+                    onClick={onCopyReplay}
+                    state={
+                      replayCopySucceeded
+                        ? "success"
+                        : replayCopyFailed
+                          ? "error"
+                          : "default"
+                    }
+                  >
+                    {replayCopySucceeded
+                      ? "已复制"
+                      : replayCopyFailed
+                        ? "重试复制本局回放"
+                        : "复制本局回放"}
+                  </EnhancedAction>
+                ) : null}
+              </div>
+              {replayCopyMessage ? (
+                <p
+                  aria-live="polite"
+                  className={[
+                    "mt-3 text-sm font-bold",
+                    replayCopyFailed
+                      ? "text-enhanced-alert"
+                      : "text-enhanced-pitch",
+                  ].join(" ")}
+                  role="status"
+                >
+                  {replayCopyMessage}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
           {view.nationalTeam ? (
             <section
               className="grid gap-3 border-b border-enhanced-line py-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
@@ -254,7 +319,10 @@ export function EnhancedSummaryScreen({
           <HonorRecords honors={view.honors} />
           <ClubRecords view={view} />
 
-          <section className="border-y border-enhanced-line py-5">
+          <section
+            className="scroll-mb-6 border-y border-enhanced-line py-5"
+            data-summary-last-record=""
+          >
             <p className="font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-supporting">
               Deterministic seed
             </p>
@@ -268,16 +336,33 @@ export function EnhancedSummaryScreen({
         </div>
       </article>
 
-      <footer className="shrink-0 border-t border-enhanced-line bg-enhanced-canvas px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:px-6 lg:px-8">
-        <div className="mx-auto grid w-full max-w-[var(--shell-max)] grid-cols-2 gap-3">
+      <footer
+        className="shrink-0 border-t border-enhanced-line bg-enhanced-canvas px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:px-6 lg:px-8"
+        data-enhanced-summary-footer=""
+      >
+        <div
+          className={`mx-auto grid w-full max-w-[var(--shell-max)] grid-cols-2 gap-3 ${
+            onStartNewCareer ? "sm:grid-cols-3" : ""
+          }`}
+        >
           <EnhancedAction
             className="min-h-12 w-full"
             onClick={onRestart}
           >
-            再来一局
+            {onStartNewCareer ? "同 Seed 重开" : "再来一局"}
           </EnhancedAction>
+          {onStartNewCareer ? (
+            <EnhancedAction
+              className="min-h-12 w-full"
+              onClick={onStartNewCareer}
+            >
+              新 Seed 新人生
+            </EnhancedAction>
+          ) : null}
           <EnhancedAction
-            className="min-h-12 w-full"
+            className={`min-h-12 w-full ${
+              onStartNewCareer ? "col-span-2 sm:col-span-1" : ""
+            }`}
             onClick={onShare}
             tone="primary"
           >

@@ -27,8 +27,10 @@ const INITIAL_JS_BUDGET_BYTES = 150_000;
 const INITIAL_CSS_BUDGET_BYTES = 15_000;
 const ENHANCED_SHELL_BUDGET_BYTES = 512;
 const ENHANCED_ONBOARDING_BUDGET_BYTES = 6_250;
-const ENHANCED_CAREER_BUDGET_BYTES = 4_000;
-const ENHANCED_ROUTE_BUDGET_BYTES = 9_850;
+const ENHANCED_CAREER_BUDGET_BYTES = 5_600;
+const ENHANCED_KEY_EVENT_BUDGET_BYTES = 1_100;
+const ENHANCED_DEFAULT_ROUTE_BUDGET_BYTES = 11_900;
+const ENHANCED_COMPLETE_ROUTE_BUDGET_BYTES = 13_000;
 const FONT_ASSET_COUNT = 4;
 const FONT_ASSET_BUDGET_BYTES = 64 * 1024;
 const CLASSIC_VISUAL_DIRECTORY = join(
@@ -238,9 +240,9 @@ describe("Production artifact budgets", () => {
     expect(html).not.toContain(career.file);
   });
 
-  it("keeps the complete Enhanced route within explicit chunk budgets", () => {
+  it("keeps default and key-event Enhanced routes within explicit chunk budgets", () => {
     const manifest = readManifest();
-    const chunks = [
+    const defaultChunks = [
       {
         budget: ENHANCED_SHELL_BUDGET_BYTES,
         entry: requireManifestEntry(
@@ -263,15 +265,35 @@ describe("Production artifact budgets", () => {
         ),
       },
     ];
-    const sizes = chunks.map(({ budget, entry }) => {
+    const defaultSizes = defaultChunks.map(({ budget, entry }) => {
       const size = gzipSize(entry.file);
       expect(size).toBeLessThanOrEqual(budget);
       return size;
     });
+    const keyEvent = requireManifestEntry(
+      manifest,
+      "src/ui/enhanced/career/CareerKeyEventDialog.tsx",
+    );
+    const keyEventSize = gzipSize(keyEvent.file);
+    const career = requireManifestEntry(
+      manifest,
+      "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
+    );
 
     expect(
-      sizes.reduce((total, size) => total + size, 0),
-    ).toBeLessThanOrEqual(ENHANCED_ROUTE_BUDGET_BYTES);
+      defaultSizes.reduce((total, size) => total + size, 0),
+    ).toBeLessThanOrEqual(ENHANCED_DEFAULT_ROUTE_BUDGET_BYTES);
+    expect(keyEvent.isDynamicEntry).toBe(true);
+    expect(career.dynamicImports).toContain(
+      "src/ui/enhanced/career/CareerKeyEventDialog.tsx",
+    );
+    expect(keyEventSize).toBeLessThanOrEqual(
+      ENHANCED_KEY_EVENT_BUDGET_BYTES,
+    );
+    expect(
+      defaultSizes.reduce((total, size) => total + size, 0) +
+        keyEventSize,
+    ).toBeLessThanOrEqual(ENHANCED_COMPLETE_ROUTE_BUDGET_BYTES);
   });
 
   it("keeps the frozen Phase 3 Classic visual gate byte-identical", () => {

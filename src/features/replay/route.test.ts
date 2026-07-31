@@ -73,6 +73,8 @@ describe("replay hash route", () => {
       }
 
       expect(route.challenge).toEqual(challenge);
+      expect(route.kind).toBe("daily_challenge");
+      expect(route.profile).toEqual({ preferredFoot: null });
       expect(stableStringify(route.career)).toBe(
         stableStringify(career),
       );
@@ -80,6 +82,34 @@ describe("replay hash route", () => {
       expect(Object.isFrozen(route)).toBe(true);
     },
   );
+
+  it("reconstructs an ordinary completed career without Daily Challenge identity", () => {
+    const career = playClassicCareer({
+      identity: FIXTURES[1].identity,
+      mode: FIXTURES[1].mode,
+      seed: "issue-23:ordinary-route",
+    });
+    const hash = encodeReplayHash(
+      createReplayPayload({
+        career,
+        profile: { preferredFoot: "left" },
+      }),
+    );
+    const route = resolveReplayRoute(hash);
+
+    expect(route).toMatchObject({
+      challenge: null,
+      kind: "ordinary",
+      profile: { preferredFoot: "left" },
+      status: "ready",
+    });
+    if (route.status !== "ready") {
+      throw new Error("Expected an ordinary replay route");
+    }
+    expect(stableStringify(route.career)).toBe(
+      stableStringify(career),
+    );
+  });
 
   it("leaves non-replay fragments to normal page navigation", () => {
     expect(resolveReplayRoute("")).toEqual({

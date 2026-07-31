@@ -82,7 +82,7 @@ export function EnhancedNationalityScreen({
             选择国籍
           </h1>
           <p className="mt-1 text-sm leading-relaxed text-enhanced-supporting">
-            国家队门槛不同，但 61 个选择都能走完整生涯
+            61 个国家均可走完整生涯
           </p>
         </div>
       </div>

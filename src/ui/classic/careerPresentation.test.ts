@@ -12,9 +12,115 @@ import {
   createCareerEconomyProjection,
 } from "../../domain/economy/careerEconomyProjection";
 import { CLASSIC_GOLDEN_FIXTURES } from "../../../tests/golden/fixtures";
-import { createCareerPresentation } from "./careerPresentation";
+import {
+  createCareerPresentation,
+  createMarketValuePresentation,
+  createYuanPresentation,
+} from "./careerPresentation";
 
 describe("Classic career presentation", () => {
+  it("formats compact and full EUR/CNY values without losing extreme amounts", () => {
+    expect(
+      createMarketValuePresentation(125_000_000),
+    ).toEqual({
+      compact: "€1.3亿",
+      currency: "EUR",
+      full: "€125,000,000",
+    });
+    expect(createMarketValuePresentation(0)).toEqual({
+      compact: "€0",
+      currency: "EUR",
+      full: "€0",
+    });
+    expect(
+      createMarketValuePresentation(Number.MAX_SAFE_INTEGER),
+    ).toMatchObject({
+      currency: "EUR",
+      full: "€9,007,199,254,740,991",
+    });
+    expect(createYuanPresentation(12_345_678)).toEqual({
+      compact: "¥1,234.6万",
+      currency: "CNY",
+      full: "¥12,345,678",
+    });
+    expect(createYuanPresentation(9_999)).toEqual({
+      compact: "¥9,999",
+      currency: "CNY",
+      full: "¥9,999",
+    });
+    expect(() =>
+      createMarketValuePresentation(-1),
+    ).toThrow(RangeError);
+    expect(() => createYuanPresentation(1.5)).toThrow(
+      RangeError,
+    );
+  });
+
+  it("keeps the ordinary timeline fixed at ages 16 through 39", () => {
+    const career = startClassicCareer({
+      identity: {
+        lastName: "基线",
+        nationalityFifaCode: "CHN",
+        position: "ST",
+        preferredNumber: 9,
+      },
+      mode: "normal",
+      seed: "issue-23:ordinary-timeline",
+    });
+
+    const view = createCareerPresentation({
+      career,
+      isRevealing: false,
+      visibleSeasonCount: 0,
+    });
+
+    expect(view.timeline).toHaveLength(24);
+    expect(view.timeline[0]).toEqual({
+      age: 16,
+      kind: "current",
+    });
+    expect(view.timeline.at(-1)).toEqual({
+      age: 39,
+      kind: "empty",
+    });
+  });
+
+  it.each([40, 41, 43] as const)(
+    "extends the timeline through a current decision at age %i",
+    (age) => {
+      const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+        (candidate) =>
+          candidate.expected.finalAge === age &&
+          candidate.choices.at(-1)?.decisionType ===
+            "no_offers_retirement",
+      );
+
+      if (fixture === undefined) {
+        throw new Error(`Missing age-${age} golden fixture`);
+      }
+
+      const career = replayClassicCareer({
+        choices: fixture.choices.slice(0, -1),
+        contentVersion: fixture.contentVersion,
+        identity: fixture.identity,
+        mode: fixture.mode,
+        seed: fixture.seed,
+      });
+      const view = createCareerPresentation({
+        career,
+        isRevealing: false,
+        visibleSeasonCount: career.seasons.length,
+      });
+
+      expect(career.currentDecision?.age).toBe(age);
+      expect(view.timeline).toHaveLength(age - 16 + 1);
+      expect(view.timeline.at(-1)).toEqual({
+        age,
+        kind: "current",
+      });
+    },
+  );
+
   it.each(["ST", "GK"] as const)(
     "exposes reveal-safe contract economy facts for a %s career",
     (position) => {
@@ -113,11 +219,16 @@ describe("Classic career presentation", () => {
     const immediate = createCareerPresentation({
       career: committed,
       isRevealing: true,
+      revealBaselineCareer: initial,
       visibleSeasonCount: 0,
     });
 
-    expect(immediate.header.age).toBe(committed.playerAge);
-    expect(immediate.header.overall).toBe(committed.overall);
+    expect(immediate.header).toMatchObject({
+      age: initial.playerAge,
+      club: null,
+      marketValue: initial.marketValue,
+      overall: initial.overall,
+    });
     expect(immediate.totals).toEqual({
       appearances: 0,
       assists: 0,
@@ -286,6 +397,7 @@ describe("Classic career presentation", () => {
         certainty: "exact",
         kind: "new_contract",
         label: "年薪 ¥20,000",
+        tone: "positive",
       },
       honorOpportunities: [
         "联赛",
@@ -324,6 +436,7 @@ describe("Classic career presentation", () => {
         kind: "contract_unchanged",
         label: "母队合同不变 · 年薪 ¥20,000",
         reason: "loan",
+        tone: "neutral",
       },
       title: "租借去 女王公园巡游者",
     });
@@ -371,6 +484,7 @@ describe("Classic career presentation", () => {
             label: expect.stringMatching(
               /^预计年薪 ¥[\d,]+$/,
             ),
+            tone: "positive",
           }),
           honorOpportunities: expect.arrayContaining([
             "联赛/升级",
@@ -402,6 +516,7 @@ describe("Classic career presentation", () => {
             kind: "no_contract",
             label: "退役后停止收入",
             reason: "retire",
+            tone: "warning",
           },
           id: "retire",
         }),
@@ -650,6 +765,7 @@ describe("Classic career presentation", () => {
         {
           kind: "relegation",
           label: "降入次级联赛",
+          tone: "negative",
         },
       ],
       tierChange: null,
@@ -659,12 +775,46 @@ describe("Classic career presentation", () => {
         {
           kind: "suspension",
           label: "停赛",
+          tone: "warning",
         },
       ],
       tierChange: {
         from: 1,
         label: "进入次级联赛",
         to: 2,
+        tone: "negative",
+      },
+    });
+
+    const promotionCareer = {
+      ...statusCareer,
+      seasons: [
+        {
+          ...statusCareer.seasons[0]!,
+          competitionTier: 2 as const,
+          relegated: false,
+        },
+        {
+          ...statusCareer.seasons[1]!,
+          competitionTier: 1 as const,
+          suspended: false,
+        },
+      ],
+    };
+    const promotionRow = createCareerPresentation({
+      career: promotionCareer,
+      isRevealing: true,
+      visibleSeasonCount: 2,
+    }).timeline.find(
+      (row) => row.kind === "season" && row.age === second.age,
+    );
+
+    expect(promotionRow).toMatchObject({
+      tierChange: {
+        from: 2,
+        label: "进入顶级联赛",
+        to: 1,
+        tone: "positive",
       },
     });
   });

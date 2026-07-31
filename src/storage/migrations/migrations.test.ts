@@ -246,7 +246,7 @@ describe("archive migrations", () => {
         `legacy-${sourceHash}`,
       ),
     ).toMatchObject({
-      sourceSchemaVersion: 2,
+      sourceSchemaVersion: 3,
       status: "ready",
     });
     expect(
@@ -309,12 +309,12 @@ describe("economy storage v1 to v2 migration", () => {
     ).toMatchObject({
       economyPolicyVersion:
         "2026-07-31-economy-v1",
-      schemaVersion: 2,
+      schemaVersion: 3,
     });
     const active =
       createClassicSessionRepository(storage).load();
     expect(active).toMatchObject({
-      sourceSchemaVersion: 2,
+      sourceSchemaVersion: 3,
       status: "ready",
     });
     if (active.status !== "ready") {
@@ -333,7 +333,7 @@ describe("economy storage v1 to v2 migration", () => {
         createCareerEconomyProjection(
           fixture.branchCareer,
         ),
-      sourceSchemaVersion: 2,
+      sourceSchemaVersion: 3,
       status: "ready",
     });
     if (archive.status !== "ready") {

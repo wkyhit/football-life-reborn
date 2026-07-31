@@ -1,6 +1,9 @@
 import {
+  createMarketValuePresentation,
+  createYuanPresentation,
   formatMarketValue,
   type CareerDecisionOptionPresentation,
+  type CareerCurrencyPresentation,
   type CareerPresentation,
 } from "../classic/careerPresentation";
 import { formatYuan } from "../../domain/economy/economyPolicy";
@@ -35,6 +38,16 @@ export function CareerEconomySummary({
   readonly variant: "classic" | "enhanced";
 }) {
   const enhanced = variant === "enhanced";
+  const marketValuePresentation =
+    createMarketValuePresentation(marketValue);
+  const annualSalaryPresentation =
+    economy?.annualSalary === null || economy === null
+      ? null
+      : createYuanPresentation(economy.annualSalary);
+  const totalIncomePresentation =
+    economy === null
+      ? null
+      : createYuanPresentation(economy.totalIncome);
 
   return (
     <dl
@@ -46,27 +59,45 @@ export function CareerEconomySummary({
       data-career-economy-summary=""
     >
       <EconomyMetric
+        currency={marketValuePresentation.currency}
+        fullValue={marketValuePresentation.full}
         label="身价"
-        value={formatMarketValue(marketValue)}
+        value={marketValuePresentation.compact}
         variant={variant}
       />
       <EconomyMetric
+        {...(annualSalaryPresentation === null
+          ? {}
+          : {
+              currency: annualSalaryPresentation.currency,
+              fullValue: annualSalaryPresentation.full,
+            })}
         label="年薪"
         value={
           economy === null
             ? "—"
             : economy.annualSalary === null
               ? "暂无合同"
-              : formatYuan(economy.annualSalary)
+              : enhanced
+                ? annualSalaryPresentation?.compact ?? "—"
+                : formatYuan(economy.annualSalary)
         }
         variant={variant}
       />
       <EconomyMetric
+        {...(totalIncomePresentation === null
+          ? {}
+          : {
+              currency: totalIncomePresentation.currency,
+              fullValue: totalIncomePresentation.full,
+            })}
         label="总收入"
         value={
           economy === null
             ? "—"
-            : formatYuan(economy.totalIncome)
+            : enhanced
+              ? totalIncomePresentation?.compact ?? "—"
+              : formatYuan(economy.totalIncome)
         }
         variant={variant}
       />
@@ -82,24 +113,101 @@ export function CareerSeasonEconomy({
   readonly variant: "classic" | "enhanced";
 }) {
   const enhanced = variant === "enhanced";
+  const marketValue = createMarketValuePresentation(
+    row.marketValue,
+  );
+  const salary =
+    row.economy === null
+      ? null
+      : createYuanPresentation(row.economy.annualSalary);
+  const income =
+    row.economy === null
+      ? null
+      : createYuanPresentation(row.economy.income);
+
+  if (enhanced) {
+    return (
+      <div
+        className="col-start-2 col-end-7 mt-1 min-w-0 rounded-[6px] bg-enhanced-surface px-2 py-1"
+        data-career-season-economy=""
+      >
+        <dl className="grid min-w-0 grid-cols-2 gap-x-2">
+          <EconomyMetric
+            compact
+            currency={marketValue.currency}
+            fullValue={marketValue.full}
+            label="身价"
+            value={marketValue.compact}
+            variant="enhanced"
+          />
+          <EconomyMetric
+            compact
+            {...(salary === null
+              ? {}
+              : {
+                  currency: salary.currency,
+                  fullValue: salary.full,
+                })}
+            label="年薪"
+            value={salary?.compact ?? "—"}
+            variant="enhanced"
+          />
+        </dl>
+        <details
+          className="mt-1 border-t border-enhanced-line"
+          data-enhanced-season-details=""
+        >
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between text-xs font-bold text-enhanced-pitch outline-none focus-visible:ring-2 focus-visible:ring-enhanced-focus">
+            收入与赛季故事
+            <span aria-hidden="true">＋</span>
+          </summary>
+          <div className="pb-1">
+            <dl>
+              <EconomyMetric
+                compact
+                {...(income === null
+                  ? {}
+                  : {
+                      currency: income.currency,
+                      fullValue: income.full,
+                    })}
+                label="收入"
+                value={income?.compact ?? "—"}
+                variant="enhanced"
+              />
+            </dl>
+            <CareerSeasonNarrative
+              contained
+              row={row}
+              variant="enhanced"
+            />
+          </div>
+        </details>
+      </div>
+    );
+  }
 
   return (
     <dl
-      className={
-        enhanced
-          ? "col-start-2 col-end-7 mt-1 grid min-w-0 grid-cols-3 gap-x-2 rounded-[6px] bg-enhanced-surface px-2 py-1"
-          : "col-start-2 col-end-7 mt-1 grid min-w-0 grid-cols-3 gap-x-2 rounded-md bg-zinc-950/45 px-2 py-1"
-      }
+      className="col-start-2 col-end-7 mt-1 grid min-w-0 grid-cols-3 gap-x-2 rounded-md bg-zinc-950/45 px-2 py-1"
       data-career-season-economy=""
     >
       <EconomyMetric
         compact
+        currency={marketValue.currency}
+        fullValue={marketValue.full}
         label="身价"
         value={formatMarketValue(row.marketValue)}
         variant={variant}
       />
       <EconomyMetric
         compact
+        {...(salary === null
+          ? {}
+          : {
+              currency: salary.currency,
+              fullValue: salary.full,
+            })}
         label="年薪"
         value={
           row.economy === null
@@ -110,6 +218,12 @@ export function CareerSeasonEconomy({
       />
       <EconomyMetric
         compact
+        {...(income === null
+          ? {}
+          : {
+              currency: income.currency,
+              fullValue: income.full,
+            })}
         label="收入"
         value={
           row.economy === null
@@ -124,11 +238,15 @@ export function CareerSeasonEconomy({
 
 function EconomyMetric({
   compact = false,
+  currency,
+  fullValue,
   label,
   value,
   variant,
 }: {
   readonly compact?: boolean;
+  readonly currency?: CareerCurrencyPresentation["currency"];
+  readonly fullValue?: string;
   readonly label: string;
   readonly value: string;
   readonly variant: "classic" | "enhanced";
@@ -159,7 +277,16 @@ function EconomyMetric({
         {label}
       </dt>
       <dd
-        className={`min-w-0 whitespace-nowrap font-bold tabular-nums ${
+        aria-label={
+          fullValue === undefined
+            ? undefined
+            : `${label}：${fullValue}`
+        }
+        className={`min-w-0 font-bold tabular-nums ${
+          enhanced
+            ? "break-words leading-tight"
+            : "whitespace-nowrap"
+        } ${
           compact
             ? enhanced
               ? "text-[9px] text-enhanced-ink-2"
@@ -168,6 +295,8 @@ function EconomyMetric({
               ? "mt-0.5 text-xs text-enhanced-strong"
               : "mt-0.5 text-[11px] text-zinc-200"
         }`}
+        data-currency={currency}
+        title={fullValue}
       >
         {value}
       </dd>
@@ -183,8 +312,7 @@ export function CareerDecisionEconomyDetails({
   readonly variant: "classic" | "enhanced";
 }) {
   const enhanced = variant === "enhanced";
-
-  return (
+  const content = (
     <>
       {option.consequences.length > 0 ? (
         <span
@@ -204,6 +332,7 @@ export function CareerDecisionEconomyDetails({
                   ? "flex items-start gap-2 text-xs leading-4"
                   : "flex items-start gap-2 text-[11px] leading-4"
               }
+              data-semantic-tone={consequence.tone}
               key={`${consequence.semanticLabel}:${consequence.text}`}
               role="listitem"
             >
@@ -230,12 +359,11 @@ export function CareerDecisionEconomyDetails({
       ) : null}
       {option.contract ? (
         <span
-          className={
-            enhanced
-              ? "mt-3 block text-xs font-bold text-enhanced-success"
-              : "mt-2 block text-[11px] font-bold text-emerald-300"
-          }
+          className={`block font-bold ${
+            enhanced ? "mt-3 text-xs" : "mt-2 text-[11px]"
+          } ${contractToneClass(option.contract.tone, variant)}`}
           data-career-decision-contract=""
+          data-semantic-tone={option.contract.tone}
         >
           {option.contract.label}
         </span>
@@ -254,6 +382,23 @@ export function CareerDecisionEconomyDetails({
         </span>
       ) : null}
     </>
+  );
+
+  if (!enhanced) {
+    return content;
+  }
+
+  return (
+    <details
+      className="border-t border-enhanced-line px-3 pb-2"
+      data-enhanced-decision-details=""
+    >
+      <summary className="flex min-h-11 cursor-pointer items-center justify-between text-xs font-bold text-enhanced-pitch outline-none focus-visible:ring-2 focus-visible:ring-enhanced-focus">
+        合同与完整故事
+        <span aria-hidden="true">＋</span>
+      </summary>
+      <div className="pb-1">{content}</div>
+    </details>
   );
 }
 
@@ -316,13 +461,10 @@ export function CareerMilestoneNarrative({
           {label}
         </li>
       ))}
-      {statuses.map(({ label }, index) => (
+      {statuses.map(({ label, tone }, index) => (
         <li
-          className={`${radius} border ${
-            enhanced
-              ? "border-rose-400/25 bg-rose-400/10 px-2.5 py-2 text-xs font-bold text-rose-100"
-              : "border-rose-500/30 bg-rose-500/10 px-2.5 py-2 text-xs font-bold text-rose-200"
-          }`}
+          className={`${radius} border px-2.5 py-2 text-xs font-bold ${milestoneToneClass(tone, variant)}`}
+          data-semantic-tone={tone}
           key={`status-${index}-${label}`}
         >
           {label}
@@ -330,11 +472,8 @@ export function CareerMilestoneNarrative({
       ))}
       {tierChange ? (
         <li
-          className={`${radius} border ${
-            enhanced
-              ? "border-rose-400/25 bg-rose-400/10 px-2.5 py-2 text-xs font-bold text-rose-100"
-              : "border-rose-500/30 bg-rose-500/10 px-2.5 py-2 text-xs font-bold text-rose-200"
-          }`}
+          className={`${radius} border px-2.5 py-2 text-xs font-bold ${milestoneToneClass(tierChange.tone, variant)}`}
+          data-semantic-tone={tierChange.tone}
         >
           {tierChange.label}
         </li>
@@ -344,9 +483,11 @@ export function CareerMilestoneNarrative({
 }
 
 export function CareerSeasonNarrative({
+  contained = false,
   row,
   variant,
 }: {
+  readonly contained?: boolean;
   readonly row: SeasonRow;
   readonly variant: "classic" | "enhanced";
 }) {
@@ -356,6 +497,7 @@ export function CareerSeasonNarrative({
     id: string;
     kind: "honor" | "national" | "status";
     label: string;
+    tone: "negative" | "neutral" | "positive" | "warning";
   }> = [
     ...row.honors.map((honor, index) => ({
       honor:
@@ -365,18 +507,21 @@ export function CareerSeasonNarrative({
       id: `honor-${index}-${honor.label}`,
       kind: "honor" as const,
       label: honor.label,
+      tone: "positive" as const,
     })),
     ...row.nationalTournaments.map(({ label }, index) => ({
       honor: null,
       id: `national-${index}-${label}`,
       kind: "national" as const,
       label,
+      tone: "neutral" as const,
     })),
-    ...row.statuses.map(({ label }, index) => ({
+    ...row.statuses.map(({ label, tone }, index) => ({
       honor: null,
       id: `status-${index}-${label}`,
       kind: "status" as const,
       label,
+      tone,
     })),
     ...(row.tierChange === null
       ? []
@@ -386,6 +531,7 @@ export function CareerSeasonNarrative({
             id: `tier-${row.tierChange.from}-${row.tierChange.to}`,
             kind: "status" as const,
             label: row.tierChange.label,
+            tone: row.tierChange.tone,
           },
         ]),
   ];
@@ -397,25 +543,26 @@ export function CareerSeasonNarrative({
   return (
     <ul
       aria-label={`${row.age} 岁赛季事件`}
-      className="col-start-2 col-end-7 mt-1 flex flex-wrap gap-1"
+      className={`${
+        contained ? "mt-2" : "col-start-2 col-end-7 mt-1"
+      } flex flex-wrap gap-1`}
       data-classic-season-narrative={enhanced ? undefined : ""}
       data-enhanced-season-narrative={enhanced ? "" : undefined}
     >
       {items.map((item) => (
         <li
-          className={
+          className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold ${
             item.kind === "honor"
               ? enhanced
-                ? "inline-flex items-center gap-1 rounded-[5px] border border-amber-400/25 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-200"
-                : "inline-flex items-center gap-1 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-300"
+                ? "rounded-[5px] border border-amber-400/25 bg-amber-400/10 text-amber-200"
+                : "rounded border border-amber-500/30 bg-amber-500/10 text-amber-300"
               : item.kind === "national"
                 ? enhanced
-                  ? "inline-flex items-center gap-1 rounded-[5px] border border-cyan-400/25 bg-cyan-400/10 px-1.5 py-0.5 text-[9px] font-bold text-cyan-200"
-                  : "inline-flex items-center gap-1 rounded border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-bold text-sky-300"
-                : enhanced
-                  ? "inline-flex items-center gap-1 rounded-[5px] border border-rose-400/25 bg-rose-400/10 px-1.5 py-0.5 text-[9px] font-bold text-rose-200"
-                  : "inline-flex items-center gap-1 rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold text-rose-300"
-          }
+                  ? "rounded-[5px] border border-cyan-400/25 bg-cyan-400/10 text-cyan-200"
+                  : "rounded border border-sky-500/30 bg-sky-500/10 text-sky-300"
+                : seasonToneClass(item.tone, variant)
+          }`}
+          data-semantic-tone={item.tone}
           key={item.id}
         >
           {item.honor === null ? null : (
@@ -482,12 +629,11 @@ export function CareerEventResultNarrative({
       </p>
       {panel.contractSummary ? (
         <p
-          className={
-            enhanced
-              ? "mt-3 text-xs font-bold text-enhanced-success"
-              : "mt-2 text-xs font-bold text-emerald-300"
-          }
+          className={`${enhanced ? "mt-3" : "mt-2"} text-xs font-bold ${contractResultToneClass(panel.contractResult, variant)}`}
           data-career-event-contract-result=""
+          data-semantic-tone={contractResultTone(
+            panel.contractResult,
+          )}
         >
           {panel.contractSummary}
         </p>
@@ -521,8 +667,11 @@ export function CareerRecentEventResult({
       </span>
       {result.contractSummary ? (
         <span
-          className={`${enhanced ? "mt-2" : "mt-1"} block font-bold`}
+          className={`${enhanced ? "mt-2" : "mt-1"} block font-bold ${contractResultToneClass(result.contractResult, variant)}`}
           data-career-event-contract-result=""
+          data-semantic-tone={contractResultTone(
+            result.contractResult,
+          )}
         >
           {result.contractSummary}
         </span>
@@ -558,6 +707,85 @@ function consequenceToneClass(
     case "negative":
       return "text-red-400";
   }
+}
+
+type SemanticTone =
+  | "negative"
+  | "neutral"
+  | "positive"
+  | "warning";
+type ContractTone = NonNullable<
+  CareerDecisionOptionPresentation["contract"]
+>["tone"];
+
+function contractToneClass(
+  tone: ContractTone,
+  variant: "classic" | "enhanced",
+): string {
+  if (variant === "classic") {
+    return "text-emerald-300";
+  }
+
+  switch (tone) {
+    case "positive":
+      return "text-enhanced-success";
+    case "neutral":
+      return "text-enhanced-supporting";
+    case "warning":
+      return "text-enhanced-trophy";
+  }
+}
+
+function contractResultTone(
+  result: EventResult["contractResult"],
+): Exclude<SemanticTone, "negative"> {
+  if (result === null) {
+    return "neutral";
+  }
+
+  switch (result.kind) {
+    case "new_contract":
+      return "positive";
+    case "contract_unchanged":
+      return "neutral";
+    case "no_contract":
+      return "warning";
+  }
+}
+
+function contractResultToneClass(
+  result: EventResult["contractResult"],
+  variant: "classic" | "enhanced",
+): string {
+  return contractToneClass(contractResultTone(result), variant);
+}
+
+function milestoneToneClass(
+  tone: SemanticTone,
+  variant: "classic" | "enhanced",
+): string {
+  if (variant === "classic") {
+    return "border-rose-500/30 bg-rose-500/10 text-rose-200";
+  }
+
+  switch (tone) {
+    case "positive":
+      return "border-emerald-400/25 bg-emerald-400/10 text-emerald-100";
+    case "negative":
+      return "border-rose-400/25 bg-rose-400/10 text-rose-100";
+    case "warning":
+      return "border-amber-400/25 bg-amber-400/10 text-amber-100";
+    case "neutral":
+      return "border-white/10 bg-white/[0.04] text-zinc-300";
+  }
+}
+
+function seasonToneClass(
+  tone: SemanticTone,
+  variant: "classic" | "enhanced",
+): string {
+  const radius = variant === "enhanced" ? "rounded-[5px]" : "rounded";
+  return `${radius} border ${milestoneToneClass(tone, variant)}`;
 }
 
 function resultToneClass(

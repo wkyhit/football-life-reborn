@@ -118,7 +118,7 @@ createRoot(root).render(
   <StrictMode>
     {fixture.kind === "career" && uiMode === "enhanced" ? (
       <EnhancedCareerScreen
-        onChoose={() => undefined}
+        onChoose={() => true}
         view={fixture.view}
       />
     ) : fixture.kind === "career" ? (
@@ -352,7 +352,12 @@ function presentation(input: {
     { appearances: 0, assists: 0, goals: 0, trophies: 0 },
   );
   const byAge = new Map(input.seasons.map((row) => [row.age, row]));
-  const timeline = Array.from({ length: 24 }, (_, index) => {
+  const endAge = Math.max(
+    39,
+    input.currentAge ?? 16,
+    ...input.seasons.map(({ age }) => age),
+  );
+  const timeline = Array.from({ length: endAge - 16 + 1 }, (_, index) => {
     const age = 16 + index;
     return (
       byAge.get(age) ??
@@ -493,6 +498,7 @@ function attackerSummary(): SummaryPresentation {
       name: "李",
       number: 10,
       position: "中锋",
+      preferredFoot: "未记录",
     },
     maxMarketValue: 57_000_000,
     maxOverall: 86,
@@ -537,6 +543,7 @@ function goalkeeperSummary(): SummaryPresentation {
       name: "李",
       number: 10,
       position: "门将",
+      preferredFoot: "未记录",
     },
     maxMarketValue: 26_000_000,
     maxOverall: 82,
@@ -597,6 +604,7 @@ function noTitleSummary(): SummaryPresentation {
       name: "李",
       number: 10,
       position: "中锋",
+      preferredFoot: "未记录",
     },
     maxMarketValue: 5_100_000,
     maxOverall: 75,

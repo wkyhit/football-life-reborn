@@ -12,11 +12,19 @@ import {
 import { ECONOMY_POLICY_VERSION } from "../domain/economy/economyPolicy";
 import { PACING_CONFIGS, type PacingMode } from "../domain/pacing";
 import { POSITION_ROLE_GROUPS } from "../domain/role";
+import {
+  LEGACY_CAREER_PRESENTATION_PROFILE,
+  isCareerPresentationProfile,
+  normalizeCareerPresentationProfile,
+  type CareerPresentationProfile,
+} from "../presentation/profile";
 import type { StorageLike } from "./careerRepository";
 
-export const CLASSIC_SESSION_SCHEMA_VERSION = 2 as const;
+export const CLASSIC_SESSION_SCHEMA_VERSION = 3 as const;
 export const ACTIVE_CLASSIC_SESSION_STORAGE_KEY =
   "football-life-reborn:classic-session:v2" as const;
+export const CLASSIC_SESSION_V2_BACKUP_STORAGE_KEY =
+  "football-life-reborn:classic-session:v2-backup" as const;
 export const LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY =
   "football-life-reborn:classic-session:v1" as const;
 export const CLASSIC_SESSION_QUARANTINE_PREFIX =
@@ -28,8 +36,16 @@ type ClassicSessionEnvelopeV2 = {
   readonly economyPolicyVersion: typeof ECONOMY_POLICY_VERSION;
   readonly identity: ClassicIdentity;
   readonly mode: PacingMode;
-  readonly schemaVersion: typeof CLASSIC_SESSION_SCHEMA_VERSION;
+  readonly schemaVersion: 2;
   readonly seed: string;
+};
+
+type ClassicSessionEnvelopeV3 = Omit<
+  ClassicSessionEnvelopeV2,
+  "schemaVersion"
+> & {
+  readonly profile: CareerPresentationProfile;
+  readonly schemaVersion: typeof CLASSIC_SESSION_SCHEMA_VERSION;
 };
 
 type ClassicSessionEnvelopeV1 = Omit<
@@ -45,7 +61,8 @@ export type ClassicSessionLoadResult =
       readonly state: ClassicCareerState;
       readonly economyPolicyVersion:
         typeof ECONOMY_POLICY_VERSION;
-      readonly sourceSchemaVersion: 1 | 2;
+      readonly profile: CareerPresentationProfile;
+      readonly sourceSchemaVersion: 1 | 2 | 3;
       readonly status: "ready";
     }
   | {
@@ -71,6 +88,7 @@ export type ClassicSessionRepository = {
   readonly load: () => ClassicSessionLoadResult;
   readonly save: (
     state: ClassicCareerState,
+    profile?: CareerPresentationProfile,
   ) => ClassicSessionSaveResult;
 };
 
@@ -147,6 +165,7 @@ export function createClassicSessionRepository(
 
       if (
         parsed.schemaVersion !== 1 &&
+        parsed.schemaVersion !== 2 &&
         parsed.schemaVersion !== CLASSIC_SESSION_SCHEMA_VERSION
       ) {
         return unsupported(
@@ -167,7 +186,7 @@ export function createClassicSessionRepository(
       }
 
       if (
-        parsed.schemaVersion === 2 &&
+        (parsed.schemaVersion === 2 || parsed.schemaVersion === 3) &&
         parsed.economyPolicyVersion !== ECONOMY_POLICY_VERSION
       ) {
         return unsupported(
@@ -180,7 +199,8 @@ export function createClassicSessionRepository(
 
       let envelope:
         | ClassicSessionEnvelopeV1
-        | ClassicSessionEnvelopeV2;
+        | ClassicSessionEnvelopeV2
+        | ClassicSessionEnvelopeV3;
 
       if (parsed.schemaVersion === 1) {
         if (!isClassicSessionEnvelopeV1(parsed)) {
@@ -191,7 +211,7 @@ export function createClassicSessionRepository(
           );
         }
         envelope = parsed;
-      } else {
+      } else if (parsed.schemaVersion === 2) {
         if (!isClassicSessionEnvelopeV2(parsed)) {
           return recoverInvalid(
             storage,
@@ -200,11 +220,24 @@ export function createClassicSessionRepository(
           );
         }
         envelope = parsed;
+      } else {
+        if (!isClassicSessionEnvelopeV3(parsed)) {
+          return recoverInvalid(
+            storage,
+            raw,
+            "Stored Classic session does not match schema version 3",
+          );
+        }
+        envelope = parsed;
       }
 
       try {
         return {
           economyPolicyVersion: ECONOMY_POLICY_VERSION,
+          profile:
+            envelope.schemaVersion === 3
+              ? normalizeCareerPresentationProfile(envelope.profile)
+              : LEGACY_CAREER_PRESENTATION_PROFILE,
           sourceSchemaVersion: envelope.schemaVersion,
           state: replayClassicCareer({
             choices: envelope.choiceLog,
@@ -224,18 +257,35 @@ export function createClassicSessionRepository(
       }
     },
 
-    save(state) {
-      const envelope: ClassicSessionEnvelopeV2 = {
+    save(state, profile = LEGACY_CAREER_PRESENTATION_PROFILE) {
+      const envelope: ClassicSessionEnvelopeV3 = {
         choiceLog: state.choiceLog,
         contentVersion: state.contentVersion,
         economyPolicyVersion: ECONOMY_POLICY_VERSION,
         identity: state.identity,
         mode: state.mode,
+        profile: normalizeCareerPresentationProfile(profile),
         schemaVersion: CLASSIC_SESSION_SCHEMA_VERSION,
         seed: state.seed,
       };
 
       try {
+        const currentRaw = storage.getItem(
+          ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+        );
+
+        if (
+          isEnvelopeVersion(currentRaw, 2) &&
+          storage.getItem(
+            CLASSIC_SESSION_V2_BACKUP_STORAGE_KEY,
+          ) === null
+        ) {
+          storage.setItem(
+            CLASSIC_SESSION_V2_BACKUP_STORAGE_KEY,
+            currentRaw,
+          );
+        }
+
         storage.setItem(
           ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
           JSON.stringify(envelope),
@@ -255,7 +305,7 @@ function isClassicSessionEnvelopeV2(
   value: Record<string, unknown>,
 ): value is ClassicSessionEnvelopeV2 {
   return (
-    value.schemaVersion === CLASSIC_SESSION_SCHEMA_VERSION &&
+    value.schemaVersion === 2 &&
     value.contentVersion === CLASSIC_CONTENT_VERSION &&
     value.economyPolicyVersion === ECONOMY_POLICY_VERSION &&
     typeof value.seed === "string" &&
@@ -266,6 +316,40 @@ function isClassicSessionEnvelopeV2(
     Array.isArray(value.choiceLog) &&
     value.choiceLog.every(isChoiceLogEntry)
   );
+}
+
+function isClassicSessionEnvelopeV3(
+  value: Record<string, unknown>,
+): value is ClassicSessionEnvelopeV3 {
+  return (
+    value.schemaVersion === CLASSIC_SESSION_SCHEMA_VERSION &&
+    value.contentVersion === CLASSIC_CONTENT_VERSION &&
+    value.economyPolicyVersion === ECONOMY_POLICY_VERSION &&
+    typeof value.seed === "string" &&
+    value.seed.length >= 1 &&
+    value.seed.length <= 128 &&
+    isPacingMode(value.mode) &&
+    isClassicIdentity(value.identity) &&
+    isCareerPresentationProfile(value.profile) &&
+    Array.isArray(value.choiceLog) &&
+    value.choiceLog.every(isChoiceLogEntry)
+  );
+}
+
+function isEnvelopeVersion(
+  raw: string | null,
+  version: number,
+): raw is string {
+  if (raw === null) {
+    return false;
+  }
+
+  try {
+    const value = JSON.parse(raw) as unknown;
+    return isRecord(value) && value.schemaVersion === version;
+  } catch {
+    return false;
+  }
 }
 
 function isClassicSessionEnvelopeV1(

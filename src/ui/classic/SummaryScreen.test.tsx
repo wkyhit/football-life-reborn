@@ -45,6 +45,17 @@ describe("SummaryScreen", () => {
       "focus-visible:outline-2",
     );
     expect(scrollRegion).toHaveAttribute("tabindex", "0");
+    const lastRecord = container.querySelector<HTMLElement>(
+      "[data-summary-last-record]",
+    );
+    const fixedActions = container.querySelector<HTMLElement>(
+      "[data-classic-summary-footer]",
+    );
+    expect(lastRecord).not.toBeNull();
+    expect(scrollRegion).toContainElement(lastRecord);
+    expect(lastRecord).toHaveTextContent("28 个赛季");
+    expect(fixedActions).not.toBeNull();
+    expect(scrollRegion).not.toContainElement(fixedActions);
     expect(
       screen.getByRole("region", { name: "荣誉室" }).children[1]
         ?.children,
@@ -172,6 +183,7 @@ function denseSummary(): SummaryPresentation {
       name: "八字名字正好上限",
       number: 10,
       position: "中锋",
+      preferredFoot: "未记录",
     },
     maxMarketValue: 150_000_000,
     maxOverall: 97,

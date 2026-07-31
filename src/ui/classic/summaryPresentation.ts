@@ -28,6 +28,11 @@ import {
   type CareerClubPresentation,
 } from "./careerPresentation";
 import type { HonorIdentityKey } from "../shared/HonorIdentity";
+import {
+  LEGACY_CAREER_PRESENTATION_PROFILE,
+  preferredFootLabel,
+  type CareerPresentationProfile,
+} from "../../presentation/profile";
 
 export type SummaryHonorPresentation = {
   readonly count: number;
@@ -56,6 +61,7 @@ export type SummaryPresentation = {
     readonly name: string;
     readonly number: number;
     readonly position: string;
+    readonly preferredFoot: string;
   };
   readonly maxMarketValue: number;
   readonly maxOverall: number;
@@ -156,6 +162,8 @@ const TOURNAMENT_RESULT_RANK: Readonly<
 
 export function createSummaryPresentation(
   career: ClassicCareerState,
+  profile: CareerPresentationProfile =
+    LEGACY_CAREER_PRESENTATION_PROFILE,
 ): SummaryPresentation {
   const summary = career.summary;
 
@@ -203,6 +211,7 @@ export function createSummaryPresentation(
         .join(""),
       number: career.identity.preferredNumber,
       position: positionLabel(career.identity.position),
+      preferredFoot: preferredFootLabel(profile.preferredFoot),
     },
     maxMarketValue: summary.maxMarketValue,
     maxOverall: summary.maxOverall,

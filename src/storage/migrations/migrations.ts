@@ -4,6 +4,7 @@ import {
   ARCHIVE_CAPACITY,
   ARCHIVE_INDEX_STORAGE_KEY,
   ARCHIVE_PAYLOAD_STORAGE_PREFIX,
+  ARCHIVE_SCHEMA_VERSION,
   LEGACY_ARCHIVE_INDEX_STORAGE_KEY,
   LEGACY_ARCHIVE_PAYLOAD_STORAGE_PREFIX,
   archivePayloadStorageKey,
@@ -13,6 +14,7 @@ import {
 } from "../archiveRepository";
 import {
   ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+  CLASSIC_SESSION_SCHEMA_VERSION,
   LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
   createClassicSessionRepository,
 } from "../classicSessionRepository";
@@ -265,13 +267,15 @@ export function migrateEconomyStorageV1ToV2(
 
       if (
         loaded.status !== "ready" ||
-        loaded.sourceSchemaVersion !== 2
+        (loaded.sourceSchemaVersion !== 2 &&
+          loaded.sourceSchemaVersion !==
+            CLASSIC_SESSION_SCHEMA_VERSION)
       ) {
         return {
           backupKey: ECONOMY_MIGRATION_BACKUP_KEY,
           reason:
             loaded.status === "ready"
-              ? "Current active session did not resolve as schema version 2"
+              ? "Current active session did not resolve as a supported current schema"
               : "reason" in loaded
                 ? loaded.reason
                 : "Current active session is invalid",
@@ -422,7 +426,7 @@ export function migrateEconomyStorageV1ToV2(
         ARCHIVE_INDEX_STORAGE_KEY,
         JSON.stringify({
           entries: [],
-          schemaVersion: 2,
+          schemaVersion: ARCHIVE_SCHEMA_VERSION,
         }),
       );
     }
@@ -930,12 +934,13 @@ function verifyEconomyMigrationWrites(
 
     if (
       active.status !== "ready" ||
-      active.sourceSchemaVersion !== 2 ||
+      active.sourceSchemaVersion !==
+        CLASSIC_SESSION_SCHEMA_VERSION ||
       stableStringify(active.state) !==
         stableStringify(sources.activeCareer)
     ) {
       throw new Error(
-        "Migrated active session failed v2 read-back",
+        "Migrated active session failed current-schema read-back",
       );
     }
   }
@@ -945,12 +950,12 @@ function verifyEconomyMigrationWrites(
 
     if (
       loaded.status !== "ready" ||
-      loaded.sourceSchemaVersion !== 2 ||
+      loaded.sourceSchemaVersion !== ARCHIVE_SCHEMA_VERSION ||
       stableStringify(loaded.career) !==
         stableStringify(archive.career)
     ) {
       throw new Error(
-        `Migrated archive failed v2 read-back: ${archive.id}`,
+        `Migrated archive failed current-schema read-back: ${archive.id}`,
       );
     }
   }
@@ -1268,6 +1273,7 @@ export function migrateClassicSessionToArchive(
     createdAt: stage.createdAt,
     displayName: `${career.identity.lastName}的生涯`,
     id: stage.archiveId,
+    profile: loaded.profile,
     updatedAt: stage.createdAt,
   });
 

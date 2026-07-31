@@ -49,26 +49,39 @@ function ReadyReplayScreen({
     string | null
   >(null);
   const [shareOpen, setShareOpen] = useState(false);
-  const view = createSummaryPresentation(route.career);
-  const progress = evaluateChallengeProgress(
-    route.challenge.family,
+  const view = createSummaryPresentation(
     route.career,
+    route.profile,
   );
+  const progress =
+    route.challenge === null
+      ? null
+      : evaluateChallengeProgress(
+          route.challenge.family,
+          route.career,
+        );
   const replayUrl = window.location.href;
-  const shareChallenge: ShareCardChallenge = {
-    calendarDate: route.challenge.calendarDate,
-    status: progress.status,
-    title: progress.title,
-  };
+  const shareChallenge: ShareCardChallenge | undefined =
+    route.challenge === null || progress === null
+      ? undefined
+      : {
+          calendarDate: route.challenge.calendarDate,
+          status: progress.status,
+          title: progress.title,
+        };
 
   return (
     <div className="contents" data-replay-route="ready">
       <EnhancedSummaryScreen
-        challenge={{
-          daily: route.challenge,
-          progress,
-          replayUrl,
-        }}
+        {...(route.challenge === null || progress === null
+          ? { replayUrl }
+          : {
+              challenge: {
+                daily: route.challenge,
+                progress,
+                replayUrl,
+              },
+            })}
         contextLabel="只读确定性回放"
         onCopyReplay={() => {
           if (navigator.clipboard === undefined) {
@@ -95,7 +108,9 @@ function ReadyReplayScreen({
       {shareOpen ? (
         <Suspense fallback={<ReplayOverlayLoading />}>
           <ReplayShareCardOverlay
-            challenge={shareChallenge}
+            {...(shareChallenge === undefined
+              ? {}
+              : { challenge: shareChallenge })}
             onClose={() => setShareOpen(false)}
             qrPayload={replayUrl}
             variant="enhanced"

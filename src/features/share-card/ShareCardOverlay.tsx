@@ -130,7 +130,7 @@ export function ShareCardOverlay({
               卡上名字
             </label>
             <input
-              className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 text-[14px] font-bold text-zinc-100 outline-none focus:border-emerald-500"
+              className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-[10px] text-[14px] font-bold text-zinc-100 outline-none focus:border-emerald-500"
               id="share-card-name"
               maxLength={12}
               onChange={(event) =>
@@ -160,7 +160,7 @@ export function ShareCardOverlay({
           <p className="mt-3 text-center text-[14px] font-bold text-amber-300">
             长按图片保存，或下载后发给朋友
           </p>
-          <div className="mt-2.5 grid shrink-0 grid-cols-2 gap-2">
+          <div className="mt-[10px] grid shrink-0 grid-cols-2 gap-2">
             <button
               className="h-12 rounded-xl border border-zinc-700 px-5 text-[15px] text-zinc-100 transition-colors active:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
               onClick={onClose}

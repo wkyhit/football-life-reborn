@@ -57,6 +57,7 @@ describe("Enhanced career archive", () => {
     const created = repository.create({
       career: parent,
       displayName: "原始人生",
+      profile: { preferredFoot: "left" },
     });
 
     if (!created.ok) {
@@ -244,6 +245,7 @@ describe("Enhanced career archive", () => {
         seed: parent.seed,
       }),
       "branch",
+      { preferredFoot: "left" },
     );
 
     await user.click(

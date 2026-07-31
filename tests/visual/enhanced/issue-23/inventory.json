@@ -1,0 +1,114 @@
+{
+  "capturedAt": "2026-07-31",
+  "issue": 23,
+  "runner": {
+    "name": "ego-browser",
+    "taskSpaceId": 40,
+    "version": "1.2.3"
+  },
+  "source": {
+    "branch": "issue-23-career-ux",
+    "commit": "6a70db69101e2d433358cb59002354f4e29e25e1",
+    "url": "http://127.0.0.1:4173/"
+  },
+  "viewportMatrix": [
+    { "width": 320, "height": 568, "zoom": 1, "verdict": "pass" },
+    { "width": 375, "height": 667, "zoom": 1, "verdict": "pass" },
+    { "width": 390, "height": 667, "zoom": 1, "verdict": "pass" },
+    { "width": 390, "height": 844, "zoom": 1, "verdict": "pass" },
+    { "width": 414, "height": 896, "zoom": 1, "verdict": "pass" },
+    { "width": 768, "height": 1024, "zoom": 1, "verdict": "pass" },
+    { "width": 1280, "height": 830, "zoom": 1, "verdict": "pass" },
+    { "width": 1440, "height": 900, "zoom": 1, "verdict": "pass" },
+    { "width": 1280, "height": 830, "zoom": 2, "verdict": "pass" }
+  ],
+  "geometry": {
+    "latestRowCenterErrorPx": 0.078125,
+    "documentHorizontalOverflowPx": 0,
+    "careerHeaderHeightPxAt320x568": 123,
+    "timelineHeightPxAt320x568": 174.52,
+    "timelineHeightPxAt375And390Short": 254,
+    "decisionRailHeightPxAt320x568": 204.48,
+    "workbenchOverlapAreaPx2": 0,
+    "finalOptionVisibleIntersectionPercent": 100,
+    "minimumInteractiveTargetPx": 44
+  },
+  "interaction": {
+    "choiceLogDeltaAfterRepeatedActivation": 1,
+    "historyBrowsePausedFollow": true,
+    "returnToLatestKeyboardResult": "pass",
+    "keyEventDialogInitialFocus": "继续",
+    "keyEventEscapeClosed": true,
+    "keyEventFocusRestored": true,
+    "reducedMotionPreservedInformation": true,
+    "summaryKeyboardEndReachedFinalRecord": true
+  },
+  "accessibility": {
+    "currentSeasonAriaCurrent": "step",
+    "choiceReceiptLiveStatus": true,
+    "dialogFocusManagement": "pass",
+    "keyboardOnlyJourney": "pass",
+    "zoom200": {
+      "visualViewportScale": 2,
+      "horizontalOverflowPx": 0,
+      "minimumInteractiveHeightPx": 44
+    }
+  },
+  "deliveryOptimization": {
+    "mobileLanding": {
+      "width": 320,
+      "height": 568,
+      "ordinaryCtaTopPx": 319,
+      "ordinaryCtaBottomPx": 367,
+      "challengeInitiallyCollapsed": true,
+      "expandedChallengeCount": 3,
+      "expandedChallengeTargetHeightPx": 44,
+      "descriptionsVisible": true,
+      "horizontalOverflowPx": 0
+    },
+    "keyEventChunk": {
+      "loadedOnDemand": true,
+      "focusedControl": "继续",
+      "horizontalOverflowPx": 0
+    },
+    "gzipBytes": {
+      "enhancedShell": 183,
+      "enhancedOnboarding": 6223,
+      "enhancedCareer": 5397,
+      "keyEventDialog": 1033,
+      "defaultRoute": 11803,
+      "completeRoute": 12836
+    }
+  },
+  "compatibility": {
+    "ordinaryReplayStorageDisabled": "pass",
+    "ordinaryReplayChallengeIdentityPresent": false,
+    "ordinaryReplayPreferredFoot": "left",
+    "legacyProfileLabel": "未记录",
+    "replayReaders": [1, 2, 3],
+    "sessionReaders": [1, 2, 3],
+    "archiveReaders": [1, 2, 3],
+    "transferReaders": [1, 2, 3],
+    "classicEngineHashChanged": false,
+    "goldenFixtureChanged": false
+  },
+  "screenshots": [
+    {
+      "file": "tests/visual/enhanced/issue-23/ordinary-replay-profile-320x568.png",
+      "sha256": "a3bbf8d11acd98febcd18a46a5ed3c0366bdb41f598b4a65d121c24032e7ec4c"
+    },
+    {
+      "file": "tests/visual/enhanced/issue-23/ordinary-replay-copy-320x568.png",
+      "sha256": "d5011879202e881f99235976c7e1a01054268e79e1928ef95635a533f98fd6fb"
+    },
+    {
+      "file": "tests/visual/enhanced/issue-23/ordinary-replay-zoom-200-1280x830.png",
+      "sha256": "ddbe3df1ea40e66f4a43e93173b3df95e5ed4d1a2a13f2c9d414dc61c1981e4c"
+    }
+  ],
+  "verdict": {
+    "critical": 0,
+    "major": 0,
+    "result": "pass"
+  }
+}

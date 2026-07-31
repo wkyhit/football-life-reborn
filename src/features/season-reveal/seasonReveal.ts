@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import {
   selectCareerEventNarrative,
@@ -18,6 +23,7 @@ import { formatYuan } from "../../domain/economy/economyPolicy";
 
 type RevealOptions = {
   readonly eventResultMs?: number;
+  readonly holdMilestones?: boolean;
   readonly milestoneMs?: number;
   readonly reducedMotion?: boolean;
   readonly seasonMs?: number;
@@ -62,11 +68,13 @@ type SeasonRevealState = {
   readonly latestResult: ClassicDecisionResult | null;
   readonly recentEventContractResult: CareerEconomyChoiceResult | null;
   readonly recentEventResult: ClassicDecisionResult | null;
+  readonly revealBaselineCareer: ClassicCareerState;
   readonly revealQueue: readonly SeasonRevealQueueItem[];
   readonly visibleSeasonCount: number;
 };
 
 export type SeasonRevealController = SeasonRevealState & {
+  readonly acknowledgeActiveItem: () => boolean;
   readonly activeItem: SeasonRevealQueueItem | null;
   readonly commitTransition: (
     transition: ClassicChoiceTransition,
@@ -82,12 +90,14 @@ export function useSeasonReveal(
   options: RevealOptions = {},
 ): SeasonRevealController {
   const reducedMotion = options.reducedMotion ?? false;
+  const holdMilestones = options.holdMilestones ?? false;
   const seasonMs =
     options.seasonMs ?? DEFAULT_SEASON_REVEAL_MS;
   const eventResultMs =
     options.eventResultMs ?? DEFAULT_EVENT_RESULT_MS;
   const milestoneMs =
     options.milestoneMs ?? DEFAULT_MILESTONE_MS;
+  const acknowledgementGuardRef = useRef<string | null>(null);
   const [state, setState] = useState<SeasonRevealState>(() => ({
     announcement: "",
     committedCareer: initialCareer,
@@ -96,6 +106,7 @@ export function useSeasonReveal(
     latestResult: null,
     recentEventContractResult: null,
     recentEventResult: null,
+    revealBaselineCareer: initialCareer,
     revealQueue: [],
     visibleSeasonCount: initialCareer.seasons.length,
   }));
@@ -125,7 +136,8 @@ export function useSeasonReveal(
           transition,
         });
         const immediate =
-          reducedMotion || queue.length === 1;
+          (reducedMotion && !holdMilestones) ||
+          queue.length === 1;
 
         return {
           announcement: immediate
@@ -149,6 +161,7 @@ export function useSeasonReveal(
             transition.result.eventKey === null
               ? null
               : transition.result,
+          revealBaselineCareer: current.committedCareer,
           revealQueue: immediate ? [] : queue,
           visibleSeasonCount: immediate
             ? transition.career.seasons.length
@@ -158,6 +171,7 @@ export function useSeasonReveal(
     },
     [
       eventResultMs,
+      holdMilestones,
       milestoneMs,
       reducedMotion,
       seasonMs,
@@ -165,37 +179,12 @@ export function useSeasonReveal(
   );
 
   useEffect(() => {
-    if (!reducedMotion) {
-      return;
-    }
-
-    setState((current) => {
-      if (!current.isRevealing) {
-        return current;
-      }
-
-      return {
-        ...current,
-        announcement: completionAnnouncement({
-          career: current.committedCareer,
-          contractResult: current.latestContractResult,
-          result: current.latestResult,
-        }),
-        isRevealing: false,
-        revealQueue: [],
-        visibleSeasonCount:
-          current.committedCareer.seasons.length,
-      };
-    });
-  }, [reducedMotion]);
-
-  useEffect(() => {
     const activeItem = state.revealQueue[0];
 
     if (
       !state.isRevealing ||
-      reducedMotion ||
-      activeItem === undefined
+      activeItem === undefined ||
+      (holdMilestones && activeItem.kind === "milestone")
     ) {
       return;
     }
@@ -204,18 +193,62 @@ export function useSeasonReveal(
       setState((current) =>
         advanceRevealQueue(current),
       );
-    }, activeItem.dwellMs);
+    }, reducedMotion ? 0 : activeItem.dwellMs);
 
     return () => window.clearTimeout(timer);
   }, [
     reducedMotion,
+    holdMilestones,
     state.isRevealing,
     state.revealQueue,
   ]);
 
+  const activeItem = state.revealQueue[0] ?? null;
+  const activeMilestoneKey =
+    activeItem?.kind === "milestone"
+      ? `milestone:${activeItem.seasonIndex}`
+      : null;
+
+  useEffect(() => {
+    if (
+      acknowledgementGuardRef.current !==
+      activeMilestoneKey
+    ) {
+      acknowledgementGuardRef.current = null;
+    }
+  }, [activeMilestoneKey]);
+
+  const acknowledgeActiveItem = useCallback(() => {
+    if (
+      activeItem?.kind !== "milestone" ||
+      !holdMilestones ||
+      activeMilestoneKey === null ||
+      acknowledgementGuardRef.current !== null
+    ) {
+      return false;
+    }
+
+    acknowledgementGuardRef.current = activeMilestoneKey;
+    setState((current) => {
+      const currentItem = current.revealQueue[0];
+
+      if (
+        currentItem?.kind !== "milestone" ||
+        `milestone:${currentItem.seasonIndex}` !==
+          activeMilestoneKey
+      ) {
+        return current;
+      }
+
+      return advanceRevealQueue(current);
+    });
+    return true;
+  }, [activeItem, activeMilestoneKey, holdMilestones]);
+
   return {
     ...state,
-    activeItem: state.revealQueue[0] ?? null,
+    acknowledgeActiveItem,
+    activeItem,
     commitTransition,
   };
 }

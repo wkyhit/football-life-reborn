@@ -11,9 +11,14 @@ import { createCareerEconomyProjection } from "../domain/economy/careerEconomyPr
 import { ECONOMY_POLICY_VERSION } from "../domain/economy/economyPolicy";
 import { createCareerLedger } from "../domain/ledger";
 import {
+  LEGACY_CAREER_PRESENTATION_PROFILE,
+  createCareerPresentationProfile,
+} from "../presentation/profile";
+import {
   ARCHIVE_CAPACITY,
   ARCHIVE_INDEX_STORAGE_KEY,
   ARCHIVE_SCHEMA_VERSION,
+  ARCHIVE_V2_BACKUP_STORAGE_KEY,
   LEGACY_ARCHIVE_INDEX_STORAGE_KEY,
   archivePayloadStorageKey,
   createArchiveRepository,
@@ -84,6 +89,7 @@ describe("archive repository", () => {
     const created = repository.create({
       career: initial,
       displayName: "第一人生",
+      profile: createCareerPresentationProfile("left"),
     });
 
     expect(created).toMatchObject({
@@ -92,6 +98,7 @@ describe("archive repository", () => {
         displayName: "第一人生",
         id: "career-a",
         identity: IDENTITY,
+        profile: { preferredFoot: "left" },
         progress: {
           age: 16,
           choiceCount: 0,
@@ -112,7 +119,7 @@ describe("archive repository", () => {
     const payloadBeforeRename = storage.getItem(payloadKey);
 
     expect(indexRaw).not.toBeNull();
-    expect(ARCHIVE_SCHEMA_VERSION).toBe(2);
+    expect(ARCHIVE_SCHEMA_VERSION).toBe(3);
     expect(ARCHIVE_INDEX_STORAGE_KEY).toBe(
       "football-life-reborn:archive:index:v2",
     );
@@ -120,10 +127,11 @@ describe("archive repository", () => {
       entries: [
         {
           economyPolicyVersion: ECONOMY_POLICY_VERSION,
+          profile: { preferredFoot: "left" },
           totalIncome: 0,
         },
       ],
-      schemaVersion: 2,
+      schemaVersion: 3,
     });
     expect(indexRaw).not.toContain('"choiceLog"');
     expect(indexRaw).not.toContain('"seasons"');
@@ -178,6 +186,7 @@ describe("archive repository", () => {
     expect(loaded.economy).toEqual(
       createCareerEconomyProjection(progressed),
     );
+    expect(loaded.profile).toEqual({ preferredFoot: "left" });
     expect(repository.list()).toMatchObject({
       entries: [
         {
@@ -292,6 +301,7 @@ describe("archive repository", () => {
         {
           economyPolicyVersion: ECONOMY_POLICY_VERSION,
           id: legacyEntry.id,
+          profile: LEGACY_CAREER_PRESENTATION_PROFILE,
           totalIncome:
             createCareerEconomyProjection(career).totalIncome,
         },
@@ -300,6 +310,7 @@ describe("archive repository", () => {
     });
     expect(repository.load(legacyEntry.id)).toMatchObject({
       economy: createCareerEconomyProjection(career),
+      profile: LEGACY_CAREER_PRESENTATION_PROFILE,
       sourceSchemaVersion: 1,
       status: "ready",
     });
@@ -355,10 +366,100 @@ describe("archive repository", () => {
       ),
     ).toMatchObject({
       economyPolicyVersion: ECONOMY_POLICY_VERSION,
-      schemaVersion: 2,
+      profile: LEGACY_CAREER_PRESENTATION_PROFILE,
+      schemaVersion: 3,
     });
     expect(repository.load(legacyEntry.id)).toMatchObject({
+      sourceSchemaVersion: 3,
+      status: "ready",
+    });
+  });
+
+  it("reads a v2 archive without profile and snapshots exact v2 bytes before the first v3 mutation", () => {
+    const sourceStorage = new MemoryStorage();
+    const source = createArchiveRepository(sourceStorage, {
+      createId: () => "legacy-v2-profile",
+      now: () => "2026-07-30T10:00:00.000Z",
+    });
+    const career = createCareer("profile-archive-v2");
+    expect(
+      source.create({
+        career,
+        displayName: "旧版档案",
+        profile: createCareerPresentationProfile("left"),
+      }),
+    ).toMatchObject({ ok: true });
+
+    const payloadKey = archivePayloadStorageKey(
+      "legacy-v2-profile",
+    );
+    const v3Index = JSON.parse(
+      sourceStorage.getItem(ARCHIVE_INDEX_STORAGE_KEY)!,
+    );
+    const v3Payload = JSON.parse(
+      sourceStorage.getItem(payloadKey)!,
+    );
+    delete v3Index.entries[0].profile;
+    delete v3Payload.profile;
+    v3Index.schemaVersion = 2;
+    v3Payload.schemaVersion = 2;
+    const v2IndexRaw = JSON.stringify(v3Index);
+    const v2PayloadRaw = JSON.stringify(v3Payload);
+    const storage = new FailingStorage();
+    storage.setItem(ARCHIVE_INDEX_STORAGE_KEY, v2IndexRaw);
+    storage.setItem(payloadKey, v2PayloadRaw);
+    const repository = createArchiveRepository(storage);
+
+    expect(repository.load("legacy-v2-profile")).toMatchObject({
+      profile: LEGACY_CAREER_PRESENTATION_PROFILE,
       sourceSchemaVersion: 2,
+      status: "ready",
+    });
+    storage.failNextSetFor = ARCHIVE_V2_BACKUP_STORAGE_KEY;
+    expect(
+      repository.update(
+        "legacy-v2-profile",
+        career,
+        createCareerPresentationProfile("right"),
+      ),
+    ).toMatchObject({ ok: false, reason: "unavailable" });
+    expect(storage.getItem(ARCHIVE_INDEX_STORAGE_KEY)).toBe(
+      v2IndexRaw,
+    );
+    expect(storage.getItem(payloadKey)).toBe(v2PayloadRaw);
+    storage.failNextRemoveFor = payloadKey;
+    expect(
+      repository.delete("legacy-v2-profile"),
+    ).toMatchObject({ ok: false, reason: "unavailable" });
+    expect(storage.getItem(ARCHIVE_INDEX_STORAGE_KEY)).toBe(
+      v2IndexRaw,
+    );
+    expect(storage.getItem(payloadKey)).toBe(v2PayloadRaw);
+    expect(
+      JSON.parse(storage.getItem(ARCHIVE_V2_BACKUP_STORAGE_KEY)!),
+    ).toEqual({
+      indexRaw: v2IndexRaw,
+      payloads: { [payloadKey]: v2PayloadRaw },
+      sourceSchemaVersion: 2,
+    });
+    expect(
+      repository.update(
+        "legacy-v2-profile",
+        career,
+        createCareerPresentationProfile("right"),
+      ),
+    ).toMatchObject({ ok: true });
+
+    expect(
+      JSON.parse(storage.getItem(ARCHIVE_V2_BACKUP_STORAGE_KEY)!),
+    ).toEqual({
+      indexRaw: v2IndexRaw,
+      payloads: { [payloadKey]: v2PayloadRaw },
+      sourceSchemaVersion: 2,
+    });
+    expect(repository.load("legacy-v2-profile")).toMatchObject({
+      profile: { preferredFoot: "right" },
+      sourceSchemaVersion: 3,
       status: "ready",
     });
   });

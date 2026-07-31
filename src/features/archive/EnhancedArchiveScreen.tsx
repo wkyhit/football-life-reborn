@@ -35,6 +35,7 @@ import { EnhancedAction } from "../../ui/enhanced/components/EnhancedAction";
 import { EnhancedAppBar } from "../../ui/enhanced/components/EnhancedAppBar";
 import { EnhancedStateSurface } from "../../ui/enhanced/components/EnhancedStateSurface";
 import { createCareerPresentation } from "../../ui/classic/careerPresentation";
+import type { CareerPresentationProfile } from "../../presentation/profile";
 
 export type EnhancedArchiveScreenProps = {
   readonly activeArchiveId: string | null;
@@ -45,6 +46,7 @@ export type EnhancedArchiveScreenProps = {
   readonly onContinue: (
     career: ClassicCareerState,
     archiveId: string,
+    profile: CareerPresentationProfile,
   ) => void;
   readonly repository: ArchiveRepository;
   readonly storage: ArchiveStorageLike;
@@ -200,6 +202,7 @@ export function EnhancedArchiveScreen({
     const created = repository.create({
       career: loaded.career,
       displayName: `${entry.displayName} · 副本`,
+      profile: loaded.profile,
     });
 
     if (created.ok) {
@@ -326,7 +329,7 @@ export function EnhancedArchiveScreen({
     const loaded = repository.load(entry.id);
 
     if (loaded.status === "ready") {
-      onContinue(loaded.career, entry.id);
+      onContinue(loaded.career, entry.id, loaded.profile);
     } else {
       setStatus("继续失败：档案无法读取");
     }
@@ -766,6 +769,7 @@ function BranchCreator({
       career: branch.career,
       displayName,
       id: branch.id,
+      profile: loaded.profile,
     });
 
     if (created.ok) {

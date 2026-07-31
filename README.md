@@ -67,9 +67,11 @@ observe around each deterministic transition:
   while club marks remain limited to the 114 authorized crest files plus
   explicit fallback and load-failure states.
 
-Reveal cursors and animation state are transient presentation data. They
-are not added to the Classic engine, ordered choice log, active-session
-envelope, archive schema, or replay payload.
+Reveal cursors and animation state are transient presentation data. The
+player's preferred foot is likewise kept outside the frozen Classic
+engine and state hash, but is carried by the version-3 session, archive,
+transfer, and replay presentation profile. Legacy data without that
+profile remains readable and is shown as `未记录`.
 
 The current reference site may continue to change after this version was
 frozen. Those live differences are evidence for a future versioned issue,
@@ -112,8 +114,10 @@ See [`docs/career-archive.md`](docs/career-archive.md) for the archive,
 transfer, migration, branching, and recovery contracts.
 
 Daily challenges use the `Asia/Shanghai` calendar date and remain separate
-from ordinary careers. Completed challenge paths can be copied as compact
-`#r=` replay URLs and opened without browser storage. See
+from ordinary careers. Every completed career—ordinary or challenge—can
+be copied as a compact `#r=` replay URL and opened without browser storage.
+Replay codec v3 identifies the route kind explicitly, so an ordinary
+replay never acquires Daily Challenge identity. See
 [`docs/challenges-and-replay.md`](docs/challenges-and-replay.md) for the
 rules, replay schema, version policy, privacy properties, and
 non-competitive product boundary.

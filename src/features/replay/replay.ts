@@ -10,8 +10,14 @@ import {
   type CareerEconomyProjection,
 } from "../../domain/economy/careerEconomyProjection";
 import { ECONOMY_POLICY_VERSION } from "../../domain/economy/economyPolicy";
+import {
+  LEGACY_CAREER_PRESENTATION_PROFILE,
+  normalizeCareerPresentationProfile,
+  type CareerPresentationProfile,
+} from "../../presentation/profile";
 import type {
   ReplayChoice,
+  ReplayKind,
   ReplayPayload,
 } from "./codec";
 
@@ -65,8 +71,30 @@ export type ChallengeReplayResult =
 
 export function createReplayPayload(input: {
   readonly career: ClassicCareerState;
-  readonly challengeId: string;
+  readonly challengeId?: string | null;
+  readonly kind?: ReplayKind;
+  readonly profile?: CareerPresentationProfile;
 }): ReplayPayload {
+  const kind =
+    input.kind ??
+    (typeof input.challengeId === "string"
+      ? "daily_challenge"
+      : "ordinary");
+  if (
+    (kind === "daily_challenge" &&
+      typeof input.challengeId !== "string") ||
+    (kind === "ordinary" &&
+      typeof input.challengeId === "string")
+  ) {
+    throw new RangeError(
+      "Replay kind and challenge ID must describe the same route",
+    );
+  }
+  const challengeId: string | null =
+    kind === "daily_challenge"
+      ? (input.challengeId as string)
+      : null;
+
   const identity = Object.freeze({
     ...(input.career.identity.firstName === undefined
       ? {}
@@ -83,12 +111,16 @@ export function createReplayPayload(input: {
   );
 
   return Object.freeze({
-    challengeId: input.challengeId,
+    challengeId,
     choiceLog,
     contentVersion: input.career.contentVersion,
     economyPolicyVersion: ECONOMY_POLICY_VERSION,
     identity,
+    kind,
     mode: input.career.mode,
+    profile: normalizeCareerPresentationProfile(
+      input.profile ?? LEGACY_CAREER_PRESENTATION_PROFILE,
+    ),
     seed: input.career.seed,
     stateHash: deterministicHash(input.career),
   });
