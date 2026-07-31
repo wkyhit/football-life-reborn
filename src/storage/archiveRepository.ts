@@ -8,6 +8,11 @@ import {
 } from "../domain/checkpoint";
 import { stableStringify } from "../domain/deterministicHash";
 import {
+  createCareerEconomyProjection,
+  type CareerEconomyProjection,
+} from "../domain/economy/careerEconomyProjection";
+import { ECONOMY_POLICY_VERSION } from "../domain/economy/economyPolicy";
+import {
   createCareerLedger,
   type CareerLedgerEntry,
 } from "../domain/ledger";
@@ -17,11 +22,15 @@ import type {
   RetirementReason,
 } from "../domain/summary";
 
-export const ARCHIVE_SCHEMA_VERSION = 1 as const;
+export const ARCHIVE_SCHEMA_VERSION = 2 as const;
 export const ARCHIVE_CAPACITY = 20 as const;
 export const ARCHIVE_INDEX_STORAGE_KEY =
-  "football-life-reborn:archive:index:v1" as const;
+  "football-life-reborn:archive:index:v2" as const;
 export const ARCHIVE_PAYLOAD_STORAGE_PREFIX =
+  "football-life-reborn:archive:career:v2:" as const;
+export const LEGACY_ARCHIVE_INDEX_STORAGE_KEY =
+  "football-life-reborn:archive:index:v1" as const;
+export const LEGACY_ARCHIVE_PAYLOAD_STORAGE_PREFIX =
   "football-life-reborn:archive:career:v1:" as const;
 
 export type ArchiveStorageLike = Pick<
@@ -37,6 +46,8 @@ export type CareerArchiveEntry = {
   readonly contentVersion: string;
   readonly createdAt: string;
   readonly displayName: string;
+  readonly economyPolicyVersion:
+    typeof ECONOMY_POLICY_VERSION;
   readonly id: string;
   readonly identity: ClassicIdentity;
   readonly mode: PacingMode;
@@ -58,17 +69,26 @@ export type CareerArchiveEntry = {
     readonly totals: CareerTotals;
     readonly trophyCount: number;
   } | null;
+  readonly totalIncome: number;
   readonly updatedAt: string;
 };
 
-type ArchiveIndexEnvelopeV1 = {
+type ArchiveIndexEnvelopeV2 = {
   readonly entries: readonly CareerArchiveEntry[];
   readonly schemaVersion: typeof ARCHIVE_SCHEMA_VERSION;
 };
 
-type ArchivePayloadEnvelopeV1 = {
+type LegacyCareerArchiveEntry = Omit<
+  CareerArchiveEntry,
+  "economyPolicyVersion" | "totalIncome"
+>;
+
+type ArchivePayloadEnvelopeV2 = {
   readonly career: ClassicCareerState;
   readonly checkpoints: readonly DecisionCheckpoint[];
+  readonly economy: CareerEconomyProjection;
+  readonly economyPolicyVersion:
+    typeof ECONOMY_POLICY_VERSION;
   readonly id: string;
   readonly ledger: readonly CareerLedgerEntry[];
   readonly schemaVersion: typeof ARCHIVE_SCHEMA_VERSION;
@@ -129,8 +149,12 @@ export type ArchiveLoadResult =
   | {
       readonly career: ClassicCareerState;
       readonly checkpoints: readonly DecisionCheckpoint[];
+      readonly economy: CareerEconomyProjection;
+      readonly economyPolicyVersion:
+        typeof ECONOMY_POLICY_VERSION;
       readonly entry: CareerArchiveEntry;
       readonly ledger: readonly CareerLedgerEntry[];
+      readonly sourceSchemaVersion: 1 | 2;
       readonly status: "ready";
     }
   | { readonly status: "missing" }
@@ -214,6 +238,12 @@ export function archivePayloadStorageKey(
   id: string,
 ): string {
   return `${ARCHIVE_PAYLOAD_STORAGE_PREFIX}${id}`;
+}
+
+export function legacyArchivePayloadStorageKey(
+  id: string,
+): string {
+  return `${LEGACY_ARCHIVE_PAYLOAD_STORAGE_PREFIX}${id}`;
 }
 
 export function createArchiveRepository(
@@ -334,17 +364,27 @@ export function createArchiveRepository(
 
       const payloadKey = archivePayloadStorageKey(id);
       let payloadRaw: string | null;
+      let undoPayloadRaw: string;
 
       try {
         payloadRaw = storage.getItem(payloadKey);
+
+        if (payloadRaw === null) {
+          payloadRaw = storage.getItem(
+            legacyArchivePayloadStorageKey(id),
+          );
+        }
+
+        if (payloadRaw === null) {
+          return unavailable(
+            new Error(`Archive payload is missing: ${id}`),
+          );
+        }
+
+        undoPayloadRaw =
+          normalizeDeletedArchivePayload(id, payloadRaw);
       } catch (error) {
         return unavailable(error);
-      }
-
-      if (payloadRaw === null) {
-        return unavailable(
-          new Error(`Archive payload is missing: ${id}`),
-        );
       }
 
       const nextEntries = index.entries.filter(
@@ -373,7 +413,10 @@ export function createArchiveRepository(
 
       const undoToken = `archive-undo-${nextUndoToken}`;
       nextUndoToken += 1;
-      deletedArchives.set(undoToken, { entry, payloadRaw });
+      deletedArchives.set(undoToken, {
+        entry,
+        payloadRaw: undoPayloadRaw,
+      });
 
       return { entry, ok: true, undoToken };
     },
@@ -408,6 +451,12 @@ export function createArchiveRepository(
 
       try {
         raw = storage.getItem(archivePayloadStorageKey(id));
+
+        if (raw === null) {
+          raw = storage.getItem(
+            legacyArchivePayloadStorageKey(id),
+          );
+        }
       } catch (error) {
         return {
           reason: readableError(error),
@@ -437,14 +486,28 @@ export function createArchiveRepository(
 
       if (
         !isRecord(parsed) ||
-        parsed.schemaVersion !== ARCHIVE_SCHEMA_VERSION ||
+        (parsed.schemaVersion !== 1 &&
+          parsed.schemaVersion !== ARCHIVE_SCHEMA_VERSION) ||
         parsed.id !== id ||
         !isRecord(parsed.career) ||
         !Array.isArray(parsed.checkpoints) ||
         !Array.isArray(parsed.ledger)
       ) {
         return {
-          detail: `Archive payload does not match schema version 1: ${id}`,
+          detail: `Archive payload does not match a supported schema: ${id}`,
+          raw,
+          status: "corrupt",
+        };
+      }
+
+      if (
+        parsed.schemaVersion === 2 &&
+        (!isRecord(parsed.economy) ||
+          parsed.economyPolicyVersion !==
+            ECONOMY_POLICY_VERSION)
+      ) {
+        return {
+          detail: `Archive payload does not match schema version 2: ${id}`,
           raw,
           status: "corrupt",
         };
@@ -498,11 +561,38 @@ export function createArchiveRepository(
         };
       }
 
+      let economy: CareerEconomyProjection;
+
+      try {
+        economy = createCareerEconomyProjection(career);
+      } catch {
+        return {
+          detail: `Archive career cannot produce an economy projection: ${id}`,
+          raw,
+          status: "corrupt",
+        };
+      }
+
+      if (
+        parsed.schemaVersion === 2 &&
+        stableStringify(economy) !==
+        stableStringify(parsed.economy)
+      ) {
+        return {
+          detail: `Archive economy does not match career: ${id}`,
+          raw,
+          status: "corrupt",
+        };
+      }
+
       return {
         career,
         checkpoints,
+        economy,
+        economyPolicyVersion: ECONOMY_POLICY_VERSION,
         entry,
         ledger,
+        sourceSchemaVersion: parsed.schemaVersion,
         status: "ready",
       };
     },
@@ -673,11 +763,13 @@ function createEntry(input: {
 }): CareerArchiveEntry {
   const { career } = input;
   const summary = career.summary;
+  const economy = createCareerEconomyProjection(career);
 
   return {
     contentVersion: career.contentVersion,
     createdAt: input.createdAt,
     displayName: input.displayName,
+    economyPolicyVersion: ECONOMY_POLICY_VERSION,
     id: input.id,
     identity: { ...career.identity },
     mode: career.mode,
@@ -705,6 +797,7 @@ function createEntry(input: {
             totals: { ...summary.totals },
             trophyCount: summary.totals.trophies,
           },
+    totalIncome: economy.totalIncome,
     updatedAt: input.updatedAt,
   };
 }
@@ -716,6 +809,12 @@ function readIndex(
 
   try {
     raw = storage.getItem(ARCHIVE_INDEX_STORAGE_KEY);
+
+    if (raw === null) {
+      raw = storage.getItem(
+        LEGACY_ARCHIVE_INDEX_STORAGE_KEY,
+      );
+    }
   } catch (error) {
     return unavailable(error);
   }
@@ -736,14 +835,55 @@ function readIndex(
     };
   }
 
-  if (
-    !isRecord(parsed) ||
-    parsed.schemaVersion !== ARCHIVE_SCHEMA_VERSION ||
-    !Array.isArray(parsed.entries) ||
-    !parsed.entries.every(isArchiveEntry)
-  ) {
+  if (!isRecord(parsed) || !Array.isArray(parsed.entries)) {
     return {
-      detail: "Archive index does not match schema version 1",
+      detail: "Archive index does not match a supported schema",
+      ok: false,
+      reason: "corrupt_index",
+    };
+  }
+
+  let entries: CareerArchiveEntry[];
+
+  if (parsed.schemaVersion === ARCHIVE_SCHEMA_VERSION) {
+    if (!parsed.entries.every(isArchiveEntry)) {
+      return {
+        detail: "Archive index does not match schema version 2",
+        ok: false,
+        reason: "corrupt_index",
+      };
+    }
+    entries = parsed.entries as CareerArchiveEntry[];
+  } else if (parsed.schemaVersion === 1) {
+    if (!parsed.entries.every(isLegacyArchiveEntry)) {
+      return {
+        detail: "Archive index does not match schema version 1",
+        ok: false,
+        reason: "corrupt_index",
+      };
+    }
+
+    entries = [];
+
+    for (const legacyEntry of parsed.entries) {
+      const economy = readLegacyArchiveEconomy(
+        storage,
+        legacyEntry.id,
+      );
+
+      if (!economy.ok) {
+        return economy;
+      }
+
+      entries.push({
+        ...(legacyEntry as LegacyCareerArchiveEntry),
+        economyPolicyVersion: ECONOMY_POLICY_VERSION,
+        totalIncome: economy.economy.totalIncome,
+      });
+    }
+  } else {
+    return {
+      detail: `Archive index has unsupported schema version: ${String(parsed.schemaVersion)}`,
       ok: false,
       reason: "corrupt_index",
     };
@@ -751,8 +891,8 @@ function readIndex(
 
   if (
     new Set(
-      parsed.entries.map((entry: CareerArchiveEntry) => entry.id),
-    ).size !== parsed.entries.length
+      entries.map((entry: CareerArchiveEntry) => entry.id),
+    ).size !== entries.length
   ) {
     return {
       detail: "Archive index contains duplicate IDs",
@@ -762,15 +902,70 @@ function readIndex(
   }
 
   return {
-    entries: parsed.entries as CareerArchiveEntry[],
+    entries,
     ok: true,
   };
+}
+
+function readLegacyArchiveEconomy(
+  storage: ArchiveStorageLike,
+  id: string,
+):
+  | {
+      readonly economy: CareerEconomyProjection;
+      readonly ok: true;
+    }
+  | ArchiveUnavailable
+  | ArchiveCorruptIndex {
+  let raw: string | null;
+
+  try {
+    raw = storage.getItem(
+      legacyArchivePayloadStorageKey(id),
+    );
+  } catch (error) {
+    return unavailable(error);
+  }
+
+  if (raw === null) {
+    return {
+      detail: `Legacy archive payload is missing: ${id}`,
+      ok: false,
+      reason: "corrupt_index",
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+
+    if (
+      !isRecord(parsed) ||
+      parsed.schemaVersion !== 1 ||
+      parsed.id !== id ||
+      !isRecord(parsed.career)
+    ) {
+      throw new Error("payload does not match schema version 1");
+    }
+
+    return {
+      economy: createCareerEconomyProjection(
+        parsed.career as unknown as ClassicCareerState,
+      ),
+      ok: true,
+    };
+  } catch (error) {
+    return {
+      detail: `Legacy archive economy backfill failed for ${id}: ${readableError(error)}`,
+      ok: false,
+      reason: "corrupt_index",
+    };
+  }
 }
 
 function serializeIndex(
   entries: readonly CareerArchiveEntry[],
 ): string {
-  const envelope: ArchiveIndexEnvelopeV1 = {
+  const envelope: ArchiveIndexEnvelopeV2 = {
     entries,
     schemaVersion: ARCHIVE_SCHEMA_VERSION,
   };
@@ -782,15 +977,38 @@ function serializePayload(
   id: string,
   career: ClassicCareerState,
 ): string {
-  const envelope: ArchivePayloadEnvelopeV1 = {
+  const envelope: ArchivePayloadEnvelopeV2 = {
     career,
     checkpoints: createDecisionCheckpoints(career),
+    economy: createCareerEconomyProjection(career),
+    economyPolicyVersion: ECONOMY_POLICY_VERSION,
     id,
     ledger: createCareerLedger(career),
     schemaVersion: ARCHIVE_SCHEMA_VERSION,
   };
 
   return JSON.stringify(envelope);
+}
+
+function normalizeDeletedArchivePayload(
+  id: string,
+  raw: string,
+): string {
+  const parsed = JSON.parse(raw) as unknown;
+
+  if (
+    isRecord(parsed) &&
+    parsed.schemaVersion === 1 &&
+    parsed.id === id &&
+    isRecord(parsed.career)
+  ) {
+    return serializePayload(
+      id,
+      parsed.career as unknown as ClassicCareerState,
+    );
+  }
+
+  return raw;
 }
 
 function sortEntries(
@@ -831,6 +1049,32 @@ function isArchiveId(value: string): boolean {
 function isArchiveEntry(
   value: unknown,
 ): value is CareerArchiveEntry {
+  return (
+    isRecord(value) &&
+    typeof value.contentVersion === "string" &&
+    typeof value.createdAt === "string" &&
+    typeof value.displayName === "string" &&
+    value.economyPolicyVersion === ECONOMY_POLICY_VERSION &&
+    typeof value.id === "string" &&
+    isArchiveId(value.id) &&
+    isRecord(value.identity) &&
+    typeof value.mode === "string" &&
+    isRecord(value.progress) &&
+    typeof value.seed === "string" &&
+    (value.status === "in_progress" ||
+      value.status === "retired") &&
+    (value.summaryPreview === null ||
+      isRecord(value.summaryPreview)) &&
+    typeof value.totalIncome === "number" &&
+    Number.isSafeInteger(value.totalIncome) &&
+    value.totalIncome >= 0 &&
+    typeof value.updatedAt === "string"
+  );
+}
+
+function isLegacyArchiveEntry(
+  value: unknown,
+): value is LegacyCareerArchiveEntry {
   return (
     isRecord(value) &&
     typeof value.contentVersion === "string" &&

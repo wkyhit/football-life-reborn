@@ -4,9 +4,11 @@ import {
   applyClassicChoice,
   startClassicCareer,
 } from "../domain/classicEngine";
+import { ECONOMY_POLICY_VERSION } from "../domain/economy/economyPolicy";
 import {
   ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
   CLASSIC_SESSION_SCHEMA_VERSION,
+  LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
   createClassicSessionRepository,
 } from "./classicSessionRepository";
 import type { StorageLike } from "./careerRepository";
@@ -53,9 +55,14 @@ describe("classic session repository", () => {
 
     const raw = storage.getItem(ACTIVE_CLASSIC_SESSION_STORAGE_KEY);
     expect(raw).not.toBeNull();
+    expect(CLASSIC_SESSION_SCHEMA_VERSION).toBe(2);
+    expect(ACTIVE_CLASSIC_SESSION_STORAGE_KEY).toBe(
+      "football-life-reborn:classic-session:v2",
+    );
     expect(JSON.parse(raw!)).toMatchObject({
       choiceLog: committed.choiceLog,
       contentVersion: committed.contentVersion,
+      economyPolicyVersion: ECONOMY_POLICY_VERSION,
       identity: committed.identity,
       mode: committed.mode,
       schemaVersion: CLASSIC_SESSION_SCHEMA_VERSION,
@@ -75,6 +82,54 @@ describe("classic session repository", () => {
     expect(JSON.stringify(restored.state)).toBe(
       JSON.stringify(committed),
     );
+    expect(restored).toMatchObject({
+      economyPolicyVersion: ECONOMY_POLICY_VERSION,
+      sourceSchemaVersion: 2,
+    });
+  });
+
+  it("backfills a v1 envelope through economy-v1 without rewriting or deleting the legacy key", () => {
+    const initial = startClassicCareer({
+      identity: {
+        lastName: "周",
+        nationalityFifaCode: "CHN",
+        position: "GK",
+        preferredNumber: 1,
+      },
+      mode: "long",
+      seed: "economy-session-v1",
+    });
+    const legacyRaw = JSON.stringify({
+      choiceLog: initial.choiceLog,
+      contentVersion: initial.contentVersion,
+      identity: initial.identity,
+      mode: initial.mode,
+      schemaVersion: 1,
+      seed: initial.seed,
+    });
+    const storage = new MemoryStorage();
+    storage.setItem(
+      LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+      legacyRaw,
+    );
+
+    const loaded =
+      createClassicSessionRepository(storage).load();
+
+    expect(loaded).toMatchObject({
+      economyPolicyVersion: ECONOMY_POLICY_VERSION,
+      sourceSchemaVersion: 1,
+      state: initial,
+      status: "ready",
+    });
+    expect(
+      storage.getItem(
+        LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+      ),
+    ).toBe(legacyRaw);
+    expect(
+      storage.getItem(ACTIVE_CLASSIC_SESSION_STORAGE_KEY),
+    ).toBeNull();
   });
 
   it("quarantines a deterministic envelope that cannot be replayed", () => {
@@ -89,6 +144,7 @@ describe("classic session repository", () => {
         },
       ],
       contentVersion: "2026-07-30-classic-v1",
+      economyPolicyVersion: ECONOMY_POLICY_VERSION,
       identity: {
         lastName: "李",
         nationalityFifaCode: "CHN",

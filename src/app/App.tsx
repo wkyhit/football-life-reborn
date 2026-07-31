@@ -48,11 +48,16 @@ import {
 } from "../storage/careerRepository";
 import {
   ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+  LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
   createClassicSessionRepository,
   type ClassicSessionLoadResult,
   type ClassicSessionRepository,
 } from "../storage/classicSessionRepository";
-import { migrateClassicSessionToArchive } from "../storage/migrations/migrations";
+import {
+  migrateClassicSessionToArchive,
+  migrateEconomyStorageV1ToV2,
+  type EconomyMigrationResult,
+} from "../storage/migrations/migrations";
 import { CareerScreen } from "../ui/classic/CareerScreen";
 import {
   createCareerPresentation,
@@ -309,6 +314,10 @@ function CareerController({
     [],
   );
   const [initial] = useState(() => {
+    const economyMigration =
+      migrateEconomyStorageV1ToV2(
+        window.localStorage,
+      );
     const loaded = loadInitialState(
       setupRepository,
       classicRepository,
@@ -339,7 +348,12 @@ function CareerController({
       }
     }
 
-    return { ...loaded, activeArchiveId };
+    return {
+      ...loaded,
+      activeArchiveId,
+      migrationWarning:
+        economyMigrationWarning(economyMigration),
+    };
   });
   const [enhancedEntryPending, setEnhancedEntryPending] =
     useState(() => uiMode === "enhanced");
@@ -358,7 +372,10 @@ function CareerController({
   const [archiveRevision, setArchiveRevision] = useState(0);
   const [mode, setMode] = useState<PacingMode>("normal");
   const [recovery, setRecovery] = useState(initial.recovery);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveError, setSaveError] =
+    useState<string | null>(null);
+  const storageError =
+    saveError ?? initial.migrationWarning;
   const setActiveArchiveId = useCallback(
     (id: string | null) => {
       setActiveArchiveIdState(id);
@@ -481,7 +498,7 @@ function CareerController({
       >
         跳到主要内容
       </a>
-      {saveError ? (
+      {storageError ? (
         <p
           className={
             uiMode === "enhanced"
@@ -493,7 +510,7 @@ function CareerController({
           }
           role="alert"
         >
-          本地保存失败：{saveError}
+          本地保存失败：{storageError}
         </p>
       ) : null}
       {uiMode === "enhanced" &&
@@ -964,13 +981,13 @@ type RecoveryIssue =
       { status: "empty" } | { status: "ready" }
     >;
 
-type InitialAppState = {
+type LoadedAppState = {
   readonly classicCareer: ClassicCareerState | null;
   readonly recovery: RecoveryIssue | null;
   readonly setupState: CareerState;
 };
 
-function hasResumableState(initial: InitialAppState): boolean {
+function hasResumableState(initial: LoadedAppState): boolean {
   return (
     initial.classicCareer !== null ||
     initial.setupState.phase !== "landing"
@@ -981,7 +998,7 @@ function loadInitialState(
   setupRepository: CareerRepository,
   classicRepository: ClassicSessionRepository,
   seed: string,
-): InitialAppState {
+): LoadedAppState {
   const classicLoaded = classicRepository.load();
 
   if (classicLoaded.status === "ready") {
@@ -1077,7 +1094,26 @@ function discardClassicSession(): void {
     window.localStorage.removeItem(
       ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
     );
+    window.localStorage.removeItem(
+      LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+    );
   } catch {
     // Recovery can continue in memory when storage is unavailable.
   }
+}
+
+function economyMigrationWarning(
+  result: EconomyMigrationResult,
+): string | null {
+  if (
+    result.status === "empty" ||
+    result.status === "migrated" ||
+    result.status === "already_migrated"
+  ) {
+    return null;
+  }
+
+  return "reason" in result
+    ? `经济存档迁移未完成：${result.reason}`
+    : null;
 }

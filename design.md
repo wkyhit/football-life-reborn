@@ -267,6 +267,7 @@ Modify:
 - `src/storage/migrations/migrations.ts`
 - `src/features/replay/codec.ts`
 - `src/features/replay/replay.ts`
+- `src/features/replay/route.ts` only to map the approved economy-policy compatibility result to an explicit recovery message
 - `src/features/branching/compareBranches.ts`
 - `src/features/season-reveal/seasonReveal.ts`
 - `src/features/share-card/shareCard.ts`

@@ -7,12 +7,17 @@ import {
   type ClassicCareerState,
 } from "../domain/classicEngine";
 import { createDecisionCheckpoints } from "../domain/checkpoint";
+import { createCareerEconomyProjection } from "../domain/economy/careerEconomyProjection";
+import { ECONOMY_POLICY_VERSION } from "../domain/economy/economyPolicy";
 import { createCareerLedger } from "../domain/ledger";
 import {
   ARCHIVE_CAPACITY,
   ARCHIVE_INDEX_STORAGE_KEY,
+  ARCHIVE_SCHEMA_VERSION,
+  LEGACY_ARCHIVE_INDEX_STORAGE_KEY,
   archivePayloadStorageKey,
   createArchiveRepository,
+  legacyArchivePayloadStorageKey,
   type ArchiveStorageLike,
 } from "./archiveRepository";
 
@@ -107,11 +112,28 @@ describe("archive repository", () => {
     const payloadBeforeRename = storage.getItem(payloadKey);
 
     expect(indexRaw).not.toBeNull();
+    expect(ARCHIVE_SCHEMA_VERSION).toBe(2);
+    expect(ARCHIVE_INDEX_STORAGE_KEY).toBe(
+      "football-life-reborn:archive:index:v2",
+    );
+    expect(JSON.parse(indexRaw!)).toMatchObject({
+      entries: [
+        {
+          economyPolicyVersion: ECONOMY_POLICY_VERSION,
+          totalIncome: 0,
+        },
+      ],
+      schemaVersion: 2,
+    });
     expect(indexRaw).not.toContain('"choiceLog"');
     expect(indexRaw).not.toContain('"seasons"');
     expect(payloadBeforeRename).not.toBeNull();
     expect(payloadBeforeRename).toContain('"choiceLog"');
     expect(payloadBeforeRename).toContain('"checkpoints"');
+    expect(payloadBeforeRename).toContain('"economy"');
+    expect(payloadBeforeRename).toContain(
+      `"economyPolicyVersion":"${ECONOMY_POLICY_VERSION}"`,
+    );
     expect(payloadBeforeRename).toContain('"ledger"');
     expect(payloadBeforeRename).toContain('"seasons"');
 
@@ -152,6 +174,9 @@ describe("archive repository", () => {
     );
     expect(loaded.ledger).toEqual(
       createCareerLedger(progressed),
+    );
+    expect(loaded.economy).toEqual(
+      createCareerEconomyProjection(progressed),
     );
     expect(repository.list()).toMatchObject({
       entries: [
@@ -214,6 +239,128 @@ describe("archive repository", () => {
       "career-a",
       "career-b",
     ]);
+  });
+
+  it("backfills a v1 archive index and payload without rewriting the legacy keys", () => {
+    const storage = new MemoryStorage();
+    const career = chooseFirstOption(
+      createCareer("economy-archive-v1"),
+    );
+    const legacyEntry = {
+      contentVersion: career.contentVersion,
+      createdAt: "2026-07-30T10:00:00.000Z",
+      displayName: "旧版生涯",
+      id: "legacy-economy",
+      identity: career.identity,
+      mode: career.mode,
+      progress: {
+        age: career.playerAge,
+        choiceCount: career.choiceLog.length,
+        currentClubId: career.currentClubId,
+        marketValue: career.marketValue,
+        overall: career.overall,
+        seasonCount: career.seasons.length,
+      },
+      seed: career.seed,
+      status: "in_progress",
+      summaryPreview: null,
+      updatedAt: "2026-07-30T10:00:00.000Z",
+    };
+    const legacyIndexRaw = JSON.stringify({
+      entries: [legacyEntry],
+      schemaVersion: 1,
+    });
+    const legacyPayloadRaw = JSON.stringify({
+      career,
+      checkpoints: createDecisionCheckpoints(career),
+      id: legacyEntry.id,
+      ledger: createCareerLedger(career),
+      schemaVersion: 1,
+    });
+    storage.setItem(
+      LEGACY_ARCHIVE_INDEX_STORAGE_KEY,
+      legacyIndexRaw,
+    );
+    storage.setItem(
+      legacyArchivePayloadStorageKey(legacyEntry.id),
+      legacyPayloadRaw,
+    );
+
+    const repository = createArchiveRepository(storage);
+    expect(repository.list()).toMatchObject({
+      entries: [
+        {
+          economyPolicyVersion: ECONOMY_POLICY_VERSION,
+          id: legacyEntry.id,
+          totalIncome:
+            createCareerEconomyProjection(career).totalIncome,
+        },
+      ],
+      ok: true,
+    });
+    expect(repository.load(legacyEntry.id)).toMatchObject({
+      economy: createCareerEconomyProjection(career),
+      sourceSchemaVersion: 1,
+      status: "ready",
+    });
+    expect(
+      storage.getItem(LEGACY_ARCHIVE_INDEX_STORAGE_KEY),
+    ).toBe(legacyIndexRaw);
+    expect(
+      storage.getItem(
+        legacyArchivePayloadStorageKey(legacyEntry.id),
+      ),
+    ).toBe(legacyPayloadRaw);
+    expect(
+      storage.getItem(ARCHIVE_INDEX_STORAGE_KEY),
+    ).toBeNull();
+    expect(
+      storage.getItem(
+        archivePayloadStorageKey(legacyEntry.id),
+      ),
+    ).toBeNull();
+
+    const deleted = repository.delete(legacyEntry.id);
+    expect(deleted).toMatchObject({
+      entry: { id: legacyEntry.id },
+      ok: true,
+    });
+    if (!deleted.ok) {
+      throw new Error("Expected legacy archive deletion");
+    }
+    expect(repository.list()).toMatchObject({
+      entries: [],
+      ok: true,
+    });
+    expect(
+      storage.getItem(LEGACY_ARCHIVE_INDEX_STORAGE_KEY),
+    ).toBe(legacyIndexRaw);
+    expect(
+      storage.getItem(
+        legacyArchivePayloadStorageKey(legacyEntry.id),
+      ),
+    ).toBe(legacyPayloadRaw);
+
+    expect(
+      repository.undoDelete(deleted.undoToken),
+    ).toMatchObject({
+      entry: { id: legacyEntry.id },
+      ok: true,
+    });
+    expect(
+      JSON.parse(
+        storage.getItem(
+          archivePayloadStorageKey(legacyEntry.id),
+        )!,
+      ),
+    ).toMatchObject({
+      economyPolicyVersion: ECONOMY_POLICY_VERSION,
+      schemaVersion: 2,
+    });
+    expect(repository.load(legacyEntry.id)).toMatchObject({
+      sourceSchemaVersion: 2,
+      status: "ready",
+    });
   });
 
   it("refuses a twenty-first career without silently evicting any archive", () => {
@@ -522,6 +669,57 @@ describe("archive repository", () => {
       detail:
         "Archive ledger does not match career: career-tampered-ledger",
       raw: tamperedRaw,
+      status: "corrupt",
+    });
+  });
+
+  it("rejects a v2 payload whose persisted economy projection or policy version drifts", () => {
+    const storage = new MemoryStorage();
+    const repository = createArchiveRepository(storage, {
+      createId: () => "career-tampered-economy",
+      now: () => "2026-07-30T16:40:00.000Z",
+    });
+    const career = chooseFirstOption(
+      createCareer("economy:tampered-archive"),
+    );
+
+    expect(
+      repository.create({
+        career,
+        displayName: "经济投影被篡改",
+      }),
+    ).toMatchObject({ ok: true });
+
+    const payloadKey = archivePayloadStorageKey(
+      "career-tampered-economy",
+    );
+    const originalRaw = storage.getItem(payloadKey)!;
+    const economy = JSON.parse(originalRaw);
+    economy.economy.totalIncome += 10_000;
+    const tamperedEconomyRaw = JSON.stringify(economy);
+    storage.setItem(payloadKey, tamperedEconomyRaw);
+
+    expect(
+      repository.load("career-tampered-economy"),
+    ).toEqual({
+      detail:
+        "Archive economy does not match career: career-tampered-economy",
+      raw: tamperedEconomyRaw,
+      status: "corrupt",
+    });
+
+    const policy = JSON.parse(originalRaw);
+    policy.economyPolicyVersion =
+      "future-economy-policy";
+    const tamperedPolicyRaw = JSON.stringify(policy);
+    storage.setItem(payloadKey, tamperedPolicyRaw);
+
+    expect(
+      repository.load("career-tampered-economy"),
+    ).toEqual({
+      detail:
+        "Archive payload does not match schema version 2: career-tampered-economy",
+      raw: tamperedPolicyRaw,
       status: "corrupt",
     });
   });

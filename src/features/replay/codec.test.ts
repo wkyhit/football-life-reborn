@@ -9,6 +9,7 @@ import {
   fnv1a64,
   stableStringify,
 } from "../../domain/deterministicHash";
+import { ECONOMY_POLICY_VERSION } from "../../domain/economy/economyPolicy";
 import { deriveDailyChallenge } from "../challenges/daily";
 import {
   REPLAY_CODEC_VERSION,
@@ -42,10 +43,15 @@ describe("replay hash codec", () => {
     );
     const hash = encodeReplayHash(payload);
 
+    expect(REPLAY_CODEC_VERSION).toBe(2);
+    expect(payload.economyPolicyVersion).toBe(
+      ECONOMY_POLICY_VERSION,
+    );
     expect(hash).toMatch(/^#r=[A-Za-z0-9_-]+$/);
     expect(hash.slice("#r=".length)).not.toContain("=");
     expect(decodeReplayHash(hash)).toEqual({
       payload,
+      sourceCodecVersion: 2,
       status: "ready",
     });
 
@@ -56,6 +62,39 @@ describe("replay hash codec", () => {
     const parsed = new URL(url);
     expect(parsed.searchParams.has("r")).toBe(false);
     expect(parsed.hash).toBe(hash);
+  });
+
+  it("backfills a v1 replay wire with economy-v1 while preserving the football hash", () => {
+    const payload = createPayload(
+      playClassicCareer({
+        identity: {
+          lastName: "旧",
+          nationalityFifaCode: "CHN",
+          position: "CM",
+          preferredNumber: 8,
+        },
+        mode: "normal",
+        seed: DAILY.seed,
+      }),
+    );
+    const v2Hash = encodeReplayHash(payload);
+    const document = JSON.parse(
+      decodeBase64Url(v2Hash.slice("#r=".length)),
+    ) as Record<string, unknown>;
+    const { e: _economy, ...withoutEconomy } = document;
+    const legacy = withChecksum({
+      ...withoutEconomy,
+      v: 1,
+    });
+    const legacyHash = `#r=${encodeBase64Url(
+      JSON.stringify(legacy),
+    )}`;
+
+    expect(decodeReplayHash(legacyHash)).toEqual({
+      payload,
+      sourceCodecVersion: 1,
+      status: "ready",
+    });
   });
 
   it("rejects corrupt alphabet, truncation, and oversized hashes", () => {
@@ -154,11 +193,15 @@ describe("replay hash codec", () => {
     ) as Record<string, unknown>;
     const codecMismatch = withChecksum({
       ...document,
-      v: 2,
+      v: REPLAY_CODEC_VERSION + 1,
     });
     const contentMismatch = withChecksum({
       ...document,
       c: "future-classic-content",
+    });
+    const economyMismatch = withChecksum({
+      ...document,
+      e: "future-economy-policy",
     });
 
     expect(
@@ -166,7 +209,7 @@ describe("replay hash codec", () => {
         `#r=${encodeBase64Url(JSON.stringify(codecMismatch))}`,
       ),
     ).toEqual({
-      codecVersion: 2,
+      codecVersion: REPLAY_CODEC_VERSION + 1,
       reason: "codec_version",
       status: "unsupported",
     });
@@ -177,6 +220,15 @@ describe("replay hash codec", () => {
     ).toEqual({
       contentVersion: "future-classic-content",
       reason: "content_version",
+      status: "unsupported",
+    });
+    expect(
+      decodeReplayHash(
+        `#r=${encodeBase64Url(JSON.stringify(economyMismatch))}`,
+      ),
+    ).toEqual({
+      economyPolicyVersion: "future-economy-policy",
+      reason: "economy_policy",
       status: "unsupported",
     });
   });
@@ -229,6 +281,7 @@ function createPayload(
       }),
     ),
     contentVersion: career.contentVersion,
+    economyPolicyVersion: ECONOMY_POLICY_VERSION,
     identity: career.identity,
     mode: career.mode,
     seed: career.seed,
