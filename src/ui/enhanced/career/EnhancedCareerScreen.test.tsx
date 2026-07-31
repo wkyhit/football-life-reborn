@@ -98,6 +98,31 @@ describe("EnhancedCareerScreen", () => {
     ).toBeVisible();
   });
 
+  it("keeps the workbench viewport-bound with explicit internal scroll regions", () => {
+    vi.spyOn(HTMLElement.prototype, "scrollTo").mockImplementation(
+      () => undefined,
+    );
+
+    render(
+      <div data-enhanced-shell="">
+        <EnhancedCareerScreen
+          onChoose={() => undefined}
+          view={decidingView()}
+        />
+      </div>,
+    );
+
+    expect(
+      document.querySelector("[data-enhanced-career-shell]"),
+    ).toHaveAttribute("data-scroll-boundary", "viewport");
+    expect(
+      document.querySelector("[data-enhanced-timeline]"),
+    ).toHaveAttribute("data-scroll-region", "career-timeline");
+    expect(
+      document.querySelector("[data-enhanced-decision-rail]"),
+    ).toHaveAttribute("data-scroll-region", "decision-rail");
+  });
+
   it("collapses optional challenge detail inside the mobile rail", () => {
     vi.spyOn(HTMLElement.prototype, "scrollTo").mockImplementation(
       () => undefined,

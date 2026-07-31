@@ -132,6 +132,7 @@ export function EnhancedCareerScreen({
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
       data-enhanced-career-shell=""
       data-hallmark-macrostructure="Workbench"
+      data-scroll-boundary="viewport"
       id="main-content"
       tabIndex={-1}
     >
@@ -216,8 +217,14 @@ function CareerHeader({
       data-enhanced-career-header=""
     >
       <div className="mx-auto w-full max-w-[1440px]">
-        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(20rem,auto)] lg:gap-5">
-          <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-[8px] border border-enhanced-trophy/40 bg-enhanced-surface text-enhanced-trophy">
+        <div
+          className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(20rem,auto)] lg:gap-5"
+          data-enhanced-career-identity=""
+        >
+          <div
+            className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-[8px] border border-enhanced-trophy/40 bg-enhanced-surface text-enhanced-trophy"
+            data-enhanced-career-overall=""
+          >
             <span className="text-xs font-bold leading-none text-enhanced-trophy">
               能力
             </span>
@@ -227,7 +234,10 @@ function CareerHeader({
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
+            <div
+              className="flex flex-wrap items-center gap-2"
+              data-enhanced-player-badges=""
+            >
               <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-[6px] py-[2px] text-xs font-bold text-enhanced-ink-2">
                 {header.countryFlag} {header.countryCode}
               </span>
@@ -420,6 +430,7 @@ function CareerTimeline({
       aria-labelledby="enhanced-timeline-heading"
       className="min-h-0 overflow-y-auto overscroll-contain px-4 py-4 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-enhanced-focus sm:px-6 lg:rounded-[16px] lg:border lg:border-enhanced-line lg:bg-enhanced-surface lg:p-5"
       data-enhanced-timeline=""
+      data-scroll-region="career-timeline"
       onKeyDown={timelineFollow.onKeyDown}
       onTouchStart={timelineFollow.onTouchStart}
       onWheel={timelineFollow.onWheel}
@@ -460,7 +471,7 @@ function CareerTimeline({
       </div>
 
       <div className="overflow-hidden rounded-[10px] border border-enhanced-line bg-enhanced-canvas/10">
-        <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-enhanced-line px-3 py-2 text-xs font-bold text-enhanced-supporting">
+        <div className="enhanced-timeline-grid grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-enhanced-line px-3 py-2 text-xs font-bold text-enhanced-supporting">
           <span>岁</span>
           <span>俱乐部</span>
           <span className="text-center">能力</span>
@@ -476,7 +487,7 @@ function CareerTimeline({
           {view.timeline.map((row) => (
             <TimelineRow key={row.age} row={row} />
           ))}
-          <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 bg-enhanced-surface px-3 py-2">
+          <div className="enhanced-timeline-grid grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 bg-enhanced-surface px-3 py-2">
             <span className="text-center text-sm">
               {view.nationalTeam.countryFlag}
             </span>
@@ -506,7 +517,7 @@ function TimelineRow({
   readonly row: CareerTimelineRowPresentation;
 }) {
   const gridClass =
-    "grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 px-3 py-2";
+    "enhanced-timeline-grid grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 px-3 py-2";
 
   if (row.kind === "current") {
     return (
@@ -654,6 +665,7 @@ function DecisionRail({
           : ""
       }`}
       data-enhanced-decision-rail=""
+      data-scroll-region="decision-rail"
       ref={decisionFocusRef}
     >
       {choiceReceipt ? (
