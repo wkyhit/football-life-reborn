@@ -4,10 +4,17 @@ import type {
   ClassicDecision,
   ClassicDecisionOption,
 } from "../../domain/classicEngine";
+import type { PersonalAward } from "../../domain/awards";
 import {
   selectCareerEventNarrative,
+  type CareerTrophy,
   type CareerEventOutcomePreview,
+  type NationalTrophy,
 } from "../../domain/careerEvents";
+import type {
+  NationalTournamentRecord,
+  NationalTournamentResult,
+} from "../../domain/nationalTeam";
 import {
   CLASSIC_CATALOG,
   type Club,
@@ -56,6 +63,42 @@ export type CareerDecisionPanelPresentation =
     }
   | { readonly kind: "simulating" };
 
+export type CareerSeasonHonorPresentation =
+  | {
+      readonly award: PersonalAward;
+      readonly kind: "award";
+      readonly label: string;
+    }
+  | {
+      readonly kind: "trophy";
+      readonly label: string;
+      readonly scope: "club" | "national";
+      readonly trophy: CareerTrophy;
+    };
+
+export type CareerNationalTournamentPresentation = {
+  readonly label: string;
+  readonly result: NationalTournamentResult | null;
+  readonly status: NationalTournamentRecord["status"];
+  readonly trophy: NationalTrophy;
+};
+
+export type CareerSeasonStatusPresentation =
+  | {
+      readonly kind: "relegation";
+      readonly label: string;
+    }
+  | {
+      readonly kind: "suspension";
+      readonly label: string;
+    };
+
+export type CareerTierChangePresentation = {
+  readonly from: 1 | 2;
+  readonly label: string;
+  readonly to: 1 | 2;
+};
+
 export type CareerTimelineRowPresentation =
   | {
       readonly age: number;
@@ -68,12 +111,17 @@ export type CareerTimelineRowPresentation =
   | {
       readonly age: number;
       readonly club: CareerClubPresentation;
+      readonly competitionTier: 1 | 2;
+      readonly honors: readonly CareerSeasonHonorPresentation[];
       readonly kind: "season";
+      readonly nationalTournaments: readonly CareerNationalTournamentPresentation[];
       readonly overall: number;
       readonly stats: Pick<
         ClassicSeasonStats,
         "appearances" | "assists" | "goals"
       >;
+      readonly statuses: readonly CareerSeasonStatusPresentation[];
+      readonly tierChange: CareerTierChangePresentation | null;
     };
 
 export type CareerPresentation = {
@@ -132,6 +180,40 @@ const POSITION_LABELS: Readonly<Record<ClassicPosition, string>> = {
   RM: "右前",
   RW: "右边",
   ST: "中锋",
+};
+
+const TROPHY_LABELS: Readonly<Record<CareerTrophy, string>> = {
+  club_world_cup: "世俱杯冠军",
+  continental_primary: "顶级洲际赛事冠军",
+  continental_secondary: "次级洲际赛事冠军",
+  cup: "国内杯赛冠军",
+  league: "联赛冠军",
+  national_continental: "洲际国家队冠军",
+  world_cup: "世界杯冠军",
+};
+
+const AWARD_LABELS: Readonly<Record<PersonalAward, string>> = {
+  ballon_dor: "金球奖",
+  golden_boot: "金靴奖",
+  golden_glove: "金手套奖",
+};
+
+const NATIONAL_TOURNAMENT_LABELS: Readonly<
+  Record<NationalTrophy, string>
+> = {
+  national_continental: "洲际国家队赛事",
+  world_cup: "世界杯",
+};
+
+const NATIONAL_RESULT_LABELS: Readonly<
+  Record<NationalTournamentResult, string>
+> = {
+  champion: "冠军",
+  final: "亚军",
+  group: "小组赛",
+  qf: "八强",
+  r16: "十六强",
+  sf: "四强",
 };
 
 const DECISION_COPY: Readonly<
@@ -243,7 +325,10 @@ export function createCareerPresentation({
       const season = seasonsByAge.get(age);
 
       if (season !== undefined) {
-        return seasonPresentation(season);
+        return seasonPresentation(
+          season,
+          seasonsByAge.get(age - 1),
+        );
       }
 
       if (age === currentDecisionAge) {
@@ -425,18 +510,100 @@ function formatOutcomePreviews(
 
 function seasonPresentation(
   season: ClassicCareerSeason,
+  previousSeason: ClassicCareerSeason | undefined,
 ): CareerTimelineRowPresentation {
+  const tierChange =
+    previousSeason !== undefined &&
+    previousSeason.teamId === season.teamId &&
+    previousSeason.competitionTier !== season.competitionTier
+      ? {
+          from: previousSeason.competitionTier,
+          label:
+            season.competitionTier === 1
+              ? "进入顶级联赛"
+              : "进入次级联赛",
+          to: season.competitionTier,
+        }
+      : null;
+
   return {
     age: season.age,
     club: clubPresentation(requireClub(season.teamId)),
+    competitionTier: season.competitionTier,
+    honors: [
+      ...season.trophies.map((trophy) => ({
+        kind: "trophy" as const,
+        label: TROPHY_LABELS[trophy],
+        scope: isNationalTrophy(trophy)
+          ? ("national" as const)
+          : ("club" as const),
+        trophy,
+      })),
+      ...season.awards.map((award) => ({
+        award,
+        kind: "award" as const,
+        label: AWARD_LABELS[award],
+      })),
+    ],
     kind: "season",
+    nationalTournaments: season.nationalTournamentRecords.map(
+      nationalTournamentPresentation,
+    ),
     overall: season.overall,
     stats: {
       appearances: season.stats.appearances,
       assists: season.stats.assists,
       goals: season.stats.goals,
     },
+    statuses: [
+      ...(season.suspended
+        ? [
+            {
+              kind: "suspension" as const,
+              label: "停赛",
+            },
+          ]
+        : []),
+      ...(season.relegated
+        ? [
+            {
+              kind: "relegation" as const,
+              label: "降入次级联赛",
+            },
+          ]
+        : []),
+    ],
+    tierChange,
   };
+}
+
+function nationalTournamentPresentation(
+  record: NationalTournamentRecord,
+): CareerNationalTournamentPresentation {
+  const result =
+    record.status === "played" ? record.result : null;
+  const resultLabel =
+    record.status === "played"
+      ? NATIONAL_RESULT_LABELS[record.result]
+      : record.status === "not_qualified"
+        ? "未晋级"
+        : "未入选";
+
+  return {
+    label: `${NATIONAL_TOURNAMENT_LABELS[record.trophy]} · ${resultLabel}`,
+    result,
+    status: record.status,
+    trophy: record.trophy,
+  };
+}
+
+function isNationalTrophy(
+  trophy: CareerTrophy,
+): trophy is NationalTrophy {
+  return (
+    trophy === "national_continental" ||
+    trophy === "world_cup"
+  );
 }
 
 export function clubPresentation(

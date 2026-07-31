@@ -328,7 +328,71 @@ function TimelineRow({
       <SeasonNumber>{row.stats.appearances}</SeasonNumber>
       <SeasonNumber>{row.stats.goals}</SeasonNumber>
       <SeasonNumber>{row.stats.assists}</SeasonNumber>
+      <SeasonNarrative row={row} />
     </div>
+  );
+}
+
+function SeasonNarrative({
+  row,
+}: {
+  readonly row: Extract<
+    CareerTimelineRowPresentation,
+    { readonly kind: "season" }
+  >;
+}) {
+  const items = [
+    ...row.honors.map(({ label }, index) => ({
+      id: `honor-${index}-${label}`,
+      kind: "honor" as const,
+      label,
+    })),
+    ...row.nationalTournaments.map(({ label }, index) => ({
+      id: `national-${index}-${label}`,
+      kind: "national" as const,
+      label,
+    })),
+    ...row.statuses.map(({ label }, index) => ({
+      id: `status-${index}-${label}`,
+      kind: "status" as const,
+      label,
+    })),
+    ...(row.tierChange === null
+      ? []
+      : [
+          {
+            id: `tier-${row.tierChange.from}-${row.tierChange.to}`,
+            kind: "status" as const,
+            label: row.tierChange.label,
+          },
+        ]),
+  ];
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <ul
+      aria-label={`${row.age} 岁赛季事件`}
+      className="col-start-2 col-end-7 mt-1 flex flex-wrap gap-1"
+      data-enhanced-season-narrative=""
+    >
+      {items.map((item) => (
+        <li
+          className={
+            item.kind === "honor"
+              ? "rounded-[5px] border border-amber-400/25 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-200"
+              : item.kind === "national"
+                ? "rounded-[5px] border border-cyan-400/25 bg-cyan-400/10 px-1.5 py-0.5 text-[9px] font-bold text-cyan-200"
+                : "rounded-[5px] border border-rose-400/25 bg-rose-400/10 px-1.5 py-0.5 text-[9px] font-bold text-rose-200"
+          }
+          key={item.id}
+        >
+          {item.label}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -465,7 +529,11 @@ function DecisionOption({
           <span className="block truncate text-[15px] font-bold">
             {option.title}
           </span>
-          <span className="mt-0.5 block truncate text-[11px] text-enhanced-supporting">
+          <span
+            className={`mt-0.5 block text-[11px] text-enhanced-supporting ${
+              option.club ? "truncate" : "whitespace-normal leading-4"
+            }`}
+          >
             {option.subtitle}
           </span>
         </span>

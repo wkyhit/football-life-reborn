@@ -326,9 +326,14 @@ function season(
   return {
     age,
     club: TONGLIANG,
+    competitionTier: 1,
+    honors: [],
     kind: "season",
+    nationalTournaments: [],
     overall,
     stats: { appearances, assists, goals },
+    statuses: [],
+    tierChange: null,
   };
 }
 

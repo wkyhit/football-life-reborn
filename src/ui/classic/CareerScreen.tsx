@@ -215,7 +215,71 @@ function TimelineRow({
       <SeasonNumber>{row.stats.appearances}</SeasonNumber>
       <SeasonNumber>{row.stats.goals}</SeasonNumber>
       <SeasonNumber>{row.stats.assists}</SeasonNumber>
+      <SeasonNarrative row={row} />
     </div>
+  );
+}
+
+function SeasonNarrative({
+  row,
+}: {
+  readonly row: Extract<
+    CareerTimelineRowPresentation,
+    { readonly kind: "season" }
+  >;
+}) {
+  const items = [
+    ...row.honors.map(({ label }, index) => ({
+      id: `honor-${index}-${label}`,
+      kind: "honor" as const,
+      label,
+    })),
+    ...row.nationalTournaments.map(({ label }, index) => ({
+      id: `national-${index}-${label}`,
+      kind: "national" as const,
+      label,
+    })),
+    ...row.statuses.map(({ label }, index) => ({
+      id: `status-${index}-${label}`,
+      kind: "status" as const,
+      label,
+    })),
+    ...(row.tierChange === null
+      ? []
+      : [
+          {
+            id: `tier-${row.tierChange.from}-${row.tierChange.to}`,
+            kind: "status" as const,
+            label: row.tierChange.label,
+          },
+        ]),
+  ];
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <ul
+      aria-label={`${row.age} 岁赛季事件`}
+      className="col-start-2 col-end-7 mt-1 flex flex-wrap gap-1"
+      data-classic-season-narrative=""
+    >
+      {items.map((item) => (
+        <li
+          className={
+            item.kind === "honor"
+              ? "rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-300"
+              : item.kind === "national"
+                ? "rounded border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-bold text-sky-300"
+                : "rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold text-rose-300"
+          }
+          key={item.id}
+        >
+          {item.label}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -312,7 +376,11 @@ function DecisionOption({
           <span className="block truncate text-[15px] font-bold text-zinc-100">
             {option.title}
           </span>
-          <span className="block truncate text-[11px] text-zinc-500">
+          <span
+            className={`block text-[11px] text-zinc-500 ${
+              option.club ? "truncate" : "whitespace-normal leading-4"
+            }`}
+          >
             {option.subtitle}
           </span>
         </span>
