@@ -394,6 +394,87 @@ describe("complete career narrative rendering", () => {
       ),
     ).toHaveClass("enhanced-reveal-enter");
   });
+
+  it.each(["classic", "enhanced"] as const)(
+    "restores focus to the next %s decision after result, season, and milestone holds",
+    (variant) => {
+      const decision = academyEconomyView();
+      const renderScreen = (
+        view: ReturnType<typeof academyEconomyView>,
+      ) =>
+        variant === "classic" ? (
+          <CareerScreen
+            onChoose={vi.fn()}
+            view={view}
+          />
+        ) : (
+          <EnhancedCareerScreen
+            onChoose={vi.fn()}
+            view={view}
+          />
+        );
+      const rendered = render(renderScreen(decision));
+      const chosen = screen.getByRole("button", {
+        name: /加盟 阿森纳/,
+      });
+
+      chosen.focus();
+      expect(chosen).toHaveFocus();
+
+      rendered.rerender(
+        renderScreen(eventTransferActualView()),
+      );
+      rendered.rerender(
+        renderScreen(
+          completeNarrativeView({
+            dwellMs: 1_700,
+            kind: "milestone",
+            seasonIndex: 0,
+          }),
+        ),
+      );
+      rendered.rerender(renderScreen(decision));
+
+      expect(
+        rendered.container.querySelector(
+          "[data-career-decision-option]",
+        ),
+      ).toHaveFocus();
+    },
+  );
+
+  it.each(["classic", "enhanced"] as const)(
+    "restores focus to the next %s decision when reduced motion skips holds",
+    (variant) => {
+      const initial = academyEconomyView();
+      const next = committedEconomyView("ST");
+      const renderScreen = (
+        view: ReturnType<typeof academyEconomyView>,
+      ) =>
+        variant === "classic" ? (
+          <CareerScreen
+            onChoose={vi.fn()}
+            view={view}
+          />
+        ) : (
+          <EnhancedCareerScreen
+            onChoose={vi.fn()}
+            view={view}
+          />
+        );
+      const rendered = render(renderScreen(initial));
+      const chosen = screen.getByRole("button", {
+        name: /加盟 阿森纳/,
+      });
+
+      chosen.focus();
+      rendered.rerender(renderScreen(next));
+
+      expect(
+        screen.getAllByRole("button")[0],
+      ).toHaveFocus();
+    },
+  );
 });
 
 function academyEconomyView() {

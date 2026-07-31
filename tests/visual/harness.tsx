@@ -13,6 +13,7 @@ import type {
 } from "../../src/ui/classic/careerPresentation";
 import type { SummaryPresentation } from "../../src/ui/classic/summaryPresentation";
 import { EnhancedCareerScreen } from "../../src/ui/enhanced/career/EnhancedCareerScreen";
+import { EnhancedSummaryScreen } from "../../src/ui/enhanced/summary/EnhancedSummaryScreen";
 
 const TONGLIANG: CareerClubPresentation = {
   abbreviation: "CQT",
@@ -125,6 +126,13 @@ createRoot(root).render(
         onChoose={() => undefined}
         view={fixture.view}
       />
+    ) : fixture.kind === "summary" &&
+      uiMode === "enhanced" ? (
+      <EnhancedSummaryScreen
+        onRestart={() => undefined}
+        onShare={() => undefined}
+        view={fixture.view}
+      />
     ) : fixture.kind === "summary" ? (
       <SummaryScreen
         onRestart={() => undefined}
@@ -217,6 +225,82 @@ function createFixture(name: string | null): VisualFixture {
           ],
         }),
       };
+    case "career-event-result": {
+      const view = presentation({
+        age: 24,
+        club: YATAI,
+        marketValue: 12_000_000,
+        options: [],
+        overall: 80,
+        panel: "simulating",
+        seasons: [
+          season(22, 76, 31, 14, 7),
+          season(23, 78, 34, 18, 9),
+        ],
+      });
+
+      return {
+        kind: "career",
+        view: {
+          ...view,
+          panel: {
+            age: 24,
+            choiceLabel: "接受豪门邀约",
+            contractResult: null,
+            contractSummary:
+              "实际合同：新合同生效 · 年薪 ¥1,200,000",
+            kind: "event_result",
+            summary: "转会成功；能力 +2",
+            title: "豪门邀约结果",
+            tone: "positive",
+          },
+        },
+      };
+    }
+    case "career-milestone": {
+      const view = presentation({
+        age: 24,
+        club: YATAI,
+        marketValue: 12_000_000,
+        options: [],
+        overall: 80,
+        panel: "simulating",
+        seasons: [
+          season(22, 76, 31, 14, 7),
+          season(23, 78, 34, 18, 9),
+          season(24, 80, 36, 21, 11),
+        ],
+      });
+
+      return {
+        kind: "career",
+        view: {
+          ...view,
+          panel: {
+            age: 24,
+            club: YATAI,
+            honors: [
+              {
+                kind: "trophy",
+                label: "联赛冠军",
+                scope: "club",
+                trophy: "league",
+              },
+              {
+                award: "golden_boot",
+                kind: "award",
+                label: "金靴奖",
+              },
+            ],
+            kind: "milestone",
+            nationalTournaments: [],
+            statuses: [],
+            tierChange: null,
+            title: "赛季里程碑",
+          },
+        },
+      };
+    }
     case "summary-attacker":
     case "summary-national-team":
       return { kind: "summary", view: attackerSummary() };

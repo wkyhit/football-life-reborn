@@ -293,20 +293,20 @@ function createRevealQueue(input: {
     (_, offset) => input.previousSeasonCount + offset,
   );
 
-  for (const seasonIndex of newSeasonIndexes) {
-    queue.push({
-      dwellMs: input.seasonMs,
-      kind: "season",
-      seasonIndex,
-    });
-  }
-
   if (input.transition.result.eventKey !== null) {
     queue.push({
       contractResult: input.contractResult,
       dwellMs: input.eventResultMs,
       kind: "event_result",
       result: input.transition.result,
+    });
+  }
+
+  for (const seasonIndex of newSeasonIndexes) {
+    queue.push({
+      dwellMs: input.seasonMs,
+      kind: "season",
+      seasonIndex,
     });
   }
 

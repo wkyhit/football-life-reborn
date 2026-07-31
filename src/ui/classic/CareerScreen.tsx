@@ -12,6 +12,7 @@ import {
   CareerSeasonEconomy,
   CareerSeasonNarrative,
 } from "../shared/CareerMilestoneNarrative";
+import { useDecisionFocusRestore } from "../shared/useDecisionFocusRestore";
 import { ClubIdentity } from "./components/ClubIdentity";
 
 type CareerScreenProps = {
@@ -275,6 +276,12 @@ function CareerPanel({
   readonly view: CareerPresentation;
 }) {
   const { panel } = view;
+  const decisionFocusRef =
+    useDecisionFocusRestore<HTMLElement>(
+      panel.kind === "decision"
+        ? panel.decisionId
+        : null,
+    );
 
   if (panel.kind === "simulating") {
     return (
@@ -339,6 +346,7 @@ function CareerPanel({
     <aside
       className="shrink-0 border-t border-zinc-800 bg-zinc-950"
       data-classic-career-panel=""
+      ref={decisionFocusRef}
     >
       <div className="max-h-[46dvh] overflow-y-auto px-4 pb-5 pt-3">
         <div className="animate-rise">
@@ -384,6 +392,7 @@ function DecisionOption({
   return (
     <button
       className="block w-full rounded-xl border border-zinc-700 bg-zinc-800/50 p-3 text-left transition-colors active:bg-zinc-700"
+      data-career-decision-option=""
       onClick={onChoose}
       type="button"
     >

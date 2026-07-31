@@ -1,0 +1,98 @@
+{
+  "acceptance": {
+    "classicIntentionalDiff": {
+      "after": "tests/visual/issue-18/after/classic-summary-390x844.png",
+      "afterSha256": "838ab4664694e808e378afc442b018b19a512d19477ff3d28d64d3844bec6f7d",
+      "before": "tests/visual/classic/reference/chromium-390x844/summary-attacker.png",
+      "beforeSha256": "dc9807c26ac669f1baaef858db96b59ffca2671bc0aa3406e72ca6e2257b44cb",
+      "changedPixelRatio": 0.6251822821728035,
+      "reason": "Issue #18 adds the approved minimal ending, simulated-percentile, narrative, and total-income record before existing Classic summary details."
+    },
+    "contrast": {
+      "eventResultMinimum": 7.678187078520096,
+      "method": "ego-browser computed foreground against page background with WCAG text-size thresholds",
+      "milestoneMinimum": 9.89952794160291,
+      "passes": true,
+      "summaryStoryMinimum": 7.678187078520096
+    },
+    "criticalIssues": [],
+    "focusRestore": {
+      "keyboardActivated": true,
+      "normalMotion": {
+        "activeElement": "next decision option",
+        "announcement": "下一项选择已就绪"
+      },
+      "reducedMotion": {
+        "activeElement": "next decision option",
+        "announcement": "下一项选择已就绪"
+      }
+    },
+    "majorIssues": [],
+    "reducedMotion": {
+      "activeRevealCount": 0,
+      "transitionDuration": "0.15s",
+      "transitionProperty": "opacity"
+    },
+    "revealOrder": [
+      "event_result",
+      "season",
+      "milestone",
+      "decision_ready"
+    ],
+    "summaryScroll": {
+      "fullyVisibleAt390x844": true,
+      "horizontalOverflow": 0
+    },
+    "targetCounts": {
+      "eventResult": 1,
+      "milestone": 1,
+      "summaryStory": 1
+    },
+    "viewports": [
+      {
+        "height": 844,
+        "horizontalOverflow": 0,
+        "width": 390
+      },
+      {
+        "height": 830,
+        "horizontalOverflow": 0,
+        "width": 1280
+      }
+    ]
+  },
+  "capturedAt": "2026-07-31",
+  "evidence": [
+    {
+      "file": "tests/visual/issue-18/after/enhanced-event-result-390x844.png",
+      "sha256": "fa5857d6cf1c147f64bbaf086fa2b0b9e4e60fb84400014fad3e8e533448fa71"
+    },
+    {
+      "file": "tests/visual/issue-18/after/enhanced-milestone-390x844.png",
+      "sha256": "095c01df544102524e8843d3f20938a34b892d927530cd26984a98356aae25aa"
+    },
+    {
+      "file": "tests/visual/issue-18/after/enhanced-summary-390x844.png",
+      "sha256": "9a555294e3a1d4414787cd4a088c35dcb6a67ca6ac771432ea310f41dca0cc7a"
+    },
+    {
+      "file": "tests/visual/issue-18/after/classic-summary-390x844.png",
+      "sha256": "838ab4664694e808e378afc442b018b19a512d19477ff3d28d64d3844bec6f7d"
+    },
+    {
+      "file": "tests/visual/issue-18/after/enhanced-event-result-1280x830.png",
+      "sha256": "2261ee50dbb3fdc9f21ab223531f4508158dd29e77a8811b7940bb7fe2780014"
+    },
+    {
+      "file": "tests/visual/issue-18/after/enhanced-summary-1280x830.png",
+      "sha256": "a86c855474e67f5d8b0f34d64519e1958c19802aebace89da4a37e73bbe46045"
+    }
+  ],
+  "runner": {
+    "name": "ego-browser",
+    "taskSpaceId": 26,
+    "version": "1.2.3"
+  },
+  "slice": 7,
+  "sourceParent": "3a028ca855dc78e3e69f69d454076dbcd9d87359"
+}

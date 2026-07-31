@@ -254,6 +254,7 @@ Create:
 - `src/domain/economy/percentileBenchmark.ts`
 - `src/domain/economy/percentileTable.generated.ts`
 - `scripts/generate-percentile-benchmark.mjs`
+- `src/ui/shared/useDecisionFocusRestore.ts`
 - `src/ui/shared/positionPresentation.ts`
 - `docs/economy-v1.md`
 - `docs/economy-migration-and-benchmark.md`

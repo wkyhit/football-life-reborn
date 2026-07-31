@@ -18,43 +18,52 @@ describe("Dialog", () => {
     document.body.style.overflow = "";
   });
 
-  it("contains keyboard focus, closes with Escape, and returns focus", async () => {
-    render(<DialogHarness />);
-    const user = userEvent.setup();
-    const trigger = screen.getByRole("button", {
-      name: "打开分享",
-    });
+  it.each(["classic", "enhanced"] as const)(
+    "contains keyboard focus, closes with Escape, and returns focus in %s",
+    async (variant) => {
+      render(<DialogHarness variant={variant} />);
+      const user = userEvent.setup();
+      const trigger = screen.getByRole("button", {
+        name: "打开分享",
+      });
 
-    await user.click(trigger);
+      await user.click(trigger);
 
-    expect(
-      screen.getByRole("dialog", { name: "分享生涯" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("textbox", { name: "卡上名字" }),
-    ).toHaveFocus();
-    expect(document.body.style.overflow).toBe("hidden");
+      expect(
+        screen.getByRole("dialog", { name: "分享生涯" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("textbox", { name: "卡上名字" }),
+      ).toHaveFocus();
+      expect(document.body.style.overflow).toBe("hidden");
 
-    await user.keyboard("{Shift>}{Tab}{/Shift}");
-    expect(
-      screen.getByRole("button", { name: "下载图片" }),
-    ).toHaveFocus();
+      await user.keyboard("{Shift>}{Tab}{/Shift}");
+      expect(
+        screen.getByRole("button", {
+          name: "下载图片",
+        }),
+      ).toHaveFocus();
 
-    await user.tab();
-    expect(
-      screen.getByRole("textbox", { name: "卡上名字" }),
-    ).toHaveFocus();
+      await user.tab();
+      expect(
+        screen.getByRole("textbox", { name: "卡上名字" }),
+      ).toHaveFocus();
 
-    await user.keyboard("{Escape}");
-    expect(
-      screen.queryByRole("dialog"),
-    ).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
-    expect(document.body.style.overflow).toBe("");
-  });
+      await user.keyboard("{Escape}");
+      expect(
+        screen.queryByRole("dialog"),
+      ).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+      expect(document.body.style.overflow).toBe("");
+    },
+  );
 });
 
-function DialogHarness() {
+function DialogHarness({
+  variant,
+}: {
+  readonly variant: "classic" | "enhanced";
+}) {
   const [open, setOpen] = useState(false);
   const initialFocusRef = useRef<HTMLInputElement>(null);
 
@@ -68,6 +77,7 @@ function DialogHarness() {
           labelledBy="dialog-title"
           initialFocusRef={initialFocusRef}
           onClose={() => setOpen(false)}
+          variant={variant}
         >
           <h2 id="dialog-title">分享生涯</h2>
           <label>

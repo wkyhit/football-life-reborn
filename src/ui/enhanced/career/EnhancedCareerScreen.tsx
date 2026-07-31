@@ -16,6 +16,7 @@ import {
   CareerSeasonEconomy,
   CareerSeasonNarrative,
 } from "../../shared/CareerMilestoneNarrative";
+import { useDecisionFocusRestore } from "../../shared/useDecisionFocusRestore";
 import { ClubIdentity } from "../../classic/components/ClubIdentity";
 import { EnhancedAppBar } from "../components/EnhancedAppBar";
 
@@ -366,6 +367,12 @@ function DecisionRail({
   readonly view: CareerPresentation;
 }) {
   const { panel } = view;
+  const decisionFocusRef =
+    useDecisionFocusRestore<HTMLElement>(
+      panel.kind === "decision"
+        ? panel.decisionId
+        : null,
+    );
   const railClass =
     "min-h-0 max-h-[48dvh] overflow-y-auto overscroll-contain border-t border-enhanced-line bg-enhanced-surface px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-4 sm:px-6 lg:h-full lg:max-h-none lg:w-[380px] lg:rounded-[16px] lg:border lg:p-5";
   const simulating = panel.kind === "simulating";
@@ -388,6 +395,7 @@ function DecisionRail({
           : ""
       }`}
       data-enhanced-decision-rail=""
+      ref={decisionFocusRef}
     >
       {challenge ? (
         <div className={simulating ? "mb-4 w-full" : "mb-4"}>
@@ -484,6 +492,7 @@ function DecisionOption({
   return (
     <button
       className="block min-h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left outline-none transition-[transform,opacity] focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:translate-y-px motion-reduce:transform-none motion-reduce:transition-opacity"
+      data-career-decision-option=""
       onClick={onChoose}
       type="button"
     >

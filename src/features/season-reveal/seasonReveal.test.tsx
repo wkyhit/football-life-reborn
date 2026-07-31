@@ -80,7 +80,7 @@ describe("useSeasonReveal", () => {
     );
   });
 
-  it("orders actual event result and milestone holds after its season", () => {
+  it("orders one actual result, season, and milestone before the next decision", () => {
     vi.useFakeTimers();
     const { before, transition } = milestoneTransition();
     const { result } = renderHook(() =>
@@ -92,14 +92,24 @@ describe("useSeasonReveal", () => {
     });
 
     expect(result.current.revealQueue.map(({ kind }) => kind)).toEqual([
-      "season",
       "event_result",
+      "season",
       "milestone",
       "decision_ready",
     ]);
+    expect(
+      result.current.revealQueue.filter(
+        ({ kind }) => kind === "event_result",
+      ),
+    ).toHaveLength(1);
+    expect(
+      result.current.revealQueue.filter(
+        ({ kind }) => kind === "milestone",
+      ),
+    ).toHaveLength(1);
 
     act(() => {
-      vi.advanceTimersByTime(550);
+      vi.advanceTimersByTime(1_599);
     });
     expect(result.current.activeItem).toMatchObject({
       contractResult: {
@@ -113,21 +123,30 @@ describe("useSeasonReveal", () => {
       },
     });
     expect(result.current.visibleSeasonCount).toBe(
-      before.seasons.length + 1,
+      before.seasons.length,
     );
-
-    act(() => {
-      vi.advanceTimersByTime(1_599);
-    });
-    expect(result.current.activeItem?.kind).toBe("event_result");
 
     act(() => {
       vi.advanceTimersByTime(1);
     });
     expect(result.current.activeItem).toMatchObject({
+      dwellMs: 550,
+      kind: "season",
+    });
+    expect(result.current.visibleSeasonCount).toBe(
+      before.seasons.length,
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(550);
+    });
+    expect(result.current.activeItem).toMatchObject({
       dwellMs: 1_700,
       kind: "milestone",
     });
+    expect(result.current.visibleSeasonCount).toBe(
+      before.seasons.length + 1,
+    );
 
     act(() => {
       vi.advanceTimersByTime(1_700);
