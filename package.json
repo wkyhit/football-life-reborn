@@ -13,6 +13,7 @@
     "capture:classic-summary-reference": "node scripts/capture-classic-summary-reference.mjs",
     "generate:metadata-assets": "node scripts/generate-metadata-assets.mjs",
     "generate:golden": "node scripts/generate-classic-golden.mjs",
+    "generate:benchmark": "node scripts/generate-percentile-benchmark.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint .",
     "preview": "vite preview",

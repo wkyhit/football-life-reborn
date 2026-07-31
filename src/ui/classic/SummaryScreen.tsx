@@ -6,6 +6,7 @@ import {
   ChallengeProgressPanel,
   type ChallengeSurface,
 } from "../../features/challenges/ChallengeProgressPanel";
+import { formatYuan } from "../../domain/economy/economyPolicy";
 import { HonorIdentity } from "../shared/HonorIdentity";
 import { ClubIdentity } from "./components/ClubIdentity";
 
@@ -54,6 +55,7 @@ export function SummaryScreen({
           ) : null}
           <SummaryHeader view={view} />
           <SummaryMetrics view={view} />
+          <SummaryStory view={view} />
           {challenge ? (
             <div className="mt-4">
               <ChallengeProgressPanel
@@ -224,6 +226,58 @@ function SummaryMetrics({
         </div>
       ))}
     </dl>
+  );
+}
+
+function SummaryStory({
+  view,
+}: {
+  readonly view: SummaryPresentation;
+}) {
+  return (
+    <section
+      aria-labelledby="classic-career-ending"
+      className="mt-3 rounded-xl border border-zinc-800 bg-zinc-950/60 p-3"
+      data-summary-story=""
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2
+            className="text-[10px] font-bold tracking-[0.14em] text-zinc-500"
+            id="classic-career-ending"
+          >
+            生涯结局
+          </h2>
+          <p className="mt-1 text-base font-black text-amber-300">
+            {view.story.ending.label}
+          </p>
+        </div>
+        <p className="text-right text-[10px] font-bold text-zinc-400">
+          {view.story.highestHonor}
+        </p>
+      </div>
+      <dl className="mt-2 grid grid-cols-2 divide-x divide-zinc-800 border-y border-zinc-800 py-2">
+        <div className="pr-2">
+          <dt className="text-[10px] text-zinc-500">
+            模拟生涯分位
+          </dt>
+          <dd className="mt-0.5 text-sm font-black tabular-nums text-emerald-300">
+            P{view.story.simulatedPercentile.value}
+          </dd>
+        </div>
+        <div className="pl-2 text-right">
+          <dt className="text-[10px] text-zinc-500">
+            总收入
+          </dt>
+          <dd className="mt-0.5 text-sm font-black tabular-nums text-zinc-100">
+            {formatYuan(view.story.totalIncome)}
+          </dd>
+        </div>
+      </dl>
+      <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">
+        {view.story.narrative}
+      </p>
+    </section>
   );
 }
 

@@ -20,6 +20,7 @@ import {
   type CareerEconomyOptionQuote,
   type CareerSeasonSalary,
 } from "../../domain/economy/careerEconomyProjection";
+import { formatYuan } from "../../domain/economy/economyPolicy";
 import type {
   NationalTournamentRecord,
   NationalTournamentResult,
@@ -795,13 +796,6 @@ function tryCreateEconomyProjection(
     // invents a fallback amount.
     return null;
   }
-}
-
-export function formatYuan(value: number): string {
-  return `¥${String(value).replace(
-    /\B(?=(\d{3})+(?!\d))/g,
-    ",",
-  )}`;
 }
 
 export function formatMarketValue(

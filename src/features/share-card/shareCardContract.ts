@@ -1,4 +1,5 @@
 import type { SummaryPresentation } from "../../ui/classic/summaryPresentation";
+import { formatYuan } from "../../domain/economy/economyPolicy";
 
 export type ShareCardChallenge = {
   readonly calendarDate: string;
@@ -12,6 +13,24 @@ export type ShareCardInput = {
   readonly qrPayload: string;
   readonly view: SummaryPresentation;
 };
+
+export type ShareCardStoryLines = {
+  readonly ending: string;
+  readonly income: string;
+  readonly narrative: readonly string[];
+  readonly percentile: string;
+};
+
+export function createShareCardStoryLines(
+  view: SummaryPresentation,
+): ShareCardStoryLines {
+  return Object.freeze({
+    ending: view.story.ending.label,
+    income: `总收入 ${formatYuan(view.story.totalIncome)}`,
+    narrative: view.story.chapters,
+    percentile: `${view.story.simulatedPercentile.label} P${view.story.simulatedPercentile.value}`,
+  });
+}
 
 export function shareCardFilename(
   displayName: string,

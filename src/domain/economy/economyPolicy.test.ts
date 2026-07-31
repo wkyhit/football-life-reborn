@@ -10,6 +10,7 @@ import { deterministicHash } from "../deterministicHash";
 import {
   ECONOMY_MARKET_VALUE_NODES,
   createAnnualSalaryQuote,
+  formatYuan,
   interpolateEconomyMarketValue,
   roundAnnualSalary,
 } from "./economyPolicy";
@@ -193,6 +194,17 @@ describe("economy-v1 salary policy", () => {
       [1_049_999, 1_000_000],
       [1_050_000, 1_100_000],
     ]);
+  });
+
+  it("formats only non-negative safe-integer yuan amounts", () => {
+    expect(
+      [0, 10_000, 123_456_789].map(formatYuan),
+    ).toEqual(["¥0", "¥10,000", "¥123,456,789"]);
+    expect(() => formatYuan(-1)).toThrow(RangeError);
+    expect(() =>
+      formatYuan(Number.MAX_SAFE_INTEGER + 1),
+    ).toThrow(RangeError);
+    expect(() => formatYuan(1.5)).toThrow(RangeError);
   });
 
   it("rounds first and then applies the CSL and China League One caps", () => {

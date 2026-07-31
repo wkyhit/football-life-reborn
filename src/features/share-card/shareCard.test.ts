@@ -9,6 +9,7 @@ import {
   shareCardFilename,
   type ShareCardCanvas,
 } from "./shareCard";
+import { createShareCardStoryLines } from "./shareCardContract";
 
 const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
 const QR_PAYLOAD = "https://football-life-reborn.test/";
@@ -76,6 +77,17 @@ describe("Classic share card", () => {
     expect(shareCardFilename("   ", view)).toBe(
       `${view.identity.name}-生涯战绩卡.png`,
     );
+  });
+
+  it("uses the exact shared ending, percentile, narrative, and total income", () => {
+    const view = createFixtureSummary();
+
+    expect(createShareCardStoryLines(view)).toEqual({
+      ending: view.story.ending.label,
+      income: `总收入 ¥${view.story.totalIncome.toLocaleString("en-US")}`,
+      narrative: view.story.chapters,
+      percentile: `模拟生涯分位 P${view.story.simulatedPercentile.value}`,
+    });
   });
 
   it("keeps a challenge replay in the QR and names the card for that challenge", () => {

@@ -181,6 +181,30 @@ function denseSummary(): SummaryPresentation {
     },
     seasonCount: 28,
     seed: "phase-3:dense-summary",
+    story: {
+      chapters: [
+        "一人一城",
+        "巅峰能力 97",
+        "最高荣誉 世界杯冠军",
+        "主动告别职业赛场",
+        "合同生涯总收入 ¥150,000,000",
+      ],
+      ending: {
+        description: "在仍有选择时主动告别职业赛场",
+        label: "主动退役",
+        reason: "voluntary",
+      },
+      highestHonor: "世界杯冠军",
+      narrative:
+        "一人一城。巅峰能力 97。最高荣誉 世界杯冠军。主动告别职业赛场。合同生涯总收入 ¥150,000,000。",
+      simulatedPercentile: {
+        label: "模拟生涯分位",
+        maxOverall: 97,
+        sampleCount: 10_000,
+        value: 99,
+      },
+      totalIncome: 150_000_000,
+    },
     titles: [
       {
         description: "这是一条需要被截断的超长特殊称号说明文字",

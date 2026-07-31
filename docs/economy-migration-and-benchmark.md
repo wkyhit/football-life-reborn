@@ -1,6 +1,6 @@
 # Economy migration and benchmark runbook
 
-Status: economy migration v1 implemented; percentile benchmark pending
+Status: economy migration v1 and percentile benchmark implemented
 Issue #18 Slice 6
 
 ## Compatibility matrix
@@ -94,7 +94,34 @@ and unchanged football hashes.
 
 ## Percentile benchmark
 
-The deterministic 10,000-career generator, its 100-entry frozen table,
-input metadata, and artifact hash are delivered in Issue #18 Slice 6.
-This section must be replaced with the exact generator command, seed
-contract, runtime, and reproducibility digest before Issue #18 closes.
+Regenerate the frozen table from the repository root:
+
+```sh
+npm run generate:benchmark
+```
+
+The generator runs 10,000 complete Classic careers through the public
+engine and records the 1st through 100th percentile of peak Overall.
+Its fixed inputs are:
+
+- seed namespace: `football-life-reborn:percentile:v1`;
+- choice strategy: `fnv1a64-uniform-valid-option-v1`;
+- benchmark version: `2026-07-31-max-overall-v1`;
+- every 61-country, 12-position, and 3-pacing-mode dimension;
+- current Classic content and economy policy versions.
+
+The generated artifact lives at
+`src/domain/economy/percentileTable.generated.ts`. The accepted
+artifact has 100 monotonic entries, reports
+`fnv1a64:9e9a27c38474e25e`, and prints:
+
+```text
+fnv1a64:9e9a27c38474e25e · 10000 careers
+```
+
+`src/domain/economy/percentileBenchmark.test.ts` rebuilds the artifact
+twice, checks the frozen metadata and digest, and exercises percentile
+boundaries. Regenerate and review the artifact whenever Classic
+content, the economy policy, or the benchmark contract changes. A
+digest change without an intentional input-version change is a
+reproducibility failure.

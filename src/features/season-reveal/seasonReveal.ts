@@ -14,6 +14,7 @@ import {
   createCareerEconomyChoiceResult,
   type CareerEconomyChoiceResult,
 } from "../../domain/economy/careerEconomyProjection";
+import { formatYuan } from "../../domain/economy/economyPolicy";
 
 type RevealOptions = {
   readonly eventResultMs?: number;
@@ -471,8 +472,4 @@ function contractResultSummary(
   return result.reason === "retire"
     ? "实际合同：退役后停止收入"
     : "实际合同：本次选择后无在效合同";
-}
-
-function formatYuan(value: number): string {
-  return `¥${value.toLocaleString("en-US")}`;
 }

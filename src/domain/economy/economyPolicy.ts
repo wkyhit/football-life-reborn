@@ -155,6 +155,16 @@ export function roundAnnualSalary(rawSalary: number): number {
   );
 }
 
+export function formatYuan(value: number): string {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new RangeError(
+      `Yuan value must be a non-negative safe integer: ${value}`,
+    );
+  }
+
+  return `¥${value.toLocaleString("en-US")}`;
+}
+
 function fameEffectiveWealth(
   peakOverall: number,
   fallbackWealth: number,

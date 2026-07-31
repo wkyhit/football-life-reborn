@@ -19,6 +19,10 @@ import type {
   HiddenTitleKey,
 } from "../../domain/summary";
 import {
+  createCareerStory,
+  type CareerStory,
+} from "../../domain/economy/careerStory";
+import {
   clubPresentation,
   positionLabel,
   type CareerClubPresentation,
@@ -69,6 +73,7 @@ export type SummaryPresentation = {
     | null;
   readonly seasonCount: number;
   readonly seed: string;
+  readonly story: CareerStory;
   readonly titles: readonly SummaryTitlePresentation[];
 };
 
@@ -236,6 +241,7 @@ export function createSummaryPresentation(
           },
     seasonCount: career.seasons.length,
     seed: career.seed,
+    story: createCareerStory(career),
     titles: summary.hiddenTitles.map((id) => ({
       id,
       ...TITLE_COPY[id],

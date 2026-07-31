@@ -253,12 +253,14 @@ Create:
 - `src/domain/economy/careerStory.ts`
 - `src/domain/economy/percentileBenchmark.ts`
 - `src/domain/economy/percentileTable.generated.ts`
+- `scripts/generate-percentile-benchmark.mjs`
 - `src/ui/shared/positionPresentation.ts`
 - `docs/economy-v1.md`
 - `docs/economy-migration-and-benchmark.md`
 
 Modify:
 
+- `package.json` only to expose the offline benchmark generator command
 - `src/domain/economics.ts` only to expose the existing market-value nodes without changing football valuation behavior
 - `src/domain/nationalTeam.ts` only to expose the existing call-up threshold contract
 - `src/storage/classicSessionRepository.ts`

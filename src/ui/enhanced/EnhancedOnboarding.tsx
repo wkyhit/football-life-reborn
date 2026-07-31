@@ -86,7 +86,7 @@ export function EnhancedOnboarding({
     );
   }
 
-  if (!isEntryPrompt && state.phase === "nationality") {
+  if (state.phase === "nationality") {
     return (
       <EnhancedNationalityScreen
         dispatch={dispatch}
@@ -95,7 +95,7 @@ export function EnhancedOnboarding({
     );
   }
 
-  if (!isEntryPrompt && state.phase === "identity") {
+  if (state.phase === "identity") {
     return (
       <EnhancedIdentityScreen
         dispatch={dispatch}
@@ -104,7 +104,7 @@ export function EnhancedOnboarding({
     );
   }
 
-  if (!isEntryPrompt && state.phase === "position") {
+  if (state.phase === "position") {
     return (
       <EnhancedPositionScreen
         dispatch={dispatch}
@@ -127,9 +127,9 @@ function EnhancedIdentityScreen({
   const validNumber = isValidShirtNumber(
     state.player.number,
   );
+  const trimmedName = state.player.name.trim();
   const validName =
-    state.player.name.trim().length >= 1 &&
-    state.player.name.trim().length <= 8;
+    trimmedName.length > 0 && trimmedName.length < 9;
   const [touched, setTouched] = useState({
     name: false,
     number: false,
@@ -176,7 +176,7 @@ function EnhancedIdentityScreen({
             countryFifaCode={
               state.player.nationality ?? "CHN"
             }
-            name={state.player.name.trim() || "输入姓名"}
+            name={trimmedName || "输入姓名"}
             number={
               validNumber ? state.player.number : "10"
             }

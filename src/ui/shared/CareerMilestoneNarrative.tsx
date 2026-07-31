@@ -1,9 +1,9 @@
 import {
   formatMarketValue,
-  formatYuan,
   type CareerDecisionOptionPresentation,
   type CareerPresentation,
 } from "../classic/careerPresentation";
+import { formatYuan } from "../../domain/economy/economyPolicy";
 import {
   HonorIdentity,
   type HonorIdentityKey,

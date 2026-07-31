@@ -15,6 +15,7 @@ import {
   createCareerBranch,
   type DecisionCheckpoint,
 } from "../../domain/checkpoint";
+import { formatYuan } from "../../domain/economy/economyPolicy";
 import type { CareerLedgerEntry } from "../../domain/ledger";
 import {
   compareBranches,
@@ -473,6 +474,12 @@ export function EnhancedArchiveScreen({
                     </p>
                     <p className="mt-1 truncate font-enhanced-mono text-xs text-enhanced-neutral">
                       {entry.seed}
+                    </p>
+                    <p className="mt-2 flex flex-wrap items-baseline gap-2 text-xs text-enhanced-supporting">
+                      <span>总收入</span>
+                      <strong className="font-enhanced-mono text-sm text-enhanced-strong">
+                        {formatYuan(entry.totalIncome)}
+                      </strong>
                     </p>
                   </div>
                 </div>
@@ -968,6 +975,24 @@ function BranchComparison({
               <p>{endingLabel(comparison.ending.right)}</p>
             </div>
           </section>
+          <section
+            className="border-b border-enhanced-line py-5"
+            data-enhanced-comparison-record="economy"
+          >
+            <h2 className="text-lg font-bold">总收入</h2>
+            <div className="mt-3 grid grid-cols-2 gap-4 font-enhanced-mono text-sm">
+              <p>
+                {formatYuan(
+                  comparison.economy.totalIncome.left,
+                )}
+              </p>
+              <p>
+                {formatYuan(
+                  comparison.economy.totalIncome.right,
+                )}
+              </p>
+            </div>
+          </section>
         </div>
       </div>
       <div className="grid border-y border-enhanced-line md:grid-cols-3 md:divide-x md:divide-enhanced-line">
@@ -1257,6 +1282,19 @@ function LedgerView({
           <p className="text-sm text-enhanced-supporting">
             {loaded.entry.displayName} · {loaded.ledger.length} 条记录
           </p>
+          <dl
+            className="mt-4 border-y border-enhanced-line py-4"
+            data-enhanced-archive-economy=""
+          >
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="text-sm text-enhanced-supporting">
+                总收入
+              </dt>
+              <dd className="font-enhanced-mono text-lg font-bold text-enhanced-strong">
+                {formatYuan(loaded.economy.totalIncome)}
+              </dd>
+            </div>
+          </dl>
           <ol className="mt-4 divide-y divide-enhanced-line border-y border-enhanced-line">
             {[...loaded.ledger]
               .reverse()

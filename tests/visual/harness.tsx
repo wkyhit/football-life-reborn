@@ -424,6 +424,7 @@ function attackerSummary(): SummaryPresentation {
     },
     seasonCount: 22,
     seed: "ms74jclp-1yj5if",
+    story: fixtureStory(86, 12_800_000, "中甲冠军"),
     titles: [],
   };
 }
@@ -467,6 +468,7 @@ function goalkeeperSummary(): SummaryPresentation {
     },
     seasonCount: 24,
     seed: "ms74faaw-18h9kt",
+    story: fixtureStory(82, 8_600_000, "中甲冠军"),
     titles: [
       {
         description: "整个生涯只效力过一家俱乐部",
@@ -526,6 +528,44 @@ function noTitleSummary(): SummaryPresentation {
     },
     seasonCount: 22,
     seed: "ms74ggo4-radcb7",
+    story: fixtureStory(
+      75,
+      3_200_000,
+      "中国足协杯冠军",
+    ),
     titles: [],
+  };
+}
+
+function fixtureStory(
+  maxOverall: number,
+  totalIncome: number,
+  highestHonor: string,
+): SummaryPresentation["story"] {
+  const income = `¥${totalIncome.toLocaleString("en-US")}`;
+  const chapters = [
+    "俱乐部轨迹已经写入记录",
+    `巅峰能力 ${maxOverall}，模拟生涯分位 P50`,
+    `最高荣誉 ${highestHonor}`,
+    "连续没有收到职业合同后结束生涯",
+    `合同生涯总收入 ${income}`,
+  ];
+
+  return {
+    chapters,
+    ending: {
+      description: "连续没有收到职业合同后结束生涯",
+      label: "合同落幕",
+      reason: "no_offers",
+    },
+    highestHonor,
+    narrative: `${chapters.join("。")}。`,
+    simulatedPercentile: {
+      label: "模拟生涯分位",
+      maxOverall,
+      sampleCount: 10_000,
+      value: 50,
+    },
+    totalIncome,
   };
 }

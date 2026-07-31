@@ -2,6 +2,7 @@ import {
   ChallengeProgressPanel,
   type ChallengeSurface,
 } from "../../../features/challenges/ChallengeProgressPanel";
+import { formatYuan } from "../../../domain/economy/economyPolicy";
 import type {
   SummaryHonorPresentation,
   SummaryPresentation,
@@ -126,6 +127,47 @@ export function EnhancedSummaryScreen({
               </div>
             ))}
           </dl>
+
+          <section
+            aria-labelledby="enhanced-career-ending"
+            className="border-b border-enhanced-line py-6"
+            data-enhanced-summary-record="story"
+            data-summary-story=""
+          >
+            <p className="font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-pitch">
+              CAREER ENDING
+            </p>
+            <h2
+              className="mt-2 text-2xl font-bold"
+              id="enhanced-career-ending"
+            >
+              生涯结局
+            </h2>
+            <p className="mt-2 text-xl font-bold text-enhanced-trophy">
+              {view.story.ending.label}
+            </p>
+            <dl className="mt-4 grid grid-cols-2 border-y border-enhanced-line py-4">
+              <div>
+                <dt className="text-xs text-enhanced-supporting">
+                  模拟生涯分位
+                </dt>
+                <dd className="mt-1 font-enhanced-display text-3xl font-bold tabular-nums text-enhanced-pitch">
+                  P{view.story.simulatedPercentile.value}
+                </dd>
+              </div>
+              <div className="border-l border-enhanced-line pl-4 text-right">
+                <dt className="text-xs text-enhanced-supporting">
+                  总收入
+                </dt>
+                <dd className="mt-1 font-enhanced-display text-2xl font-bold tabular-nums">
+                  {formatYuan(view.story.totalIncome)}
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-4 max-w-[72ch] text-sm leading-relaxed text-enhanced-supporting">
+              {view.story.narrative}
+            </p>
+          </section>
 
           {challenge ? (
             <section

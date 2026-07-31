@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { playClassicCareer } from "../../domain/classicEngine";
+import { createCareerEconomyProjection } from "../../domain/economy/careerEconomyProjection";
+import { createCareerStory } from "../../domain/economy/careerStory";
 import { createSummaryPresentation } from "./summaryPresentation";
 
 describe("Classic summary presentation", () => {
@@ -37,6 +39,14 @@ describe("Classic summary presentation", () => {
       ),
     ).toBe(career.summary?.totals.trophies);
     expect(view.seasonCount).toBe(career.seasons.length);
+    expect(view.story).toEqual(createCareerStory(career));
+    expect(view.story.totalIncome).toBe(
+      createCareerEconomyProjection(career).totalIncome,
+    );
+    expect(view.story.simulatedPercentile.label).toBe(
+      "模拟生涯分位",
+    );
+    expect(view.story.narrative).toContain("生涯总收入");
   });
 
   it("switches goalkeeper totals and club rows to clean sheets", () => {
