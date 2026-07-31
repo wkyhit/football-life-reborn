@@ -8,12 +8,12 @@ import { isValidShirtNumber } from "../../domain/careerReducer";
 import type {
   CareerAction,
   CareerState,
-  PositionCode,
   PreferredFoot,
 } from "../../domain/model";
 import type { PacingMode } from "../../domain/pacing";
 import type { DailyChallenge } from "../../features/challenges/daily";
 import { JerseyPreview } from "../classic/JerseyPreview";
+import { CAREER_POSITION_PRESENTATIONS } from "../shared/positionPresentation";
 import { EnhancedAction } from "./components/EnhancedAction";
 import { EnhancedAppBar } from "./components/EnhancedAppBar";
 import { EnhancedLandingScreen } from "./onboarding/EnhancedLandingScreen";
@@ -277,25 +277,6 @@ function EnhancedIdentityScreen({
   );
 }
 
-const ENHANCED_POSITIONS = [
-  ["LW", "左边锋", "进攻"],
-  ["ST", "中锋", "进攻"],
-  ["RW", "右边锋", "进攻"],
-  ["LM", "左前卫", "组织"],
-  ["CAM", "前腰", "组织"],
-  ["RM", "右前卫", "组织"],
-  ["LB", "左后卫", "支援"],
-  ["CM", "中前卫", "支援"],
-  ["RB", "右后卫", "支援"],
-  ["CDM", "后腰", "防守"],
-  ["CB", "中后卫", "防守"],
-  ["GK", "门将", "门将"],
-] as const satisfies readonly [
-  PositionCode,
-  string,
-  string,
-][];
-
 function EnhancedPositionScreen({
   dispatch,
   onStart,
@@ -323,42 +304,47 @@ function EnhancedPositionScreen({
 
       <section className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="grid grid-cols-2 gap-2 pb-4 sm:grid-cols-3 lg:grid-cols-4">
-            {ENHANCED_POSITIONS.map(
-              ([position, label, group]) => {
+          <div
+            aria-label="足球场位置"
+            className="relative mx-auto h-[520px] w-full max-w-3xl overflow-hidden rounded-[16px] border border-enhanced-pitch/30 bg-enhanced-pitch/5"
+            role="group"
+          >
+            {CAREER_POSITION_PRESENTATIONS.map(
+              (presentation) => {
                 const selected =
-                  state.player.position === position;
+                  state.player.position ===
+                  presentation.code;
 
                 return (
                   <button
                     aria-pressed={selected}
-                    className={
+                    className={`absolute size-14 -translate-x-1/2 -translate-y-1/2 rounded-[8px] border px-2 outline-none focus-visible:ring-2 focus-visible:ring-enhanced-focus ${
                       selected
-                        ? "min-h-20 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 p-3 text-left"
-                        : "min-h-20 rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left"
+                        ? "border-enhanced-pitch bg-enhanced-pitch text-enhanced-pitch-ink"
+                        : "border-enhanced-line bg-enhanced-canvas text-enhanced-supporting"
+                    }`}
+                    data-enhanced-position={
+                      presentation.code
                     }
-                    data-enhanced-position={position}
-                    key={position}
+                    key={presentation.code}
                     onClick={() =>
                       dispatch({
-                        position,
+                        position: presentation.code,
                         type: "select_position",
                       })
                     }
+                    style={{
+                      left: presentation.x,
+                      top: presentation.y,
+                    }}
                     type="button"
                   >
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="text-base font-bold">
-                        {label}
-                      </span>
-                      <span className="text-xs font-black text-enhanced-supporting">
-                        {position}
-                      </span>
-                    </span>
-                    <span className="mt-1 block text-xs text-enhanced-supporting">
-                      {group}
-                      {selected ? " · 已选择" : ""}
-                    </span>
+                    <strong className="block text-xs">
+                      {presentation.label}
+                    </strong>
+                    <small className="block">
+                      {presentation.code}
+                    </small>
                   </button>
                 );
               },

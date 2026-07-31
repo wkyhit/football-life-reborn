@@ -15,8 +15,10 @@ import {
 } from "../../domain/careerEvents";
 import {
   createCareerEconomyProjection,
+  type CareerEconomyProjection,
   type CareerEconomyChoiceResult,
   type CareerEconomyOptionQuote,
+  type CareerSeasonSalary,
 } from "../../domain/economy/careerEconomyProjection";
 import type {
   NationalTournamentRecord,
@@ -170,6 +172,11 @@ export type CareerTimelineRowPresentation =
       readonly competitionTier: 1 | 2;
       readonly honors: readonly CareerSeasonHonorPresentation[];
       readonly kind: "season";
+      readonly economy: {
+        readonly annualSalary: number;
+        readonly income: number;
+      } | null;
+      readonly marketValue: number;
       readonly nationalTournaments: readonly CareerNationalTournamentPresentation[];
       readonly overall: number;
       readonly stats: Pick<
@@ -181,6 +188,10 @@ export type CareerTimelineRowPresentation =
     };
 
 export type CareerPresentation = {
+  readonly economy: {
+    readonly annualSalary: number | null;
+    readonly totalIncome: number;
+  } | null;
   readonly header: {
     readonly age: number;
     readonly club: CareerClubPresentation | null;
@@ -327,6 +338,16 @@ export function createCareerPresentation({
   );
   const visibleSeasons = career.seasons.slice(0, safeVisibleCount);
   const latestVisibleSeason = visibleSeasons.at(-1);
+  const economy = tryCreateEconomyProjection(career);
+  const visibleSeasonSalaries =
+    economy?.seasonSalaries.slice(0, safeVisibleCount) ?? [];
+  const salaryBySeasonIndex = new Map(
+    visibleSeasonSalaries.map((salary) => [
+      salary.seasonIndex,
+      salary,
+    ]),
+  );
+  const latestVisibleSalary = visibleSeasonSalaries.at(-1);
   const headerSeason = isRevealing
     ? latestVisibleSeason
     : undefined;
@@ -369,6 +390,7 @@ export function createCareerPresentation({
       return seasonPresentation(
         season,
         seasonsByAge.get(age - 1),
+        salaryBySeasonIndex.get(season.index) ?? null,
       );
     }
 
@@ -380,6 +402,20 @@ export function createCareerPresentation({
   });
 
   return {
+    economy:
+      economy === null
+        ? null
+        : {
+            annualSalary: isRevealing
+              ? latestVisibleSalary?.annualSalary ?? null
+              : economy.currentContract?.annualSalary ?? null,
+            totalIncome: isRevealing
+              ? visibleSeasonSalaries.reduce(
+                  (total, salary) => total + salary.income,
+                  0,
+                )
+              : economy.totalIncome,
+          },
     header: {
       age: headerSeason?.age ?? career.playerAge,
       club: headerClub,
@@ -398,6 +434,7 @@ export function createCareerPresentation({
     panel: revealPanelPresentation({
       activeRevealItem,
       career,
+      economy,
       isRevealing,
     }),
     recentEventResult:
@@ -423,10 +460,14 @@ export function createCareerPresentation({
 function revealPanelPresentation(input: {
   readonly activeRevealItem: SeasonRevealQueueItem | null;
   readonly career: ClassicCareerState;
+  readonly economy: CareerEconomyProjection | null;
   readonly isRevealing: boolean;
 }): CareerDecisionPanelPresentation {
   if (!input.isRevealing) {
-    return decisionPresentation(input.career);
+    return decisionPresentation(
+      input.career,
+      input.economy,
+    );
   }
 
   const item = input.activeRevealItem;
@@ -456,6 +497,7 @@ function revealPanelPresentation(input: {
     const presentation = seasonPresentation(
       season,
       input.career.seasons[item.seasonIndex - 1],
+      null,
     );
 
     return {
@@ -475,6 +517,7 @@ function revealPanelPresentation(input: {
 
 function decisionPresentation(
   career: ClassicCareerState,
+  economy: CareerEconomyProjection | null,
 ): CareerDecisionPanelPresentation {
   const decision = career.currentDecision;
 
@@ -497,7 +540,6 @@ function decisionPresentation(
             "career_event"
           >
         ];
-  const economy = tryCreateEconomyProjection(career);
   const economyByOptionId = new Map(
     economy?.optionQuotes.map((quote) => [
       quote.optionId,
@@ -755,11 +797,27 @@ function tryCreateEconomyProjection(
   }
 }
 
-function formatYuan(value: number): string {
+export function formatYuan(value: number): string {
   return `¥${String(value).replace(
     /\B(?=(\d{3})+(?!\d))/g,
     ",",
   )}`;
+}
+
+export function formatMarketValue(
+  valueEuro: number,
+): string {
+  if (valueEuro >= 100_000_000) {
+    return `€${trimDecimal(valueEuro / 100_000_000)}亿`;
+  }
+
+  return `€${trimDecimal(valueEuro / 10_000)}万`;
+}
+
+function trimDecimal(value: number): string {
+  return Number.isInteger(value)
+    ? String(value)
+    : value.toFixed(1);
 }
 
 function optionTitle(
@@ -804,6 +862,7 @@ function optionTitle(
 function seasonPresentation(
   season: ClassicCareerSeason,
   previousSeason: ClassicCareerSeason | undefined,
+  salary: CareerSeasonSalary | null,
 ): Extract<
   CareerTimelineRowPresentation,
   { readonly kind: "season" }
@@ -826,6 +885,13 @@ function seasonPresentation(
     age: season.age,
     club: clubPresentation(requireClub(season.teamId)),
     competitionTier: season.competitionTier,
+    economy:
+      salary === null
+        ? null
+        : {
+            annualSalary: salary.annualSalary,
+            income: salary.income,
+          },
     honors: [
       ...season.trophies.map((trophy) => ({
         kind: "trophy" as const,
@@ -842,6 +908,7 @@ function seasonPresentation(
       })),
     ],
     kind: "season",
+    marketValue: season.marketValue,
     nationalTournaments: season.nationalTournamentRecords.map(
       nationalTournamentPresentation,
     ),

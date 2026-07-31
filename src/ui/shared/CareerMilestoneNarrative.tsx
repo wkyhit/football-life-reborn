@@ -1,6 +1,8 @@
-import type {
-  CareerDecisionOptionPresentation,
-  CareerPresentation,
+import {
+  formatMarketValue,
+  formatYuan,
+  type CareerDecisionOptionPresentation,
+  type CareerPresentation,
 } from "../classic/careerPresentation";
 import {
   HonorIdentity,
@@ -22,6 +24,156 @@ type SeasonRow = Extract<
   CareerPresentation["timeline"][number],
   { readonly kind: "season" }
 >;
+
+export function CareerEconomySummary({
+  economy,
+  marketValue,
+  variant,
+}: {
+  readonly economy: CareerPresentation["economy"];
+  readonly marketValue: number;
+  readonly variant: "classic" | "enhanced";
+}) {
+  const enhanced = variant === "enhanced";
+
+  return (
+    <dl
+      className={
+        enhanced
+          ? "mt-3 grid grid-cols-3 divide-x divide-enhanced-line rounded-[8px] border border-enhanced-line bg-enhanced-surface"
+          : "mt-2 grid grid-cols-3 divide-x divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-900/50"
+      }
+      data-career-economy-summary=""
+    >
+      <EconomyMetric
+        label="身价"
+        value={formatMarketValue(marketValue)}
+        variant={variant}
+      />
+      <EconomyMetric
+        label="年薪"
+        value={
+          economy === null
+            ? "—"
+            : economy.annualSalary === null
+              ? "暂无合同"
+              : formatYuan(economy.annualSalary)
+        }
+        variant={variant}
+      />
+      <EconomyMetric
+        label="总收入"
+        value={
+          economy === null
+            ? "—"
+            : formatYuan(economy.totalIncome)
+        }
+        variant={variant}
+      />
+    </dl>
+  );
+}
+
+export function CareerSeasonEconomy({
+  row,
+  variant,
+}: {
+  readonly row: SeasonRow;
+  readonly variant: "classic" | "enhanced";
+}) {
+  const enhanced = variant === "enhanced";
+
+  return (
+    <dl
+      className={
+        enhanced
+          ? "col-start-2 col-end-7 mt-1 grid min-w-0 grid-cols-3 gap-x-2 rounded-[6px] bg-enhanced-surface px-2 py-1"
+          : "col-start-2 col-end-7 mt-1 grid min-w-0 grid-cols-3 gap-x-2 rounded-md bg-zinc-950/45 px-2 py-1"
+      }
+      data-career-season-economy=""
+    >
+      <EconomyMetric
+        compact
+        label="身价"
+        value={formatMarketValue(row.marketValue)}
+        variant={variant}
+      />
+      <EconomyMetric
+        compact
+        label="年薪"
+        value={
+          row.economy === null
+            ? "—"
+            : formatYuan(row.economy.annualSalary)
+        }
+        variant={variant}
+      />
+      <EconomyMetric
+        compact
+        label="收入"
+        value={
+          row.economy === null
+            ? "—"
+            : formatYuan(row.economy.income)
+        }
+        variant={variant}
+      />
+    </dl>
+  );
+}
+
+function EconomyMetric({
+  compact = false,
+  label,
+  value,
+  variant,
+}: {
+  readonly compact?: boolean;
+  readonly label: string;
+  readonly value: string;
+  readonly variant: "classic" | "enhanced";
+}) {
+  const enhanced = variant === "enhanced";
+
+  return (
+    <div
+      className={
+        compact
+          ? "min-w-0"
+          : enhanced
+            ? "min-w-0 px-2 py-2 text-center"
+            : "min-w-0 px-2 py-1.5 text-center"
+      }
+    >
+      <dt
+        className={
+          compact
+            ? enhanced
+              ? "text-[9px] font-bold text-enhanced-supporting"
+              : "text-[9px] font-medium text-zinc-500"
+            : enhanced
+              ? "text-xs font-bold text-enhanced-supporting"
+              : "text-[10px] font-medium text-zinc-500"
+        }
+      >
+        {label}
+      </dt>
+      <dd
+        className={`min-w-0 whitespace-nowrap font-bold tabular-nums ${
+          compact
+            ? enhanced
+              ? "text-[9px] text-enhanced-ink-2"
+              : "text-[9px] text-zinc-300"
+            : enhanced
+              ? "mt-0.5 text-xs text-enhanced-strong"
+              : "mt-0.5 text-[11px] text-zinc-200"
+        }`}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
 
 export function CareerDecisionEconomyDetails({
   option,

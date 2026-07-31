@@ -9,9 +9,11 @@ import {
 } from "../../../features/challenges/ChallengeProgressPanel";
 import {
   CareerDecisionEconomyDetails,
+  CareerEconomySummary,
   CareerEventResultNarrative,
   CareerMilestoneNarrative,
   CareerRecentEventResult,
+  CareerSeasonEconomy,
   CareerSeasonNarrative,
 } from "../../shared/CareerMilestoneNarrative";
 import { ClubIdentity } from "../../classic/components/ClubIdentity";
@@ -96,67 +98,72 @@ function CareerHeader({
   return (
     <header
       className="shrink-0 border-b border-enhanced-line bg-enhanced-canvas px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] sm:px-6 lg:px-8 lg:py-4"
+      data-enhanced-career-header=""
     >
-      <div className="mx-auto grid w-full max-w-[1440px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(20rem,auto)] lg:gap-5">
-        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[10px] border border-enhanced-trophy/40 bg-enhanced-surface text-enhanced-trophy">
-          <span className="text-xs font-bold leading-none text-enhanced-trophy">
-            能力
-          </span>
-          <strong className="mt-1 text-2xl font-black leading-none tabular-nums">
-            {header.overall}
-          </strong>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-2 py-1 text-xs font-bold text-enhanced-ink-2">
-              {header.countryFlag} {header.countryCode}
+      <div className="mx-auto w-full max-w-[1440px]">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(20rem,auto)] lg:gap-5">
+          <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[10px] border border-enhanced-trophy/40 bg-enhanced-surface text-enhanced-trophy">
+            <span className="text-xs font-bold leading-none text-enhanced-trophy">
+              能力
             </span>
-            <span className="rounded-[6px] border border-enhanced-pitch/20 bg-enhanced-pitch/10 px-2 py-1 text-xs font-bold text-enhanced-pitch">
-              #{header.number} {header.position}
-            </span>
+            <strong className="mt-1 text-2xl font-black leading-none tabular-nums">
+              {header.overall}
+            </strong>
           </div>
-          <div className="mt-2 flex min-w-0 items-center gap-2">
-            {header.club ? (
-              <ClubIdentity club={header.club} size={22} />
-            ) : null}
-            <span className="truncate text-lg font-extrabold">
-              {header.club?.shortName ?? "自由身"}
-            </span>
-          </div>
-        </div>
 
-        <div className="shrink-0 border-l border-enhanced-line pl-3 text-right lg:pl-5">
-          <div className="text-xs font-bold text-enhanced-supporting">
-            年龄
-          </div>
-          <div className="text-xl font-black tabular-nums">
-            {header.age}
-          </div>
-          <div className="text-xs font-bold text-enhanced-pitch">
-            {formatMarketValue(header.marketValue)}
-          </div>
-        </div>
-
-        <dl className="col-span-3 mt-3 grid grid-cols-4 divide-x divide-enhanced-line lg:col-span-1 lg:mt-0">
-          {(
-            [
-              ["出场", totals.appearances],
-              ["进球", totals.goals],
-              ["助攻", totals.assists],
-              ["奖杯", totals.trophies],
-            ] as const
-          ).map(([label, value]) => (
-            <div className="px-2 text-center lg:min-w-20 lg:px-4" key={label}>
-              <dt className="text-xs font-bold text-enhanced-supporting">
-                {label}
-              </dt>
-              <dd className="mt-1 text-base font-extrabold tabular-nums lg:text-lg">
-                {value}
-              </dd>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-2 py-1 text-xs font-bold text-enhanced-ink-2">
+                {header.countryFlag} {header.countryCode}
+              </span>
+              <span className="rounded-[6px] border border-enhanced-pitch/20 bg-enhanced-pitch/10 px-2 py-1 text-xs font-bold text-enhanced-pitch">
+                #{header.number} {header.position}
+              </span>
             </div>
-          ))}
-        </dl>
+            <div className="mt-2 flex min-w-0 items-center gap-2">
+              {header.club ? (
+                <ClubIdentity club={header.club} size={22} />
+              ) : null}
+              <span className="truncate text-lg font-extrabold">
+                {header.club?.shortName ?? "自由身"}
+              </span>
+            </div>
+          </div>
+
+          <div className="shrink-0 border-l border-enhanced-line pl-3 text-right lg:pl-5">
+            <div className="text-xs font-bold text-enhanced-supporting">
+              年龄
+            </div>
+            <div className="text-xl font-black tabular-nums">
+              {header.age}
+            </div>
+          </div>
+
+          <dl className="col-span-3 mt-3 grid grid-cols-4 divide-x divide-enhanced-line lg:col-span-1 lg:mt-0">
+            {(
+              [
+                ["出场", totals.appearances],
+                ["进球", totals.goals],
+                ["助攻", totals.assists],
+                ["奖杯", totals.trophies],
+              ] as const
+            ).map(([label, value]) => (
+              <div className="px-2 text-center lg:min-w-20 lg:px-4" key={label}>
+                <dt className="text-xs font-bold text-enhanced-supporting">
+                  {label}
+                </dt>
+                <dd className="mt-1 text-base font-extrabold tabular-nums lg:text-lg">
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <CareerEconomySummary
+          economy={view.economy}
+          marketValue={header.marketValue}
+          variant="enhanced"
+        />
       </div>
     </header>
   );
@@ -249,6 +256,7 @@ function TimelineRow({
     return (
       <div
         className={`${gridClass} bg-enhanced-pitch/[0.06]`}
+        data-career-season-row={row.age}
         data-enhanced-season-row="current"
       >
         <span className="text-xs font-black tabular-nums text-enhanced-pitch">
@@ -273,6 +281,7 @@ function TimelineRow({
     return (
       <div
         className={gridClass}
+        data-career-season-row={row.age}
         data-enhanced-season-row="empty"
       >
         <span className="text-xs font-black tabular-nums text-enhanced-supporting">
@@ -292,6 +301,7 @@ function TimelineRow({
   return (
     <div
       className={gridClass}
+      data-career-season-row={row.age}
       data-enhanced-season-row="season"
     >
       <span className="text-xs font-black tabular-nums text-enhanced-supporting">
@@ -316,6 +326,7 @@ function TimelineRow({
       <SeasonNumber>{row.stats.appearances}</SeasonNumber>
       <SeasonNumber>{row.stats.goals}</SeasonNumber>
       <SeasonNumber>{row.stats.assists}</SeasonNumber>
+      <CareerSeasonEconomy row={row} variant="enhanced" />
       <CareerSeasonNarrative row={row} variant="enhanced" />
     </div>
   );
@@ -535,18 +546,4 @@ function roleToneClass(
     case "danger":
       return "text-enhanced-alert";
   }
-}
-
-function formatMarketValue(valueEuro: number): string {
-  if (valueEuro >= 100_000_000) {
-    return `€${trimDecimal(valueEuro / 100_000_000)}亿`;
-  }
-
-  return `€${trimDecimal(valueEuro / 10_000)}万`;
-}
-
-function trimDecimal(value: number): string {
-  return Number.isInteger(value)
-    ? String(value)
-    : value.toFixed(1);
 }

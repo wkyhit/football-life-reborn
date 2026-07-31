@@ -60,7 +60,7 @@ export type NationalTeamPeriod = {
   readonly stats: ClassicSeasonStats;
 };
 
-const NATIONAL_CALL_UP_THRESHOLDS = [
+export const NATIONAL_CALL_UP_THRESHOLDS = [
   60,
   70,
   74,

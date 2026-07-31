@@ -39,6 +39,90 @@ const SEASON_LABELS = [
 afterEach(cleanup);
 
 describe("complete career narrative rendering", () => {
+  it.each([
+    ["classic", "ST"],
+    ["classic", "GK"],
+    ["enhanced", "ST"],
+    ["enhanced", "GK"],
+  ] as const)(
+    "labels market value, salary, and income for a %s %s career",
+    (variant, position) => {
+      const view = committedEconomyView(position);
+      const season = view.timeline.find(
+        (row) => row.kind === "season",
+      );
+
+      if (
+        view.economy === null ||
+        season?.kind !== "season" ||
+        season.economy === null
+      ) {
+        throw new Error("Expected presented economy facts");
+      }
+
+      const rendered =
+        variant === "classic"
+          ? render(
+              <CareerScreen
+                onChoose={vi.fn()}
+                view={view}
+              />,
+            )
+          : render(
+              <EnhancedCareerScreen
+                onChoose={vi.fn()}
+                view={view}
+              />,
+            );
+      const header =
+        rendered.container.querySelector<HTMLElement>(
+        variant === "classic"
+          ? "[data-classic-career-header]"
+          : "[data-enhanced-career-header]",
+      );
+      const seasonRow =
+        rendered.container.querySelector<HTMLElement>(
+          `[data-career-season-row="${season.age}"]`,
+        );
+
+      if (header === null || seasonRow === null) {
+        throw new Error("Expected career economy surfaces");
+      }
+
+      const headerView = within(header);
+      expect(headerView.getByText("身价")).toBeVisible();
+      expect(headerView.getByText("年薪")).toBeVisible();
+      expect(headerView.getByText("总收入")).toBeVisible();
+      expect(
+        metricView(header, "年薪").getByText(
+          formatYuan(view.economy.annualSalary),
+        ),
+      ).toBeVisible();
+      expect(
+        metricView(header, "总收入").getByText(
+          formatYuan(view.economy.totalIncome),
+        ),
+      ).toBeVisible();
+
+      const seasonView = within(seasonRow);
+      expect(seasonView.getByText("身价")).toBeVisible();
+      expect(seasonView.getByText("年薪")).toBeVisible();
+      expect(seasonView.getByText("收入")).toBeVisible();
+      expect(
+        metricView(seasonRow, "年薪").getByText(
+          formatYuan(season.economy.annualSalary),
+        ),
+      ).toBeVisible();
+      expect(
+        metricView(seasonRow, "收入").getByText(
+          formatYuan(season.economy.income),
+        ),
+      ).toBeVisible();
+
+      rendered.unmount();
+    },
+  );
+
   it.each(["classic", "enhanced"] as const)(
     "renders the five-layer contract choice card in %s",
     (variant) => {
@@ -329,6 +413,54 @@ function academyEconomyView() {
     isRevealing: false,
     visibleSeasonCount: 0,
   });
+}
+
+function committedEconomyView(position: "GK" | "ST") {
+  const initial = startClassicCareer({
+    identity: {
+      lastName: "经济",
+      nationalityFifaCode: "CHN",
+      position,
+      preferredNumber: position === "GK" ? 1 : 9,
+    },
+    mode: "normal",
+    seed: `issue-18:career-economy-ui:${position}`,
+  });
+  const decision = initial.currentDecision;
+
+  if (decision === null) {
+    throw new Error("Expected an academy decision");
+  }
+
+  const career = applyClassicChoice(initial, {
+    decisionId: decision.id,
+    decisionType: decision.type,
+    optionId: decision.options[0]!.id,
+  });
+
+  return createCareerPresentation({
+    career,
+    isRevealing: false,
+    visibleSeasonCount: career.seasons.length,
+  });
+}
+
+function formatYuan(value: number | null): string {
+  if (value === null) {
+    return "暂无合同";
+  }
+
+  return `¥${value.toLocaleString("en-US")}`;
+}
+
+function metricView(root: HTMLElement, label: string) {
+  const metric = within(root).getByText(label).parentElement;
+
+  if (metric === null) {
+    throw new Error(`Expected ${label} metric`);
+  }
+
+  return within(metric);
 }
 
 function eventEconomyView() {

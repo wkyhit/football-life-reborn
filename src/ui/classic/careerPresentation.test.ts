@@ -7,11 +7,87 @@ import {
   startClassicCareer,
 } from "../../domain/classicEngine";
 import { CLASSIC_CATALOG } from "../../domain/catalog/classicCatalog";
-import { createCareerEconomyChoiceResult } from "../../domain/economy/careerEconomyProjection";
+import {
+  createCareerEconomyChoiceResult,
+  createCareerEconomyProjection,
+} from "../../domain/economy/careerEconomyProjection";
 import { CLASSIC_GOLDEN_FIXTURES } from "../../../tests/golden/fixtures";
 import { createCareerPresentation } from "./careerPresentation";
 
 describe("Classic career presentation", () => {
+  it.each(["ST", "GK"] as const)(
+    "exposes reveal-safe contract economy facts for a %s career",
+    (position) => {
+      const initial = startClassicCareer({
+        identity: {
+          lastName: "经济",
+          nationalityFifaCode: "CHN",
+          position,
+          preferredNumber: position === "GK" ? 1 : 9,
+        },
+        mode: "normal",
+        seed: `issue-18:career-economy:${position}`,
+      });
+      const decision = initial.currentDecision;
+
+      if (decision === null) {
+        throw new Error("Expected an academy decision");
+      }
+
+      const committed = applyClassicChoice(initial, {
+        decisionId: decision.id,
+        decisionType: decision.type,
+        optionId: decision.options[0]!.id,
+      });
+      const projection =
+        createCareerEconomyProjection(committed);
+      const firstSalary = projection.seasonSalaries[0];
+      const firstSeason = committed.seasons[0];
+
+      if (
+        firstSalary === undefined ||
+        firstSeason === undefined
+      ) {
+        throw new Error("Expected a settled first season");
+      }
+
+      const partial = createCareerPresentation({
+        career: committed,
+        isRevealing: true,
+        visibleSeasonCount: 1,
+      });
+      const firstRow = partial.timeline.find(
+        (row) =>
+          row.kind === "season" &&
+          row.age === firstSeason.age,
+      );
+
+      expect(partial.economy).toEqual({
+        annualSalary: firstSalary.annualSalary,
+        totalIncome: firstSalary.income,
+      });
+      expect(firstRow).toMatchObject({
+        economy: {
+          annualSalary: firstSalary.annualSalary,
+          income: firstSalary.income,
+        },
+        marketValue: firstSeason.marketValue,
+      });
+
+      const complete = createCareerPresentation({
+        career: committed,
+        isRevealing: false,
+        visibleSeasonCount: committed.seasons.length,
+      });
+
+      expect(complete.economy).toEqual({
+        annualSalary:
+          projection.currentContract?.annualSalary ?? null,
+        totalIncome: projection.totalIncome,
+      });
+    },
+  );
+
   it("separates committed engine state from the visible reveal cursor", () => {
     const initial = startClassicCareer({
       identity: {

@@ -279,6 +279,13 @@ function presentation(input: {
   });
 
   return {
+    economy: {
+      annualSalary: input.club === null ? null : 20_000,
+      totalIncome:
+        input.seasons.filter(
+          (row) => row.kind === "season",
+        ).length * 20_000,
+    },
     header: {
       age: input.age,
       club: input.club,
@@ -328,8 +335,13 @@ function season(
     age,
     club: TONGLIANG,
     competitionTier: 1,
+    economy: {
+      annualSalary: 20_000,
+      income: 20_000,
+    },
     honors: [],
     kind: "season",
+    marketValue: overall * 10_000,
     nationalTournaments: [],
     overall,
     stats: { appearances, assists, goals },
