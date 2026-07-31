@@ -21,6 +21,7 @@ archive, summary, challenge, and replay states.
 | Story ID | Required remote behavior |
 | --- | --- |
 | `attacker-career` | Create a seeded attacker, inspect salary and consequence hierarchy, choose through the actual-result/reveal sequence, retire, and verify contract history, income, percentile, honors, and narrative. |
+| `career-workbench` | From clean storage, create real attacker and goalkeeper careers through the application setup flow. At 195×415, 390×667, 568×320, and 1280×830 require bounded document geometry, fixed timeline chrome, a readable centered current year, compact history, first-level salary/role/stars/risk, a selected choice beside its held result, persisted yearly choice/outcome/contract detail, 44×44 exact-money disclosure, position-correct metrics and semantic rows, deliberate follow suspension, and a working return-to-latest action. Repeat the Classic compatibility check at 390×667. |
 | `mid-career-resume` | Reload a saved career, resume it from local storage, and verify that the raw saved state and deterministic output do not change. |
 | `share-card` | Download the rendered PNG, verify 1080×1720 dimensions, decode its QR payload, and require the current public origin. |
 | `archive-round-trip` | Export an archive, clear/delete its local entry, import the downloaded file, reopen it, and recover the same summary. |
@@ -36,6 +37,8 @@ replace any story.
 ## UI and viewport matrix
 
 - Exercise Classic and Enhanced entry/setup/career/summary surfaces.
+- Treat 195×415 and 390×667 as required career-workbench reflow/mobile
+  boundaries, and 568×320 as its short-landscape boundary.
 - Check 320, 375, 414, 768, 1280, and 1440 CSS-pixel widths with no document
   overflow, clipped action, or failed first-party asset.
 - Verify 200% reflow by halving the CSS viewport while preserving readable

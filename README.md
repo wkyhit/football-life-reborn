@@ -144,10 +144,13 @@ Enhanced presentation changes remain additive:
   `.hallmark/release.json`, with reviewed `ego-browser` evidence under
   `tests/visual/enhanced/after/`.
 
-Classic is the frozen compatibility baseline. Files under
-`src/ui/classic/**`, Classic reference screenshots, the
-`2026-07-30-classic-v1` engine/content contract, and serialized career
-formats do not consume Enhanced tokens and must remain unchanged.
+Classic is the frozen compatibility baseline. Classic renderers and tokens,
+Classic reference screenshots, the `2026-07-30-classic-v1` engine/content
+contract, and serialized career formats do not consume Enhanced tokens and
+must remain unchanged. The renderer-neutral presentation DTO in
+`src/ui/classic/careerPresentation.ts` may gain additive read-only facts for
+Enhanced consumers only when Classic markup, behavior, and golden output stay
+byte-identical.
 
 ## UI modes and deployment
 

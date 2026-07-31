@@ -84,6 +84,7 @@ describe("Vercel Preview journey contract", () => {
     const acceptance = readFileSync(ACCEPTANCE, "utf8");
     const requiredStories = [
       "attacker-career",
+      "career-workbench",
       "mid-career-resume",
       "share-card",
       "archive-round-trip",
