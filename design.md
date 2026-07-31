@@ -236,6 +236,58 @@ Frozen:
 - `tests/visual/classic/**`
 - domain, deterministic engine, replay codec, storage schema, catalog data, share-card semantics, and route ownership
 
+### Issue #18 approved amendment
+
+[Issue #18](https://github.com/wkyhit/football-life-reborn/issues/18)
+is the approved, additive exception for deterministic contract economy
+and career storytelling after the Phase 7 baseline. This amendment does
+not unfreeze the football engine, football RNG cursor/core hash, Classic
+content version/catalog, route ownership, or existing Classic visual
+reference images. Any production file not named below still requires a
+new amendment before modification.
+
+Create:
+
+- `src/domain/economy/economyPolicy.ts`
+- `src/domain/economy/careerEconomyProjection.ts`
+- `src/domain/economy/careerStory.ts`
+- `src/domain/economy/percentileBenchmark.ts`
+- `src/domain/economy/percentileTable.generated.ts`
+- `src/ui/shared/positionPresentation.ts`
+- `docs/economy-v1.md`
+- `docs/economy-migration-and-benchmark.md`
+
+Modify:
+
+- `src/domain/economics.ts` only to expose the existing market-value nodes without changing football valuation behavior
+- `src/domain/nationalTeam.ts` only to expose the existing call-up threshold contract
+- `src/storage/classicSessionRepository.ts`
+- `src/storage/archiveRepository.ts`
+- `src/storage/careerTransfer.ts`
+- `src/storage/migrations/migrations.ts`
+- `src/features/replay/codec.ts`
+- `src/features/replay/replay.ts`
+- `src/features/branching/compareBranches.ts`
+- `src/features/season-reveal/seasonReveal.ts`
+- `src/features/share-card/shareCard.ts`
+- `src/features/share-card/shareCardContract.ts`
+- `src/features/share-card/ShareCardOverlay.tsx`
+- `src/features/archive/EnhancedArchiveScreen.tsx`
+- `src/ui/classic/PositionScreen.tsx` only to consume shared, behavior-equivalent position metadata
+- `src/ui/classic/careerPresentation.ts`
+- `src/ui/classic/summaryPresentation.ts`
+- `src/ui/classic/CareerScreen.tsx` and `src/ui/classic/SummaryScreen.tsx` only for the approved minimal economy/story parity
+- `src/ui/enhanced/EnhancedOnboarding.tsx`
+- `src/ui/enhanced/career/EnhancedCareerScreen.tsx`
+- `src/ui/enhanced/summary/EnhancedSummaryScreen.tsx`
+- `src/app/App.tsx`
+- `src/styles.css`
+- `README.md`
+
+Adjacent tests, benchmark generation fixtures, and Issue #18 evidence
+may be added or updated, but existing football golden fixtures and
+Classic visual reference PNGs remain immutable acceptance inputs.
+
 ## 11. Portable exports
 
 ### CSS source
