@@ -55,7 +55,7 @@ describe("EnhancedCareerScreen", () => {
     expect(within(primary as HTMLElement).getByText("年薪")).toBeVisible();
     expect(secondary).not.toHaveAttribute("open");
     expect(
-      within(secondary as HTMLElement).getByText("生涯累计与收入"),
+      within(secondary as HTMLElement).getByText("生涯收入与明细"),
     ).toBeVisible();
     expect(within(secondary as HTMLElement).getByText("累计收入")).toBeInTheDocument();
     expect(within(secondary as HTMLElement).getByText("出场")).toBeInTheDocument();

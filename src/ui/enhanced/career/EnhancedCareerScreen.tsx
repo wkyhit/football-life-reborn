@@ -9,8 +9,11 @@ import type {
   CareerPresentation,
   CareerTimelineRowPresentation,
 } from "../../classic/careerPresentation";
-import { formatMarketValue } from "../../classic/careerPresentation";
-import { formatYuan } from "../../../domain/economy/economyPolicy";
+import {
+  createMarketValuePresentation,
+  createYuanPresentation,
+  type CareerCurrencyPresentation,
+} from "../../classic/careerPresentation";
 import {
   ChallengeProgressPanel,
   type ChallengeSurface,
@@ -20,7 +23,6 @@ import {
   CareerEventResultNarrative,
   CareerRecentEventResult,
   CareerSeasonEconomy,
-  CareerSeasonNarrative,
 } from "../../shared/CareerMilestoneNarrative";
 import { useDecisionFocusRestore } from "../../shared/useDecisionFocusRestore";
 import { useReducedMotion } from "../../shared/useReducedMotion";
@@ -183,6 +185,18 @@ function CareerHeader({
   readonly view: CareerPresentation;
 }) {
   const { header, totals } = view;
+  const marketValue = createMarketValuePresentation(
+    header.marketValue,
+  );
+  const annualSalary =
+    view.economy?.annualSalary === null ||
+    view.economy === null
+      ? null
+      : createYuanPresentation(view.economy.annualSalary);
+  const totalIncome =
+    view.economy === null
+      ? null
+      : createYuanPresentation(view.economy.totalIncome);
 
   return (
     <header
@@ -253,34 +267,34 @@ function CareerHeader({
           data-enhanced-primary-career-facts=""
         >
           <HeaderMetric
+            currency={marketValue.currency}
+            fullValue={marketValue.full}
             label="身价"
-            value={formatMarketValue(header.marketValue)}
+            value={marketValue.compact}
           />
           <HeaderMetric
+            {...(annualSalary === null
+              ? {}
+              : {
+                  currency: annualSalary.currency,
+                  fullValue: annualSalary.full,
+                })}
             label="年薪"
             value={
               view.economy === null
                 ? "—"
                 : view.economy.annualSalary === null
                   ? "暂无合同"
-                  : formatYuan(view.economy.annualSalary)
-            }
-          />
-          <HeaderMetric
-            className="hidden lg:block"
-            label="总收入"
-            value={
-              view.economy === null
-                ? "—"
-                : formatYuan(view.economy.totalIncome)
+                  : annualSalary?.compact ?? "—"
             }
           />
           <details
-            className="relative lg:hidden"
+            className="relative"
+            data-enhanced-career-economy-details=""
             data-enhanced-secondary-career-facts=""
           >
             <summary className="flex min-h-11 items-center justify-center px-2 text-center text-xs font-bold text-enhanced-pitch">
-              生涯累计与收入
+              生涯收入与明细
             </summary>
             <div
               className="absolute right-0 z-[var(--z-dropdown)] mt-1 rounded-[8px] border border-enhanced-line bg-enhanced-raised p-3"
@@ -297,7 +311,7 @@ function CareerHeader({
                       "累计收入",
                       view.economy === null
                         ? "—"
-                        : formatYuan(view.economy.totalIncome),
+                        : totalIncome?.compact ?? "—",
                     ],
                   ] as const
                 ).map(([label, value]) => (
@@ -305,7 +319,25 @@ function CareerHeader({
                     <dt className="text-xs text-enhanced-supporting">
                       {label}
                     </dt>
-                    <dd className="mt-0.5 text-sm font-bold tabular-nums">
+                    <dd
+                      aria-label={
+                        label === "累计收入" &&
+                        totalIncome !== null
+                          ? `累计收入：${totalIncome.full}`
+                          : undefined
+                      }
+                      className="mt-0.5 break-words text-sm font-bold leading-tight tabular-nums"
+                      data-currency={
+                        label === "累计收入"
+                          ? totalIncome?.currency
+                          : undefined
+                      }
+                      title={
+                        label === "累计收入"
+                          ? totalIncome?.full
+                          : undefined
+                      }
+                    >
                       {value}
                     </dd>
                   </div>
@@ -321,10 +353,14 @@ function CareerHeader({
 
 function HeaderMetric({
   className = "",
+  currency,
+  fullValue,
   label,
   value,
 }: {
   readonly className?: string;
+  readonly currency?: CareerCurrencyPresentation["currency"];
+  readonly fullValue?: string;
   readonly label: string;
   readonly value: string;
 }) {
@@ -333,7 +369,16 @@ function HeaderMetric({
       <dt className="text-xs font-bold text-enhanced-supporting">
         {label}
       </dt>
-      <dd className="mt-0.5 min-w-0 truncate text-xs font-bold tabular-nums">
+      <dd
+        aria-label={
+          fullValue === undefined
+            ? undefined
+            : `${label}：${fullValue}`
+        }
+        className="mt-0.5 min-w-0 break-words text-xs font-bold leading-tight tabular-nums"
+        data-currency={currency}
+        title={fullValue}
+      >
         {value}
       </dd>
     </dl>
@@ -527,7 +572,6 @@ function TimelineRow({
       <SeasonNumber>{row.stats.goals}</SeasonNumber>
       <SeasonNumber>{row.stats.assists}</SeasonNumber>
       <CareerSeasonEconomy row={row} variant="enhanced" />
-      <CareerSeasonNarrative row={row} variant="enhanced" />
     </div>
   );
 }
@@ -724,75 +768,83 @@ function DecisionOption({
   readonly selected: boolean;
 }) {
   return (
-    <button
-      aria-describedby={
-        disabled ? "enhanced-choice-receipt" : undefined
-      }
-      aria-pressed={selected}
-      className={`block min-h-12 w-full rounded-[10px] border p-3 text-left outline-none transition-[transform,opacity] focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:translate-y-px motion-reduce:transform-none motion-reduce:transition-opacity ${
+    <div
+      className={`overflow-hidden rounded-[10px] border transition-opacity ${
         selected
           ? "border-enhanced-pitch bg-enhanced-pitch/[0.08] text-enhanced-pitch"
           : "border-enhanced-line bg-enhanced-surface"
       }`}
-      data-career-decision-option=""
+      data-enhanced-decision-card=""
       data-choice-state={
         selected ? "selected" : disabled ? "pending-sibling" : "idle"
       }
-      disabled={disabled}
-      onClick={onChoose}
-      type="button"
     >
-      <span className="flex items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center">
-          {option.club ? (
-            <ClubIdentity club={option.club} size={34} />
-          ) : (
+      <button
+        aria-describedby={
+          disabled ? "enhanced-choice-receipt" : undefined
+        }
+        aria-pressed={selected}
+        className="block min-h-12 w-full p-3 text-left outline-none transition-transform focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-enhanced-focus active:translate-y-px motion-reduce:transform-none"
+        data-career-decision-option=""
+        disabled={disabled}
+        onClick={onChoose}
+        type="button"
+      >
+        <span className="flex items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center">
+            {option.club ? (
+              <ClubIdentity club={option.club} size={34} />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="text-lg text-enhanced-pitch"
+              >
+                ›
+              </span>
+            )}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[15px] font-bold">
+              {option.title}
+            </span>
+            <span
+              className={`mt-1 block text-xs text-enhanced-supporting ${
+                option.club ? "truncate" : "whitespace-normal leading-4"
+              }`}
+            >
+              {option.subtitle}
+            </span>
+          </span>
+          {option.role ? (
+            <span className="shrink-0 text-right">
+              <span
+                className={`block text-xs font-bold ${roleToneClass(option.roleTone)}`}
+              >
+                {option.role}
+              </span>
+              <span className="block text-xs text-enhanced-supporting">
+                {option.stars}
+              </span>
+            </span>
+          ) : null}
+          {selected ? (
             <span
               aria-hidden="true"
-              className="text-lg text-enhanced-pitch"
+              className="shrink-0 text-base font-black text-enhanced-pitch"
             >
-              ›
+              ✓
             </span>
-          )}
+          ) : null}
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-bold">
-            {option.title}
-          </span>
-          <span
-            className={`mt-1 block text-xs text-enhanced-supporting ${
-              option.club ? "truncate" : "whitespace-normal leading-4"
-            }`}
-          >
-            {option.subtitle}
-          </span>
+        <span className="sr-only">
+          合同与完整故事可在本选项下方展开
         </span>
-        {option.role ? (
-          <span className="shrink-0 text-right">
-            <span
-              className={`block text-xs font-bold ${roleToneClass(option.roleTone)}`}
-            >
-              {option.role}
-            </span>
-            <span className="block text-xs text-enhanced-supporting">
-              {option.stars}
-            </span>
-          </span>
-        ) : null}
-        {selected ? (
-          <span
-            aria-hidden="true"
-            className="shrink-0 text-base font-black text-enhanced-pitch"
-          >
-            ✓
-          </span>
-        ) : null}
-      </span>
+      </button>
       <CareerDecisionEconomyDetails
         option={option}
         variant="enhanced"
       />
-    </button>
+    </div>
   );
 }
 

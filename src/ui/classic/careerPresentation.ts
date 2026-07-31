@@ -84,17 +84,20 @@ export type CareerDecisionContractPresentation =
       readonly certainty: "estimated" | "exact";
       readonly kind: "new_contract";
       readonly label: string;
+      readonly tone: "positive";
     }
   | {
       readonly annualSalary: number;
       readonly kind: "contract_unchanged";
       readonly label: string;
       readonly reason: "career_choice" | "loan" | "stay";
+      readonly tone: "neutral";
     }
   | {
       readonly kind: "no_contract";
       readonly label: string;
       readonly reason: "free_agent" | "retire";
+      readonly tone: "warning";
     };
 
 export type CareerDecisionPanelPresentation =
@@ -146,16 +149,25 @@ export type CareerSeasonStatusPresentation =
   | {
       readonly kind: "relegation";
       readonly label: string;
+      readonly tone: "negative";
     }
   | {
       readonly kind: "suspension";
       readonly label: string;
+      readonly tone: "warning";
     };
 
 export type CareerTierChangePresentation = {
   readonly from: 1 | 2;
   readonly label: string;
   readonly to: 1 | 2;
+  readonly tone: "negative" | "positive";
+};
+
+export type CareerCurrencyPresentation = {
+  readonly compact: string;
+  readonly currency: "CNY" | "EUR";
+  readonly full: string;
 };
 
 export type CareerTimelineRowPresentation =
@@ -735,6 +747,7 @@ function contractPresentation(
           ? "预计年薪"
           : "年薪"
       } ${formatYuan(quote.quote.annualSalary)}`,
+      tone: "positive",
     };
   }
 
@@ -748,6 +761,7 @@ function contractPresentation(
           : "合同不变"
       } · 年薪 ${formatYuan(quote.contract.annualSalary)}`,
       reason: quote.reason,
+      tone: "neutral",
     };
   }
 
@@ -758,6 +772,7 @@ function contractPresentation(
         ? "退役后停止收入"
         : "本选项不签新合同",
     reason: quote.reason,
+    tone: "warning",
   };
 }
 
@@ -838,17 +853,75 @@ function tryCreateEconomyProjection(
 export function formatMarketValue(
   valueEuro: number,
 ): string {
-  if (valueEuro >= 100_000_000) {
-    return `€${trimDecimal(valueEuro / 100_000_000)}亿`;
-  }
-
-  return `€${trimDecimal(valueEuro / 10_000)}万`;
+  return createMarketValuePresentation(valueEuro).compact;
 }
 
-function trimDecimal(value: number): string {
-  return Number.isInteger(value)
-    ? String(value)
-    : value.toFixed(1);
+export function createMarketValuePresentation(
+  valueEuro: number,
+): CareerCurrencyPresentation {
+  assertCurrencyValue(valueEuro, "Euro");
+  const full = `€${valueEuro.toLocaleString("en-US")}`;
+
+  if (valueEuro >= 100_000_000) {
+    return {
+      compact: `€${formatCompactMagnitude(valueEuro / 100_000_000)}亿`,
+      currency: "EUR",
+      full,
+    };
+  }
+
+  if (valueEuro >= 10_000) {
+    return {
+      compact: `€${formatCompactMagnitude(valueEuro / 10_000)}万`,
+      currency: "EUR",
+      full,
+    };
+  }
+
+  return { compact: full, currency: "EUR", full };
+}
+
+export function createYuanPresentation(
+  valueYuan: number,
+): CareerCurrencyPresentation {
+  assertCurrencyValue(valueYuan, "Yuan");
+  const full = formatYuan(valueYuan);
+
+  if (valueYuan >= 100_000_000) {
+    return {
+      compact: `¥${formatCompactMagnitude(valueYuan / 100_000_000)}亿`,
+      currency: "CNY",
+      full,
+    };
+  }
+
+  if (valueYuan >= 10_000) {
+    return {
+      compact: `¥${formatCompactMagnitude(valueYuan / 10_000)}万`,
+      currency: "CNY",
+      full,
+    };
+  }
+
+  return { compact: full, currency: "CNY", full };
+}
+
+function formatCompactMagnitude(value: number): string {
+  return value.toLocaleString("en-US", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 0,
+  });
+}
+
+function assertCurrencyValue(
+  value: number,
+  currency: "Euro" | "Yuan",
+): void {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new RangeError(
+      `${currency} value must be a non-negative safe integer: ${value}`,
+    );
+  }
 }
 
 function optionTitle(
@@ -909,6 +982,10 @@ function seasonPresentation(
               ? "进入顶级联赛"
               : "进入次级联赛",
           to: season.competitionTier,
+          tone:
+            season.competitionTier === 1
+              ? ("positive" as const)
+              : ("negative" as const),
         }
       : null;
 
@@ -955,6 +1032,7 @@ function seasonPresentation(
             {
               kind: "suspension" as const,
               label: "停赛",
+              tone: "warning" as const,
             },
           ]
         : []),
@@ -963,6 +1041,7 @@ function seasonPresentation(
             {
               kind: "relegation" as const,
               label: "降入次级联赛",
+              tone: "negative" as const,
             },
           ]
         : []),
