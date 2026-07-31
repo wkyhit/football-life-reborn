@@ -14,6 +14,7 @@ import {
   createSummaryPresentation,
   type SummaryPresentation,
 } from "./summaryPresentation";
+import { HONOR_IDENTITY_KEYS } from "../shared/HonorIdentity";
 
 describe("SummaryScreen", () => {
   afterEach(cleanup);
@@ -46,6 +47,12 @@ describe("SummaryScreen", () => {
       screen.getByRole("region", { name: "效力过" }).children[1]
         ?.children,
     ).toHaveLength(12);
+    expect(
+      container.querySelectorAll(
+        '[data-honor-art="local-svg"]',
+      ),
+    ).toHaveLength(20);
+    expect(container).not.toHaveTextContent(/[🏆🥇]/u);
 
     await user.click(
       screen.getByRole("button", { name: "再来一局" }),
@@ -149,6 +156,8 @@ function denseSummary(): SummaryPresentation {
     honors: Array.from({ length: 20 }, (_, index) => ({
       count: index + 1,
       id: `honor-${index}`,
+      identity:
+        HONOR_IDENTITY_KEYS[index % HONOR_IDENTITY_KEYS.length]!,
       kind: "trophy" as const,
       label: `荣誉${index}`,
     })),

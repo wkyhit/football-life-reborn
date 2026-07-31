@@ -3,6 +3,10 @@ import type {
   CareerPresentation,
   CareerTimelineRowPresentation,
 } from "./careerPresentation";
+import {
+  HonorIdentity,
+  type HonorIdentityKey,
+} from "../shared/HonorIdentity";
 import { ClubIdentity } from "./components/ClubIdentity";
 
 type CareerScreenProps = {
@@ -228,18 +232,29 @@ function SeasonNarrative({
     { readonly kind: "season" }
   >;
 }) {
-  const items = [
-    ...row.honors.map(({ label }, index) => ({
-      id: `honor-${index}-${label}`,
+  const items: Array<{
+    honor: HonorIdentityKey | null;
+    id: string;
+    kind: "honor" | "national" | "status";
+    label: string;
+  }> = [
+    ...row.honors.map((honor, index) => ({
+      honor:
+        honor.kind === "award"
+          ? honor.award
+          : honor.trophy,
+      id: `honor-${index}-${honor.label}`,
       kind: "honor" as const,
-      label,
+      label: honor.label,
     })),
     ...row.nationalTournaments.map(({ label }, index) => ({
+      honor: null,
       id: `national-${index}-${label}`,
       kind: "national" as const,
       label,
     })),
     ...row.statuses.map(({ label }, index) => ({
+      honor: null,
       id: `status-${index}-${label}`,
       kind: "status" as const,
       label,
@@ -248,6 +263,7 @@ function SeasonNarrative({
       ? []
       : [
           {
+            honor: null,
             id: `tier-${row.tierChange.from}-${row.tierChange.to}`,
             kind: "status" as const,
             label: row.tierChange.label,
@@ -269,13 +285,16 @@ function SeasonNarrative({
         <li
           className={
             item.kind === "honor"
-              ? "rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-300"
+              ? "inline-flex items-center gap-1 rounded border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold text-amber-300"
               : item.kind === "national"
-                ? "rounded border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-bold text-sky-300"
-                : "rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold text-rose-300"
+                ? "inline-flex items-center gap-1 rounded border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-bold text-sky-300"
+                : "inline-flex items-center gap-1 rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-bold text-rose-300"
           }
           key={item.id}
         >
+          {item.honor === null ? null : (
+            <HonorIdentity honor={item.honor} size={14} />
+          )}
           {item.label}
         </li>
       ))}

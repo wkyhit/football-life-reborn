@@ -61,7 +61,10 @@ describe("Classic club identity", () => {
 
     fireEvent.error(image!);
 
-    expect(mark).toHaveAttribute("data-crest-state", "fallback");
+    expect(mark).toHaveAttribute(
+      "data-crest-state",
+      "load-failure",
+    );
     expect(mark).toHaveTextContent("ARS");
     expect(mark).toHaveStyle({ height: "34px", width: "34px" });
   });
@@ -77,7 +80,10 @@ describe("Classic club identity", () => {
 
     expect(classicCrestUrl(club.id)).toBeNull();
     expect(container.querySelector("img")).toBeNull();
-    expect(mark).toHaveAttribute("data-crest-state", "fallback");
+    expect(mark).toHaveAttribute(
+      "data-crest-state",
+      "intentional-fallback",
+    );
     expect(mark).toHaveTextContent("ARS");
     expect(mark).toHaveStyle({ height: "20px", width: "20px" });
   });

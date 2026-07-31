@@ -376,12 +376,14 @@ function attackerSummary(): SummaryPresentation {
       {
         count: 1,
         id: "trophy:中甲冠军",
+        identity: "league",
         kind: "trophy",
         label: "中甲冠军",
       },
       {
         count: 1,
         id: "trophy:中国足协杯",
+        identity: "cup",
         kind: "trophy",
         label: "中国足协杯",
       },
@@ -424,6 +426,7 @@ function goalkeeperSummary(): SummaryPresentation {
       {
         count: 1,
         id: "trophy:中甲冠军",
+        identity: "league",
         kind: "trophy",
         label: "中甲冠军",
       },
@@ -482,6 +485,7 @@ function noTitleSummary(): SummaryPresentation {
       {
         count: 2,
         id: "trophy:中国足协杯",
+        identity: "cup",
         kind: "trophy",
         label: "中国足协杯",
       },

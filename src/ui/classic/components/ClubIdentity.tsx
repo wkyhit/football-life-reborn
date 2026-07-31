@@ -21,6 +21,11 @@ export function ClubIdentity({
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const showCrest =
     crestUrl !== null && crestUrl !== failedUrl;
+  const crestState = showCrest
+    ? "image"
+    : crestUrl === null
+      ? "intentional-fallback"
+      : "load-failure";
 
   return (
     <span
@@ -28,7 +33,7 @@ export function ClubIdentity({
       className="relative flex shrink-0 items-center justify-center rounded-md text-[8px] font-black leading-none"
       data-classic-club-mark=""
       data-crest-id={club.id}
-      data-crest-state={showCrest ? "image" : "fallback"}
+      data-crest-state={crestState}
       style={{
         backgroundColor: showCrest ? "transparent" : club.color,
         color: isLightColor(club.color) ? "#18181b" : "#ffffff",

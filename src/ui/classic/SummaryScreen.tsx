@@ -6,6 +6,7 @@ import {
   ChallengeProgressPanel,
   type ChallengeSurface,
 } from "../../features/challenges/ChallengeProgressPanel";
+import { HonorIdentity } from "../shared/HonorIdentity";
 import { ClubIdentity } from "./components/ClubIdentity";
 
 type ChallengeSummarySurface = ChallengeSurface & {
@@ -273,10 +274,10 @@ function HonorMark({
   return (
     <span
       aria-hidden="true"
-      className="flex h-9 w-9 items-center justify-center text-[30px] leading-9"
+      className="flex h-9 w-9 items-center justify-center"
       data-classic-summary-art=""
     >
-      {honor.kind === "award" ? "🥇" : "🏆"}
+      <HonorIdentity honor={honor.identity} size={36} />
     </span>
   );
 }
@@ -305,8 +306,8 @@ function SummaryClubs({
               {stats}
             </span>
             {trophyCount > 0 ? (
-              <span className="shrink-0 text-[10px]">
-                🏆
+              <span className="shrink-0 rounded border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[9px] text-amber-300">
+                荣誉
                 <span className="font-black text-emerald-400">
                   ×{trophyCount}
                 </span>

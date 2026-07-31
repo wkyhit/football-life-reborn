@@ -31,9 +31,14 @@ describe("complete career narrative rendering", () => {
     for (const label of SEASON_LABELS) {
       expect(screen.getByText(label)).toBeVisible();
     }
+    expect(
+      classic.container.querySelectorAll(
+        '[data-honor-art="local-svg"]',
+      ),
+    ).toHaveLength(4);
 
     classic.unmount();
-    render(
+    const enhanced = render(
       <EnhancedCareerScreen
         onChoose={vi.fn()}
         view={view}
@@ -43,6 +48,11 @@ describe("complete career narrative rendering", () => {
     for (const label of SEASON_LABELS) {
       expect(screen.getByText(label)).toBeVisible();
     }
+    expect(
+      enhanced.container.querySelectorAll(
+        '[data-honor-art="local-svg"]',
+      ),
+    ).toHaveLength(4);
   });
 });
 
