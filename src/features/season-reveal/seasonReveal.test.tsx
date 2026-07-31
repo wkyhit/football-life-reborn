@@ -32,7 +32,7 @@ describe("useSeasonReveal", () => {
       transition.career,
     );
     const { result } = renderHook(() =>
-      useSeasonReveal(initial),
+      useSeasonReveal(initial, { holdEventResults: true }),
     );
 
     act(() => {
@@ -84,7 +84,10 @@ describe("useSeasonReveal", () => {
     vi.useFakeTimers();
     const { before, transition } = milestoneTransition();
     const { result } = renderHook(() =>
-      useSeasonReveal(before, { holdMilestones: true }),
+      useSeasonReveal(before, {
+        holdEventResults: true,
+        holdMilestones: true,
+      }),
     );
 
     act(() => {
@@ -130,6 +133,16 @@ describe("useSeasonReveal", () => {
       vi.advanceTimersByTime(1);
     });
     expect(result.current.activeItem).toMatchObject({
+      kind: "event_result",
+    });
+    expect(result.current.visibleSeasonCount).toBe(
+      before.seasons.length,
+    );
+
+    act(() => {
+      expect(result.current.acknowledgeActiveItem()).toBe(true);
+    });
+    expect(result.current.activeItem).toMatchObject({
       dwellMs: 550,
       kind: "season",
     });
@@ -172,6 +185,32 @@ describe("useSeasonReveal", () => {
     expect(result.current.announcement).toContain(
       "双倍训练结果",
     );
+  });
+
+  it("advances one held event result for repeated synchronous acknowledgement", () => {
+    vi.useFakeTimers();
+    const { before, transition } = eventTransferTransition();
+    const { result } = renderHook(() =>
+      useSeasonReveal(before, { holdEventResults: true }),
+    );
+    const acknowledgements: boolean[] = [];
+
+    act(() => {
+      result.current.commitTransition(transition);
+    });
+    expect(result.current.activeItem).toMatchObject({
+      kind: "event_result",
+    });
+
+    act(() => {
+      acknowledgements.push(
+        result.current.acknowledgeActiveItem(),
+        result.current.acknowledgeActiveItem(),
+      );
+    });
+
+    expect(acknowledgements).toEqual([true, false]);
+    expect(result.current.activeItem?.kind).toBe("season");
   });
 
   it("replaces an estimated event offer with the exact signed contract in the actual-result reveal", () => {
@@ -228,6 +267,7 @@ describe("useSeasonReveal", () => {
     const { before, transition } = milestoneTransition();
     const immediate = renderHook(() =>
       useSeasonReveal(before, {
+        holdEventResults: true,
         holdMilestones: true,
         reducedMotion: true,
       }),
@@ -237,6 +277,19 @@ describe("useSeasonReveal", () => {
       immediate.result.current.commitTransition(transition);
     });
 
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
+    expect(immediate.result.current.activeItem?.kind).toBe(
+      "event_result",
+    );
+    expect(immediate.result.current.visibleSeasonCount).toBe(
+      before.seasons.length,
+    );
+
+    act(() => {
+      immediate.result.current.acknowledgeActiveItem();
+    });
     act(() => {
       vi.runOnlyPendingTimers();
     });

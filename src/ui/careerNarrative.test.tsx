@@ -518,6 +518,34 @@ describe("complete career narrative rendering", () => {
     },
   );
 
+  it("requires explicit acknowledgement for the Enhanced actual result", () => {
+    const continued = vi.fn();
+    const view = eventTransferActualView();
+    const enhanced = render(
+      <EnhancedCareerScreen
+        onChoose={vi.fn()}
+        onContinueReveal={continued}
+        view={view}
+      />,
+    );
+    const confirm = screen.getByRole("button", {
+      name: "确认结果",
+    });
+
+    expect(confirm).toHaveFocus();
+    expect(
+      document.querySelector("[data-enhanced-decision-rail]"),
+    ).not.toHaveAttribute("aria-busy");
+    fireEvent.click(confirm);
+    expect(continued).toHaveBeenCalledTimes(1);
+
+    enhanced.unmount();
+    render(<CareerScreen onChoose={vi.fn()} view={view} />);
+    expect(
+      screen.queryByRole("button", { name: "确认结果" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps the selected event card beside its actual result", () => {
     const decision = eventTransferDecisionView();
     const result = eventTransferActualView();

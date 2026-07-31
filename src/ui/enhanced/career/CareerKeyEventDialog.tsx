@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import type { CareerPresentation } from "../../classic/careerPresentation";
 import { CareerMilestoneNarrative } from "../../shared/CareerMilestoneNarrative";
@@ -19,33 +19,37 @@ export function CareerKeyEventDialog({
   panel,
 }: CareerKeyEventDialogProps) {
   const continueRef = useRef<HTMLButtonElement>(null);
-  const continuedRef = useRef(false);
+  const continuedAgeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    continueRef.current?.focus();
+  }, [panel.age]);
 
   const continueOnce = () => {
-    if (continuedRef.current) {
+    if (continuedAgeRef.current === panel.age) {
       return;
     }
 
-    continuedRef.current = true;
+    continuedAgeRef.current = panel.age;
     onContinue();
   };
 
   return (
     <Dialog
       aria-describedby="enhanced-key-event-description"
-      className="fixed inset-x-0 bottom-0 top-auto z-50 w-full overflow-visible bg-transparent text-enhanced-strong backdrop:bg-black/60 sm:inset-0 sm:m-auto sm:max-w-[520px]"
+      className="fixed inset-x-0 bottom-0 top-auto z-[var(--z-modal)] w-full overflow-visible bg-transparent text-enhanced-strong backdrop:bg-enhanced-canvas/80 sm:inset-0 sm:m-auto sm:max-w-[520px]"
       data-enhanced-key-event-dialog=""
       initialFocusRef={continueRef}
       labelledBy="enhanced-key-event-heading"
       onClose={continueOnce}
       variant="enhanced"
     >
-      <section className="max-h-[85dvh] overflow-y-auto rounded-t-[18px] border border-enhanced-line bg-enhanced-raised px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-5 shadow-2xl sm:rounded-[18px] sm:p-6">
+      <section className="max-h-[85dvh] overflow-y-auto rounded-t-[var(--radius-card)] border border-enhanced-line bg-enhanced-raised px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-4 sm:rounded-[var(--radius-card)] sm:p-6">
         <p className="text-xs font-bold tracking-[0.10em] text-enhanced-trophy">
           KEY EVENT · {panel.age} 岁 · {panel.club.shortName}
         </p>
         <h2
-          className="mt-2 text-[24px] font-extrabold leading-tight"
+          className="mt-2 text-lg font-extrabold leading-tight"
           id="enhanced-key-event-heading"
         >
           {panel.age} 岁{panel.title}
@@ -69,7 +73,9 @@ export function CareerKeyEventDialog({
           />
         </div>
         <button
-          className="mt-6 min-h-11 w-full rounded-[10px] bg-enhanced-pitch px-4 py-3 text-sm font-extrabold text-white outline-none focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-raised"
+          className="mt-6 min-h-11 w-full rounded-[var(--radius-input)] border border-enhanced-pitch bg-enhanced-pitch px-4 py-3 text-sm font-extrabold text-enhanced-pitch-ink"
+          data-enhanced-action="primary"
+          data-interaction-state="default"
           onClick={continueOnce}
           ref={continueRef}
           type="button"

@@ -463,7 +463,7 @@ export function CareerMilestoneNarrative({
               enhanced ? "gap-2" : "gap-1.5"
             } border ${
               enhanced
-                ? "border-amber-400/25 bg-amber-400/10 px-2.5 py-2 text-xs font-bold text-amber-100"
+                ? "border-enhanced-trophy px-2.5 py-2 text-xs font-bold text-enhanced-trophy"
                 : "border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-xs font-bold text-amber-200"
             }`}
             key={`honor-${index}-${honor.label}`}
@@ -480,7 +480,7 @@ export function CareerMilestoneNarrative({
         <li
           className={`${radius} border ${
             enhanced
-              ? "border-cyan-400/25 bg-cyan-400/10 px-2.5 py-2 text-xs font-bold text-cyan-100"
+              ? "border-enhanced-pitch px-2.5 py-2 text-xs font-bold text-enhanced-pitch"
               : "border-sky-500/30 bg-sky-500/10 px-2.5 py-2 text-xs font-bold text-sky-200"
           }`}
           key={`national-${index}-${label}`}
@@ -581,11 +581,11 @@ export function CareerSeasonNarrative({
           className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold ${
             item.kind === "honor"
               ? enhanced
-                ? "rounded-[5px] border border-amber-400/25 bg-amber-400/10 text-amber-200"
+                ? "rounded-[5px] border border-enhanced-trophy text-enhanced-trophy"
                 : "rounded border border-amber-500/30 bg-amber-500/10 text-amber-300"
               : item.kind === "national"
                 ? enhanced
-                  ? "rounded-[5px] border border-cyan-400/25 bg-cyan-400/10 text-cyan-200"
+                  ? "rounded-[5px] border border-enhanced-pitch text-enhanced-pitch"
                   : "rounded border border-sky-500/30 bg-sky-500/10 text-sky-300"
                 : seasonToneClass(item.tone, variant)
           }`}
@@ -604,10 +604,12 @@ export function CareerSeasonNarrative({
 
 export function CareerEventResultNarrative({
   headingId,
+  onContinue,
   panel,
   variant,
 }: {
   readonly headingId?: string;
+  readonly onContinue?: (() => void) | undefined;
   readonly panel: EventResultPanel;
   readonly variant: "classic" | "enhanced";
 }) {
@@ -618,7 +620,7 @@ export function CareerEventResultNarrative({
       <p
         className={
           enhanced
-            ? "text-[10px] font-bold tracking-[0.12em] text-emerald-400"
+            ? "text-[10px] font-bold tracking-[0.10em] text-enhanced-pitch"
             : "text-[10px] font-bold tracking-wide text-emerald-500"
         }
       >
@@ -664,6 +666,16 @@ export function CareerEventResultNarrative({
         >
           {panel.contractSummary}
         </p>
+      ) : null}
+      {enhanced && onContinue ? (
+        <button
+          autoFocus
+          className="mt-4 min-h-11 w-full rounded-[var(--radius-input)] bg-enhanced-pitch px-4 py-3 text-sm font-bold text-enhanced-pitch-ink"
+          onClick={onContinue}
+          type="button"
+        >
+          确认结果
+        </button>
       ) : null}
     </>
   );
@@ -797,13 +809,13 @@ function milestoneToneClass(
 
   switch (tone) {
     case "positive":
-      return "border-emerald-400/25 bg-emerald-400/10 text-emerald-100";
+      return "border-enhanced-success text-enhanced-success";
     case "negative":
-      return "border-rose-400/25 bg-rose-400/10 text-rose-100";
+      return "border-enhanced-alert bg-enhanced-surface text-enhanced-alert";
     case "warning":
-      return "border-amber-400/25 bg-amber-400/10 text-amber-100";
+      return "border-enhanced-trophy text-enhanced-trophy";
     case "neutral":
-      return "border-white/10 bg-white/[0.04] text-zinc-300";
+      return "border-enhanced-line text-enhanced-supporting";
   }
 }
 
@@ -820,16 +832,7 @@ function resultToneClass(
   variant: "classic" | "enhanced",
 ): string {
   if (variant === "enhanced") {
-    switch (tone) {
-      case "positive":
-        return "border-emerald-400/25 bg-emerald-400/10 text-emerald-100";
-      case "negative":
-        return "border-rose-400/25 bg-rose-400/10 text-rose-100";
-      case "warning":
-        return "border-amber-400/25 bg-amber-400/10 text-amber-100";
-      case "neutral":
-        return "border-white/10 bg-white/[0.04] text-zinc-300";
-    }
+    return milestoneToneClass(tone, variant);
   }
 
   switch (tone) {

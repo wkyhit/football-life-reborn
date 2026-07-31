@@ -168,10 +168,11 @@ export function EnhancedCareerScreen({
       >
         <CareerTimeline view={view} />
         <DecisionRail
-          choiceReceipt={choiceReceipt}
-          onChoose={choose}
+          confirm={onContinueReveal}
+          choose={choose}
+          progress={challenge}
+          receipt={choiceReceipt}
           view={view}
-          {...(challenge === undefined ? {} : { challenge })}
         />
       </div>
       {view.panel.kind === "milestone" ? (
@@ -634,28 +635,28 @@ function SeasonNumber({
 }
 
 function DecisionRail({
-  challenge,
-  choiceReceipt,
-  onChoose,
+  confirm,
+  choose,
+  progress,
+  receipt,
   view,
 }: {
-  readonly challenge?: ChallengeSurface;
-  readonly choiceReceipt: ChoiceReceipt | null;
-  readonly onChoose: (
+  readonly confirm?: (() => void) | undefined;
+  readonly choose: (
     decisionId: string,
     option: CareerDecisionOptionPresentation,
   ) => void;
+  readonly progress: ChallengeSurface | undefined;
+  readonly receipt: ChoiceReceipt | null;
   readonly view: CareerPresentation;
 }) {
   const { panel } = view;
   const decisionFocusRef =
     useDecisionFocusRestore<HTMLElement>(
-      panel.kind === "decision" && choiceReceipt === null
+      panel.kind === "decision" && receipt === null
         ? panel.decisionId
         : null,
     );
-  const railClass =
-    "min-h-0 overflow-y-auto overscroll-contain border-t border-enhanced-line bg-enhanced-surface px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-3 sm:px-6 lg:h-full lg:max-h-none lg:w-[380px] lg:rounded-[16px] lg:border lg:p-5";
   const simulating = panel.kind === "simulating";
   const labelledBy =
     panel.kind === "event_result"
@@ -668,8 +669,8 @@ function DecisionRail({
     <aside
       aria-label={simulating ? "赛季状态" : undefined}
       aria-labelledby={labelledBy}
-      aria-busy={choiceReceipt === null ? undefined : true}
-      className={`${railClass}${
+      aria-busy={simulating || undefined}
+      className={`lg:w-[380px]${
         simulating
           ? " flex flex-col items-center justify-center"
           : ""
@@ -678,7 +679,7 @@ function DecisionRail({
       data-scroll-region="decision-rail"
       ref={decisionFocusRef}
     >
-      {choiceReceipt ? (
+      {receipt ? (
         <p
           aria-atomic="true"
           aria-live="polite"
@@ -687,19 +688,19 @@ function DecisionRail({
           id="enhanced-choice-receipt"
           role="status"
         >
-          已选择：{choiceReceipt.option.title}。正在提交本次选择
+          已选择：{receipt.option.title}。正在提交本次选择
         </p>
       ) : null}
-      {choiceReceipt && panel.kind !== "decision" ? (
+      {receipt && panel.kind !== "decision" ? (
         <div className="mb-3 w-full">
           <DecisionOption
             disabled
-            option={choiceReceipt.option}
+            option={receipt.option}
             selected
           />
         </div>
       ) : null}
-      {challenge ? (
+      {progress ? (
         <>
           <details
             className="mb-3 lg:hidden"
@@ -709,12 +710,12 @@ function DecisionRail({
               挑战进度
               <span aria-hidden="true">＋</span>
             </summary>
-            <ChallengeProgressPanel {...challenge} />
+            <ChallengeProgressPanel {...progress} />
           </details>
           <div
             className={`${simulating ? "mb-4 w-full" : "mb-4"} hidden lg:block`}
           >
-            <ChallengeProgressPanel {...challenge} />
+            <ChallengeProgressPanel {...progress} />
           </div>
         </>
       ) : null}
@@ -735,6 +736,7 @@ function DecisionRail({
         <div className="enhanced-reveal-enter">
           <CareerEventResultNarrative
             headingId="enhanced-event-result-heading"
+            onContinue={confirm}
             panel={panel}
             variant="enhanced"
           />
@@ -774,16 +776,16 @@ function DecisionRail({
           >
             {panel.options.map((option) => (
               <DecisionOption
-                disabled={choiceReceipt !== null}
+                disabled={receipt !== null}
                 key={option.id}
                 onChoose={() =>
-                  onChoose(panel.decisionId, option)
+                  choose(panel.decisionId, option)
                 }
                 option={option}
                 selected={
-                  choiceReceipt?.decisionId ===
+                  receipt?.decisionId ===
                     panel.decisionId &&
-                  choiceReceipt.option.id === option.id
+                  receipt.option.id === option.id
                 }
               />
             ))}
