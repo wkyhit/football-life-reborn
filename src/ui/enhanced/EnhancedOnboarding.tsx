@@ -1,4 +1,8 @@
-import type { Dispatch } from "react";
+import {
+  useId,
+  useState,
+  type Dispatch,
+} from "react";
 
 import { isValidShirtNumber } from "../../domain/careerReducer";
 import type {
@@ -126,6 +130,17 @@ function EnhancedIdentityScreen({
   const validName =
     state.player.name.trim().length >= 1 &&
     state.player.name.trim().length <= 8;
+  const [touched, setTouched] = useState({
+    name: false,
+    number: false,
+  });
+  const nameInputId = useId();
+  const numberInputId = useId();
+  const touch = (field: keyof typeof touched) =>
+    setTouched((current) => ({
+      ...current,
+      [field]: true,
+    }));
 
   const updateIdentity = (
     update:
@@ -170,42 +185,40 @@ function EnhancedIdentityScreen({
 
         <div className="flex min-h-0 flex-col justify-end pt-4 lg:justify-center lg:pt-0">
           <div className="grid grid-cols-[minmax(0,2fr)_minmax(88px,1fr)] gap-3">
-            <label className="block">
-              <span className="text-[11px] font-bold text-enhanced-supporting">
-                姓名
-              </span>
-              <input
-                autoComplete="name"
-                className="mt-1 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-[15px] font-bold outline-none focus:border-enhanced-pitch focus:ring-2 focus:ring-enhanced-focus/25"
-                maxLength={8}
-                onChange={(event) =>
-                  updateIdentity({
-                    name: event.target.value,
-                  })
-                }
-                value={state.player.name}
-              />
-            </label>
-            <label className="block">
-              <span className="text-[11px] font-bold text-enhanced-supporting">
-                号码
-              </span>
-              <input
-                aria-invalid={!validNumber}
-                className="mt-1 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-center text-[15px] font-bold outline-none focus:border-enhanced-pitch focus:ring-2 focus:ring-enhanced-focus/25"
-                inputMode="numeric"
-                onChange={(event) =>
-                  updateIdentity({
-                    number: event.target.value,
-                  })
-                }
-                value={state.player.number}
-              />
-            </label>
+            <IdentityField
+              autoComplete="name"
+              field="name"
+              inputId={nameInputId}
+              label="姓名"
+              maxLength={8}
+              onBlur={() => touch("name")}
+              onChange={(name) =>
+                updateIdentity({ name })
+              }
+              rule="1–8 个字符"
+              touched={touched.name}
+              valid={validName}
+              value={state.player.name}
+            />
+            <IdentityField
+              centered
+              field="number"
+              inputId={numberInputId}
+              inputMode="numeric"
+              label="号码"
+              onBlur={() => touch("number")}
+              onChange={(number) =>
+                updateIdentity({ number })
+              }
+              rule="1–99 的整数号码"
+              touched={touched.number}
+              valid={validNumber}
+              value={state.player.number}
+            />
           </div>
 
           <fieldset className="mt-4">
-            <legend className="text-[11px] font-bold text-enhanced-supporting">
+            <legend className="text-xs font-bold text-enhanced-supporting">
               惯用脚
             </legend>
             <div className="mt-1 grid grid-cols-2 gap-2">
@@ -248,6 +261,10 @@ function EnhancedIdentityScreen({
 
           <EnhancedStepFooter
             nextDisabled={!validName || !validNumber}
+            nextDisabledReason={identityDisabledReason(
+              validName,
+              validNumber,
+            )}
             nextLabel="下一步"
             onBack={() => dispatch({ type: "back" })}
             onNext={() =>
@@ -334,11 +351,11 @@ function EnhancedPositionScreen({
                       <span className="text-base font-bold">
                         {label}
                       </span>
-                      <span className="text-[10px] font-black text-enhanced-supporting">
+                      <span className="text-xs font-black text-enhanced-supporting">
                         {position}
                       </span>
                     </span>
-                    <span className="mt-1 block text-[11px] text-enhanced-supporting">
+                    <span className="mt-1 block text-xs text-enhanced-supporting">
                       {group}
                       {selected ? " · 已选择" : ""}
                     </span>
@@ -351,6 +368,7 @@ function EnhancedPositionScreen({
 
         <EnhancedStepFooter
           nextDisabled={state.player.position === null}
+          nextDisabledReason="选择一个场上位置后才能开始"
           nextLabel="开始踢球"
           onBack={() => dispatch({ type: "back" })}
           onNext={onStart}
@@ -392,11 +410,13 @@ function EnhancedStepHeader({
 
 function EnhancedStepFooter({
   nextDisabled,
+  nextDisabledReason,
   nextLabel,
   onBack,
   onNext,
 }: {
   readonly nextDisabled: boolean;
+  readonly nextDisabledReason: string;
   readonly nextLabel: string;
   readonly onBack: () => void;
   readonly onNext: () => void;
@@ -412,6 +432,7 @@ function EnhancedStepFooter({
       <EnhancedAction
         className="min-h-12 w-full"
         disabled={nextDisabled}
+        disabledReason={nextDisabledReason}
         onClick={onNext}
         tone="primary"
       >
@@ -419,4 +440,107 @@ function EnhancedStepFooter({
       </EnhancedAction>
     </footer>
   );
+}
+
+type FieldState = "default" | "error" | "success";
+
+function IdentityField({
+  autoComplete,
+  centered,
+  field,
+  inputId,
+  inputMode,
+  label,
+  maxLength,
+  onBlur,
+  onChange,
+  rule,
+  touched,
+  valid,
+  value,
+}: {
+  readonly autoComplete?: string;
+  readonly centered?: boolean;
+  readonly field: "name" | "number";
+  readonly inputId: string;
+  readonly inputMode?: "numeric";
+  readonly label: string;
+  readonly maxLength?: number;
+  readonly onBlur: () => void;
+  readonly onChange: (value: string) => void;
+  readonly rule: string;
+  readonly touched: boolean;
+  readonly valid: boolean;
+  readonly value: string;
+}) {
+  const messageId = `${inputId}-m`;
+  const state: FieldState = touched
+    ? valid
+      ? "success"
+      : "error"
+    : "default";
+
+  return (
+    <div>
+      <label
+        className="text-xs font-bold text-enhanced-supporting"
+        htmlFor={inputId}
+      >
+        {label}
+      </label>
+      <span className="relative mt-1 block">
+        <input
+          aria-describedby={messageId}
+          aria-invalid={touched ? !valid : undefined}
+          autoComplete={autoComplete}
+          className={`h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 pr-10 text-[15px] font-bold outline-none focus:border-enhanced-pitch focus:ring-2 focus:ring-enhanced-focus/25${centered ? " text-center" : ""}`}
+          data-enhanced-field=""
+          data-field-state={state}
+          id={inputId}
+          inputMode={inputMode}
+          maxLength={maxLength}
+          onBlur={onBlur}
+          onChange={(event) => onChange(event.target.value)}
+          value={value}
+        />
+        <span
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-y-0 right-3 flex w-4 items-center justify-center text-sm font-bold ${state === "error" ? "text-enhanced-alert" : "text-enhanced-success"}`}
+        >
+          {state === "default"
+            ? null
+            : state === "success"
+              ? "✓"
+              : "×"}
+        </span>
+      </span>
+      <span
+        className={`mt-1 block min-h-5 text-xs leading-5 ${state === "error" ? "text-enhanced-alert" : "text-enhanced-supporting"}`}
+        data-enhanced-field-message={field}
+        id={messageId}
+        role={state === "error" ? "alert" : undefined}
+      >
+        {state === "error"
+          ? `请输入 ${rule}`
+          : state === "success"
+            ? `${label}可用`
+            : `填写 ${rule}`}
+      </span>
+    </div>
+  );
+}
+
+function identityDisabledReason(
+  validName: boolean,
+  validNumber: boolean,
+): string {
+  if (!validName && !validNumber) {
+    return "输入 1–8 个字符的姓名和 1–99 的整数号码后才能继续";
+  }
+
+  if (!validName) {
+    return "输入 1–8 个字符的姓名后才能继续";
+  }
+
+  return "输入 1–99 的整数号码后才能继续";
 }

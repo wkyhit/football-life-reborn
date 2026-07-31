@@ -33,7 +33,8 @@ export function Dialog({
   variant = "classic",
   ...dialogProps
 }: DialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const classicDialogRef = useRef<HTMLDivElement>(null);
+  const enhancedDialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     const returnTarget =
@@ -43,7 +44,24 @@ export function Dialog({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const dialog = dialogRef.current;
+    const dialog =
+      variant === "enhanced"
+        ? enhancedDialogRef.current
+        : classicDialogRef.current;
+    let openedNativeDialog = false;
+
+    if (
+      variant === "enhanced" &&
+      dialog instanceof HTMLDialogElement
+    ) {
+      if (typeof dialog.showModal === "function") {
+        dialog.showModal();
+        openedNativeDialog = true;
+      } else {
+        dialog.setAttribute("open", "");
+      }
+    }
+
     const target =
       initialFocusRef?.current ??
       (dialog === null ? null : focusableElements(dialog)[0]) ??
@@ -52,12 +70,21 @@ export function Dialog({
 
     return () => {
       document.body.style.overflow = previousOverflow;
+
+      if (
+        openedNativeDialog &&
+        dialog instanceof HTMLDialogElement &&
+        dialog.open
+      ) {
+        dialog.close();
+      }
+
       returnTarget?.focus();
     };
-  }, [initialFocusRef]);
+  }, [initialFocusRef, variant]);
 
   const handleKeyDown = (
-    event: KeyboardEvent<HTMLDivElement>,
+    event: KeyboardEvent<HTMLElement>,
   ) => {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -69,26 +96,29 @@ export function Dialog({
       return;
     }
 
-    const dialog = dialogRef.current;
+    const currentDialog =
+      variant === "enhanced"
+        ? enhancedDialogRef.current
+        : classicDialogRef.current;
 
-    if (dialog === null) {
+    if (currentDialog === null) {
       return;
     }
 
-    const focusable = focusableElements(dialog);
+    const focusable = focusableElements(currentDialog);
     const first = focusable[0];
     const last = focusable.at(-1);
     const active = document.activeElement;
 
     if (first === undefined || last === undefined) {
       event.preventDefault();
-      dialog.focus();
+      currentDialog.focus();
       return;
     }
 
     if (
       event.shiftKey &&
-      (active === first || !dialog.contains(active))
+      (active === first || !currentDialog.contains(active))
     ) {
       event.preventDefault();
       last.focus();
@@ -97,12 +127,41 @@ export function Dialog({
 
     if (
       !event.shiftKey &&
-      (active === last || !dialog.contains(active))
+      (active === last || !currentDialog.contains(active))
     ) {
       event.preventDefault();
       first.focus();
     }
   };
+
+  if (variant === "enhanced") {
+    const {
+      className = "",
+      ...enhancedDialogProps
+    } = dialogProps;
+
+    return (
+      <dialog
+        {...(enhancedDialogProps as ComponentPropsWithoutRef<"dialog">)}
+        aria-labelledby={labelledBy}
+        className={[
+          "m-0 max-h-none max-w-none border-0 p-0",
+          className,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        data-dialog-variant="enhanced"
+        onCancel={(event) => {
+          event.preventDefault();
+          onClose();
+        }}
+        onKeyDown={handleKeyDown}
+        ref={enhancedDialogRef}
+      >
+        {children}
+      </dialog>
+    );
+  }
 
   return (
     <div
@@ -111,7 +170,7 @@ export function Dialog({
       aria-modal="true"
       data-dialog-variant={variant}
       onKeyDown={handleKeyDown}
-      ref={dialogRef}
+      ref={classicDialogRef}
       role="dialog"
       tabIndex={-1}
     >

@@ -39,6 +39,11 @@ export function EnhancedSummaryScreen({
   replayCopyMessage,
   view,
 }: EnhancedSummaryScreenProps) {
+  const replayCopySucceeded =
+    replayCopyMessage === "回放链接已复制";
+  const replayCopyFailed =
+    replayCopyMessage?.startsWith("复制失败") === true;
+
   return (
     <main
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
@@ -137,20 +142,40 @@ export function EnhancedSummaryScreen({
                   挑战回放链接
                   <input
                     className="mt-2 h-11 w-full min-w-0 border border-enhanced-line bg-enhanced-surface px-3 font-enhanced-mono text-xs text-enhanced-ink-2"
+                    data-enhanced-field=""
+                    data-field-state="success"
                     readOnly
                     value={challenge.replayUrl}
                   />
                 </label>
                 {onCopyReplay ? (
-                  <EnhancedAction onClick={onCopyReplay}>
-                    复制挑战回放链接
+                  <EnhancedAction
+                    onClick={onCopyReplay}
+                    state={
+                      replayCopySucceeded
+                        ? "success"
+                        : replayCopyFailed
+                          ? "error"
+                          : "default"
+                    }
+                  >
+                    {replayCopySucceeded
+                      ? "已复制"
+                      : replayCopyFailed
+                        ? "重试复制回放链接"
+                        : "复制挑战回放链接"}
                   </EnhancedAction>
                 ) : null}
               </div>
               {replayCopyMessage ? (
                 <p
                   aria-live="polite"
-                  className="mt-3 text-sm font-bold text-enhanced-pitch"
+                  className={[
+                    "mt-3 text-sm font-bold",
+                    replayCopyFailed
+                      ? "text-enhanced-alert"
+                      : "text-enhanced-pitch",
+                  ].join(" ")}
                   role="status"
                 >
                   {replayCopyMessage}

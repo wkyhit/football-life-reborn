@@ -381,6 +381,7 @@ export function EnhancedArchiveScreen({
           </label>
           <EnhancedAction
             disabled={selectedIds.length !== 2}
+            disabledReason={`再选择 ${2 - selectedIds.length} 个兼容生涯后才能比较`}
             onClick={() => {
               if (selectedIds.length === 2) {
                 setView({
@@ -454,11 +455,11 @@ export function EnhancedArchiveScreen({
                         {entry.displayName}
                       </h2>
                       {entry.id === activeArchiveId ? (
-                        <span className="rounded-full bg-enhanced-pitch/10 px-2 py-0.5 text-[10px] font-bold text-enhanced-pitch">
+                        <span className="rounded-full bg-enhanced-pitch/10 px-2 py-0.5 text-xs font-bold text-enhanced-pitch">
                           当前
                         </span>
                       ) : null}
-                      <span className="rounded-full border border-enhanced-line px-2 py-0.5 text-[10px] font-bold text-enhanced-supporting">
+                      <span className="rounded-full border border-enhanced-line px-2 py-0.5 text-xs font-bold text-enhanced-supporting">
                         {entry.status === "retired"
                           ? "已退役"
                           : "进行中"}
@@ -470,7 +471,7 @@ export function EnhancedArchiveScreen({
                       {entry.progress.age} 岁 ·{" "}
                       {entry.progress.seasonCount} 赛季
                     </p>
-                    <p className="mt-1 truncate font-enhanced-mono text-[10px] text-enhanced-neutral">
+                    <p className="mt-1 truncate font-enhanced-mono text-xs text-enhanced-neutral">
                       {entry.seed}
                     </p>
                   </div>
@@ -486,6 +487,8 @@ export function EnhancedArchiveScreen({
                         aria-label="新的生涯名称"
                         autoFocus
                         className="h-11 w-full rounded-[9px] border border-enhanced-pitch bg-enhanced-canvas px-3 text-sm outline-none"
+                        data-enhanced-field=""
+                        data-field-state="default"
                         maxLength={80}
                         onChange={(event) =>
                           setRenameValue(event.target.value)
@@ -782,6 +785,8 @@ function BranchCreator({
             <select
               aria-label="分叉决策"
               className="mt-2 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-sm text-enhanced-strong"
+              data-enhanced-field=""
+              data-field-state="default"
               onChange={(event) => {
                 setCheckpointId(event.target.value);
                 setSelectedOptionId(null);
@@ -801,6 +806,8 @@ function BranchCreator({
             分支名称
             <input
               className="mt-2 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-sm text-enhanced-strong"
+              data-enhanced-field=""
+              data-field-state="default"
               maxLength={80}
               onChange={(event) =>
                 setDisplayName(event.target.value)
@@ -843,6 +850,11 @@ function BranchCreator({
             disabled={
               selectedOptionId === null ||
               displayName.trim().length === 0
+            }
+            disabledReason={
+              displayName.trim().length === 0
+                ? "输入分支名称后才能保存"
+                : "选择一条不同路线后才能保存"
             }
             onClick={createBranch}
             tone="primary"

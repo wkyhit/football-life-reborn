@@ -197,7 +197,7 @@ export function EnhancedLandingScreen({
                   return (
                     <button
                       aria-label={`开始${definition.title}挑战`}
-                      className="group min-h-14 rounded-[10px] border border-enhanced-pitch/20 bg-enhanced-pitch/[0.05] px-3 py-2 text-left outline-none transition-colors hover:border-enhanced-pitch/50 focus-visible:ring-2 focus-visible:ring-enhanced-focus"
+                      className="group min-h-14 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/[0.05] px-3 py-2 text-left outline-none transition-[transform,opacity] hover:border-enhanced-pitch/50 focus-visible:ring-2 focus-visible:ring-enhanced-focus active:translate-y-px"
                       key={challenge.id}
                       onClick={() =>
                         onBeginChallenge(challenge, mode)

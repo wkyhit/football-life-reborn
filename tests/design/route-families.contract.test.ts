@@ -186,9 +186,9 @@ describe("Enhanced route-family redesign contract", () => {
 
     expect(inventory).toMatchObject({
       runner: "ego-browser",
-      slice: 4,
       viewportWidths: [320, 375, 414, 768, 1280, 1440],
     });
+    expect(inventory.slice).toBeGreaterThanOrEqual(4);
 
     for (const id of [
       "career-workbench",

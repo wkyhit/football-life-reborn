@@ -234,6 +234,8 @@ export function ShareCardOverlay({
               卡上名字
               <input
                 className="mt-2 min-h-11 w-full border border-enhanced-line bg-enhanced-surface px-3 text-base font-bold text-enhanced-strong outline-none focus-visible:border-enhanced-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-enhanced-focus"
+                data-enhanced-field=""
+                data-field-state="default"
                 id="share-card-name"
                 maxLength={12}
                 onChange={(event) =>
@@ -250,7 +252,19 @@ export function ShareCardOverlay({
             <EnhancedAction
               className="mt-5 w-full sm:w-auto"
               disabled={previewUrl === null}
+              disabledReason={
+                renderError
+                  ? "战绩卡生成失败，请修改署名或关闭后重试"
+                  : "战绩卡生成完成后才能下载"
+              }
               onClick={download}
+              state={
+                renderError
+                  ? "error"
+                  : previewUrl === null
+                    ? "loading"
+                    : "default"
+              }
               tone="primary"
             >
               下载图片

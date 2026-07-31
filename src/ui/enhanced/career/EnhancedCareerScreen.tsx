@@ -97,8 +97,8 @@ function CareerHeader({
       className="shrink-0 border-b border-enhanced-line bg-enhanced-canvas px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] sm:px-6 lg:px-8 lg:py-4"
     >
       <div className="mx-auto grid w-full max-w-[1440px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(20rem,auto)] lg:gap-5">
-        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[10px] border border-enhanced-trophy/40 bg-enhanced-trophy/50 text-enhanced-trophy">
-          <span className="text-[9px] font-bold leading-none text-enhanced-trophy">
+        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[10px] border border-enhanced-trophy/40 bg-enhanced-surface text-enhanced-trophy">
+          <span className="text-xs font-bold leading-none text-enhanced-trophy">
             能力
           </span>
           <strong className="mt-0.5 text-2xl font-black leading-none tabular-nums">
@@ -108,10 +108,10 @@ function CareerHeader({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-1.5 py-0.5 text-[10px] font-bold text-enhanced-ink-2">
+            <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-1.5 py-0.5 text-xs font-bold text-enhanced-ink-2">
               {header.countryFlag} {header.countryCode}
             </span>
-            <span className="rounded-[6px] border border-enhanced-pitch/20 bg-enhanced-pitch/10 px-1.5 py-0.5 text-[10px] font-bold text-enhanced-pitch">
+            <span className="rounded-[6px] border border-enhanced-pitch/20 bg-enhanced-pitch/10 px-1.5 py-0.5 text-xs font-bold text-enhanced-pitch">
               #{header.number} {header.position}
             </span>
           </div>
@@ -126,13 +126,13 @@ function CareerHeader({
         </div>
 
         <div className="shrink-0 border-l border-enhanced-line pl-3 text-right lg:pl-5">
-          <div className="text-[10px] font-bold text-enhanced-supporting">
+          <div className="text-xs font-bold text-enhanced-supporting">
             年龄
           </div>
           <div className="text-xl font-black tabular-nums">
             {header.age}
           </div>
-          <div className="text-[11px] font-bold text-enhanced-pitch">
+          <div className="text-xs font-bold text-enhanced-pitch">
             {formatMarketValue(header.marketValue)}
           </div>
         </div>
@@ -147,7 +147,7 @@ function CareerHeader({
             ] as const
           ).map(([label, value]) => (
             <div className="px-2 text-center lg:min-w-20 lg:px-4" key={label}>
-              <dt className="text-[9px] font-bold text-enhanced-supporting lg:text-[10px]">
+              <dt className="text-xs font-bold text-enhanced-supporting">
                 {label}
               </dt>
               <dd className="mt-0.5 text-base font-extrabold tabular-nums lg:text-lg">
@@ -179,7 +179,7 @@ function CareerTimeline({
     >
       <div className="mb-3 flex items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
+          <p className="text-xs font-bold tracking-[0.10em] text-enhanced-pitch">
             SEASON ARCHIVE
           </p>
           <h1
@@ -189,7 +189,7 @@ function CareerTimeline({
             生涯时间线
           </h1>
         </div>
-        <p className="text-right text-[11px] font-bold text-enhanced-supporting">
+        <p className="text-right text-xs font-bold text-enhanced-supporting">
           已记录{" "}
           <span className="text-enhanced-ink-2 tabular-nums">
             {recordedSeasons}
@@ -199,7 +199,7 @@ function CareerTimeline({
       </div>
 
       <div className="overflow-hidden rounded-[10px] border border-enhanced-line bg-enhanced-canvas/10">
-        <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-enhanced-line px-2.5 py-2 text-[9px] font-bold text-enhanced-supporting">
+        <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-enhanced-line px-2.5 py-2 text-xs font-bold text-enhanced-supporting">
           <span>岁</span>
           <span>俱乐部</span>
           <span className="text-center">能力</span>
@@ -302,13 +302,13 @@ function TimelineRow({
           <span className="block truncate text-[13px] font-bold">
             {row.club.shortName}
           </span>
-          <span className="block truncate text-[9px] text-enhanced-supporting">
+          <span className="block truncate text-xs text-enhanced-supporting">
             {row.club.subtitle.replace(" · 次级联赛", "")}
           </span>
         </span>
       </span>
       <span className="text-center">
-        <span className="inline-block min-w-8 rounded-[6px] border border-enhanced-trophy/35 bg-enhanced-trophy/40 px-1 py-0.5 text-[11px] font-black tabular-nums text-enhanced-trophy">
+        <span className="inline-block min-w-8 rounded-[6px] border border-enhanced-trophy/35 bg-enhanced-surface px-1 py-0.5 text-xs font-black tabular-nums text-enhanced-trophy">
           {row.overall}
         </span>
       </span>
@@ -408,7 +408,7 @@ function DecisionRail({
           className="enhanced-reveal-enter"
           data-enhanced-milestone-reveal=""
         >
-          <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-trophy">
+          <p className="text-xs font-bold tracking-[0.10em] text-enhanced-trophy">
             MILESTONE · {panel.age} 岁 · {panel.club.shortName}
           </p>
           <h2
@@ -433,7 +433,7 @@ function DecisionRail({
               variant="enhanced"
             />
           ) : null}
-          <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
+          <p className="text-xs font-bold tracking-[0.10em] text-enhanced-pitch">
             DECISION RAIL · {panel.age} 岁
           </p>
           <h2
@@ -471,7 +471,7 @@ function DecisionOption({
 }) {
   return (
     <button
-      className="block min-h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left outline-none transition-[transform,background-color,border-color] hover:border-enhanced-pitch/40 hover:bg-enhanced-pitch/[0.06] focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:translate-y-px motion-reduce:transform-none motion-reduce:transition-none"
+      className="block min-h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left outline-none transition-[transform,opacity] hover:border-enhanced-pitch/40 hover:bg-enhanced-pitch/[0.06] focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:translate-y-px motion-reduce:transform-none motion-reduce:transition-opacity"
       onClick={onChoose}
       type="button"
     >
@@ -493,7 +493,7 @@ function DecisionOption({
             {option.title}
           </span>
           <span
-            className={`mt-0.5 block text-[11px] text-enhanced-supporting ${
+            className={`mt-0.5 block text-xs text-enhanced-supporting ${
               option.club ? "truncate" : "whitespace-normal leading-4"
             }`}
           >
@@ -503,11 +503,11 @@ function DecisionOption({
         {option.role ? (
           <span className="shrink-0 text-right">
             <span
-              className={`block text-[11px] font-bold ${roleToneClass(option.roleTone)}`}
+              className={`block text-xs font-bold ${roleToneClass(option.roleTone)}`}
             >
               {option.role}
             </span>
-            <span className="block text-[10px] text-enhanced-supporting">
+            <span className="block text-xs text-enhanced-supporting">
               {option.stars}
             </span>
           </span>

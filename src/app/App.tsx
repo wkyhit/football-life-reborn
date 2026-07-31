@@ -472,7 +472,11 @@ function CareerController({
   return (
     <>
       <a
-        className="sr-only z-50 rounded-[8px] bg-accent px-4 py-3 font-bold text-accent-ink focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        className={
+          uiMode === "enhanced"
+            ? "fixed -top-24 left-4 z-[var(--z-tooltip)] inline-flex min-h-11 items-center rounded-[var(--radius-input)] bg-enhanced-pitch px-4 font-bold text-enhanced-pitch-ink outline-none focus:top-4 focus:outline-2 focus:outline-offset-2 focus:outline-enhanced-focus"
+            : "sr-only z-50 rounded-[8px] bg-accent px-4 py-3 font-bold text-accent-ink focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        }
         href="#main-content"
       >
         跳到主要内容

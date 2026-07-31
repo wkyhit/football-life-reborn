@@ -89,6 +89,8 @@ export function EnhancedNationalityScreen({
         <input
           aria-label="搜索国家"
           className="h-12 shrink-0 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-4 text-[15px] text-enhanced-strong outline-none placeholder:text-enhanced-supporting focus:border-enhanced-pitch focus:ring-2 focus:ring-enhanced-focus/25"
+          data-enhanced-field=""
+          data-field-state="default"
           onChange={(event) => setQuery(event.target.value)}
           placeholder="搜索中文、英文或 FIFA code"
           type="search"
@@ -137,7 +139,7 @@ export function EnhancedNationalityScreen({
               aria-label="最近选择"
               className="mb-4 border-b border-enhanced-line pb-4"
             >
-              <h2 className="mb-2 text-[11px] font-bold text-enhanced-supporting">
+              <h2 className="mb-2 text-xs font-bold text-enhanced-supporting">
                 最近选择
               </h2>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -193,6 +195,7 @@ export function EnhancedNationalityScreen({
           <EnhancedAction
             className="min-h-12 w-full"
             disabled={state.player.nationality === null}
+            disabledReason="选择一个国家后才能继续"
             onClick={() =>
               dispatch({ type: "continue_setup" })
             }
@@ -236,7 +239,7 @@ function CountryButton({
         <span className="block truncate text-[13px] font-bold">
           {country.nameZh}
         </span>
-        <span className="block text-[10px] text-enhanced-supporting">
+        <span className="block text-xs text-enhanced-supporting">
           {country.fifaCode}
         </span>
       </span>
