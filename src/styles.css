@@ -235,6 +235,10 @@
     var(--ease-out) both;
 }
 
+[data-enhanced-timeline-rows] {
+  padding-block: var(--timeline-edge-space, 0px);
+}
+
 @media (hover: hover) and (pointer: fine) {
   [data-enhanced-shell]
     button:not([data-enhanced-action]):hover:not(:disabled),

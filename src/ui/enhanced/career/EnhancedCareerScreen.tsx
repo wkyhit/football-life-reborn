@@ -17,8 +17,10 @@ import {
   CareerSeasonNarrative,
 } from "../../shared/CareerMilestoneNarrative";
 import { useDecisionFocusRestore } from "../../shared/useDecisionFocusRestore";
+import { useReducedMotion } from "../../shared/useReducedMotion";
 import { ClubIdentity } from "../../classic/components/ClubIdentity";
 import { EnhancedAppBar } from "../components/EnhancedAppBar";
+import { useTimelineFollow } from "./useTimelineFollow";
 
 type EnhancedCareerScreenProps = {
   readonly challenge?: ChallengeSurface;
@@ -178,12 +180,25 @@ function CareerTimeline({
   const recordedSeasons = view.timeline.filter(
     (row) => row.kind === "season",
   ).length;
+  const activeAge = [...view.timeline]
+    .reverse()
+    .find(
+      (row) => row.kind === "current" || row.kind === "season",
+    )?.age ?? null;
+  const timelineFollow = useTimelineFollow({
+    activeAge,
+    reducedMotion: useReducedMotion(),
+  });
 
   return (
     <section
       aria-labelledby="enhanced-timeline-heading"
       className="min-h-0 overflow-y-auto overscroll-contain px-4 py-4 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-enhanced-focus sm:px-6 lg:rounded-[16px] lg:border lg:border-enhanced-line lg:bg-enhanced-surface lg:p-5"
       data-enhanced-timeline=""
+      onKeyDown={timelineFollow.onKeyDown}
+      onTouchStart={timelineFollow.onTouchStart}
+      onWheel={timelineFollow.onWheel}
+      ref={timelineFollow.containerRef}
       tabIndex={0}
     >
       <div className="mb-3 flex items-end justify-between gap-4">
@@ -198,13 +213,25 @@ function CareerTimeline({
             生涯时间线
           </h1>
         </div>
-        <p className="text-right text-xs font-bold text-enhanced-supporting">
-          已记录{" "}
-          <span className="text-enhanced-ink-2 tabular-nums">
-            {recordedSeasons}
-          </span>{" "}
-          赛季
-        </p>
+        <div className="text-right">
+          <p className="text-xs font-bold text-enhanced-supporting">
+            已记录{" "}
+            <span className="text-enhanced-ink-2 tabular-nums">
+              {recordedSeasons}
+            </span>{" "}
+            赛季
+          </p>
+          {!timelineFollow.isFollowing ? (
+            <button
+              className="mt-1 min-h-11 rounded-[8px] px-2 text-xs font-bold text-enhanced-pitch"
+              data-enhanced-return-latest=""
+              onClick={timelineFollow.resume}
+              type="button"
+            >
+              回到最新
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-[10px] border border-enhanced-line bg-enhanced-canvas/10">
@@ -217,7 +244,10 @@ function CareerTimeline({
           <span className="text-right">助</span>
         </div>
 
-        <div className="divide-y divide-enhanced-line-soft">
+        <div
+          className="divide-y divide-enhanced-line-soft"
+          data-enhanced-timeline-rows=""
+        >
           {view.timeline.map((row) => (
             <TimelineRow key={row.age} row={row} />
           ))}
@@ -256,6 +286,7 @@ function TimelineRow({
   if (row.kind === "current") {
     return (
       <div
+        aria-current="step"
         className={`${gridClass} bg-enhanced-pitch/[0.06]`}
         data-career-season-row={row.age}
         data-enhanced-season-row="current"
