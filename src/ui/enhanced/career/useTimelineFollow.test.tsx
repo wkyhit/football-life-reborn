@@ -140,7 +140,7 @@ function TimelineHarness({
     [rowTop],
   );
   const containerRef = useCallback(
-    (node: HTMLElement | null) => {
+    (node: HTMLDivElement | null) => {
       if (node !== null) {
         Object.defineProperty(node, "clientHeight", {
           configurable: true,
@@ -148,7 +148,7 @@ function TimelineHarness({
         });
         node.getBoundingClientRect = () =>
           rect({ height: 200, top: 100 });
-        node.scrollTo = scrollTo as HTMLElement["scrollTo"];
+        node.scrollTo = scrollTo as HTMLDivElement["scrollTo"];
       }
 
       setRef(follow.containerRef, node);
@@ -158,7 +158,7 @@ function TimelineHarness({
 
   return (
     <>
-      <section
+      <div
         data-testid="timeline"
         onKeyDown={follow.onKeyDown}
         onTouchStart={follow.onTouchStart}
@@ -172,7 +172,7 @@ function TimelineHarness({
           data-testid="latest-row"
           ref={rowRef}
         />
-      </section>
+      </div>
       {!follow.isFollowing ? (
         <button onClick={follow.resume} type="button">
           回到最新
@@ -183,8 +183,8 @@ function TimelineHarness({
 }
 
 function setRef(
-  ref: RefObject<HTMLElement | null>,
-  value: HTMLElement | null,
+  ref: RefObject<HTMLDivElement | null>,
+  value: HTMLDivElement | null,
 ): void {
   ref.current = value;
 }

@@ -415,11 +415,9 @@ function CareerTimeline({
   const recordedSeasons = view.timeline.filter(
     (row) => row.kind === "season",
   ).length;
-  const activeAge = [...view.timeline]
-    .reverse()
-    .find(
-      (row) => row.kind === "current" || row.kind === "season",
-    )?.age ?? null;
+  const activeAge = view.timeline.findLast(
+    (row) => row.kind === "current" || row.kind === "season",
+  )?.age ?? null;
   const timelineFollow = useTimelineFollow({
     activeAge,
     reducedMotion: useReducedMotion(),
@@ -428,16 +426,12 @@ function CareerTimeline({
   return (
     <section
       aria-labelledby="enhanced-timeline-heading"
-      className="min-h-0 overflow-y-auto overscroll-contain px-4 py-4 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-enhanced-focus sm:px-6 lg:rounded-[16px] lg:border lg:border-enhanced-line lg:bg-enhanced-surface lg:p-5"
+      className="flex min-h-0 flex-col overflow-hidden px-4 py-4 sm:px-6 lg:rounded-[16px] lg:border lg:border-enhanced-line lg:bg-enhanced-surface lg:p-5"
       data-enhanced-timeline=""
-      data-scroll-region="career-timeline"
-      onKeyDown={timelineFollow.onKeyDown}
-      onTouchStart={timelineFollow.onTouchStart}
-      onWheel={timelineFollow.onWheel}
-      ref={timelineFollow.containerRef}
-      tabIndex={0}
     >
-      <div className="mb-3 flex items-end justify-between gap-4">
+      <div
+        className="mb-3 flex shrink-0 items-end justify-between gap-4"
+      >
         <div>
           <p className="text-xs font-bold tracking-[0.10em] text-enhanced-pitch">
             SEASON ARCHIVE
@@ -470,8 +464,10 @@ function CareerTimeline({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-enhanced-line bg-enhanced-canvas/10">
-        <div className="enhanced-timeline-grid grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-enhanced-line px-3 py-2 text-xs font-bold text-enhanced-supporting">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-enhanced-line bg-enhanced-canvas/10">
+        <div
+          className="enhanced-timeline-grid grid shrink-0 items-center gap-1 border-b border-enhanced-line px-3 py-2 text-xs font-bold text-enhanced-supporting"
+        >
           <span>岁</span>
           <span>俱乐部</span>
           <span className="text-center">能力</span>
@@ -481,29 +477,41 @@ function CareerTimeline({
         </div>
 
         <div
-          className="divide-y divide-enhanced-line-soft"
-          data-enhanced-timeline-rows=""
+          aria-label="生涯年份"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          data-scroll-region="career-timeline"
+          onKeyDown={timelineFollow.onKeyDown}
+          onTouchStart={timelineFollow.onTouchStart}
+          onWheel={timelineFollow.onWheel}
+          ref={timelineFollow.containerRef}
+          role="region"
+          tabIndex={0}
         >
-          {view.timeline.map((row) => (
-            <TimelineRow key={row.age} row={row} />
-          ))}
-          <div className="enhanced-timeline-grid grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 bg-enhanced-surface px-3 py-2">
-            <span className="text-center text-sm">
-              {view.nationalTeam.countryFlag}
-            </span>
-            <span className="truncate text-xs font-bold text-enhanced-supporting">
-              {view.nationalTeam.name}
-            </span>
-            <span />
-            <TimelineNumber>
-              {view.nationalTeam.stats.appearances}
-            </TimelineNumber>
-            <TimelineNumber>
-              {view.nationalTeam.stats.goals}
-            </TimelineNumber>
-            <TimelineNumber>
-              {view.nationalTeam.stats.assists}
-            </TimelineNumber>
+          <div
+            className="divide-y divide-enhanced-line-soft"
+            data-enhanced-timeline-rows=""
+          >
+            {view.timeline.map((row) => (
+              <TimelineRow key={row.age} row={row} />
+            ))}
+            <div className="enhanced-timeline-grid grid items-center gap-1 bg-enhanced-surface px-3 py-2">
+              <span className="text-center text-sm">
+                {view.nationalTeam.countryFlag}
+              </span>
+              <span className="truncate text-xs font-bold text-enhanced-supporting">
+                {view.nationalTeam.name}
+              </span>
+              <span />
+              <TimelineNumber>
+                {view.nationalTeam.stats.appearances}
+              </TimelineNumber>
+              <TimelineNumber>
+                {view.nationalTeam.stats.goals}
+              </TimelineNumber>
+              <TimelineNumber>
+                {view.nationalTeam.stats.assists}
+              </TimelineNumber>
+            </div>
           </div>
         </div>
       </div>
@@ -517,13 +525,13 @@ function TimelineRow({
   readonly row: CareerTimelineRowPresentation;
 }) {
   const gridClass =
-    "enhanced-timeline-grid grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 px-3 py-2";
+    "enhanced-timeline-grid grid items-center gap-1 px-3 py-2";
 
   if (row.kind === "current") {
     return (
       <div
         aria-current="step"
-        className={`${gridClass} bg-enhanced-pitch/[0.06]`}
+        className={`${gridClass} min-h-11 bg-enhanced-pitch/[0.06]`}
         data-career-season-row={row.age}
         data-enhanced-season-row="current"
       >
@@ -550,7 +558,6 @@ function TimelineRow({
       <div
         className={gridClass}
         data-career-season-row={row.age}
-        data-enhanced-season-row="empty"
       >
         <span className="text-xs font-black tabular-nums text-enhanced-supporting">
           {row.age}
@@ -567,35 +574,40 @@ function TimelineRow({
   }
 
   return (
-    <div
-      className={gridClass}
+    <details
       data-career-season-row={row.age}
       data-enhanced-season-row="season"
     >
-      <span className="text-xs font-black tabular-nums text-enhanced-supporting">
-        {row.age}
-      </span>
-      <span className="flex min-w-0 items-center gap-2">
-        <ClubIdentity club={row.club} size={20} />
-        <span className="min-w-0">
-          <span className="block truncate text-[13px] font-bold">
-            {row.club.shortName}
-          </span>
-          <span className="block truncate text-xs text-enhanced-supporting">
-            {row.club.subtitle.replace(" · 次级联赛", "")}
+      <summary
+        className={`${gridClass} min-h-11`}
+      >
+        <span className="text-xs font-black tabular-nums text-enhanced-supporting">
+          {row.age}
+        </span>
+        <span className="flex min-w-0 items-center gap-2">
+          <ClubIdentity club={row.club} size={20} />
+          <span className="min-w-0">
+            <span className="block truncate text-[13px] font-bold">
+              {row.club.shortName}
+            </span>
+            <span className="block truncate text-xs text-enhanced-supporting">
+              {row.club.subtitle.replace(" · 次级联赛", "")}
+            </span>
           </span>
         </span>
-      </span>
-      <span className="text-center">
-        <span className="inline-block min-w-8 rounded-[6px] border border-enhanced-trophy/35 bg-enhanced-surface px-1 py-1 text-xs font-black tabular-nums text-enhanced-trophy">
-          {row.overall}
+        <span className="text-center">
+          <span className="inline-block min-w-8 rounded-[6px] border border-enhanced-trophy/35 bg-enhanced-surface px-1 py-1 text-xs font-black tabular-nums text-enhanced-trophy">
+            {row.overall}
+          </span>
         </span>
-      </span>
-      <SeasonNumber>{row.stats.appearances}</SeasonNumber>
-      <SeasonNumber>{row.stats.goals}</SeasonNumber>
-      <SeasonNumber>{row.stats.assists}</SeasonNumber>
-      <CareerSeasonEconomy row={row} variant="enhanced" />
-    </div>
+        <SeasonNumber>{row.stats.appearances}</SeasonNumber>
+        <SeasonNumber>{row.stats.goals}</SeasonNumber>
+        <SeasonNumber>{row.stats.assists}</SeasonNumber>
+      </summary>
+      <div className="border-t border-enhanced-line-soft px-2 pb-2">
+        <CareerSeasonEconomy row={row} variant="enhanced" />
+      </div>
+    </details>
   );
 }
 

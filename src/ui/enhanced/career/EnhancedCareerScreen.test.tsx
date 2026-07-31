@@ -117,10 +117,78 @@ describe("EnhancedCareerScreen", () => {
     ).toHaveAttribute("data-scroll-boundary", "viewport");
     expect(
       document.querySelector("[data-enhanced-timeline]"),
-    ).toHaveAttribute("data-scroll-region", "career-timeline");
+    ).toContainElement(
+      document.querySelector(
+        '[data-scroll-region="career-timeline"]',
+      ) as HTMLElement,
+    );
     expect(
       document.querySelector("[data-enhanced-decision-rail]"),
     ).toHaveAttribute("data-scroll-region", "decision-rail");
+  });
+
+  it("keeps timeline chrome outside the independently scrollable year region", () => {
+    vi.spyOn(HTMLElement.prototype, "scrollTo").mockImplementation(
+      () => undefined,
+    );
+
+    render(
+      <div data-enhanced-shell="">
+        <EnhancedCareerScreen
+          onChoose={() => undefined}
+          view={decidingView()}
+        />
+      </div>,
+    );
+
+    const scroller = screen.getByRole("region", {
+      name: "生涯年份",
+    });
+    const heading = screen.getByRole("heading", {
+      name: "生涯时间线",
+    });
+    const columns = document.querySelector(
+      "[data-enhanced-timeline] .enhanced-timeline-grid",
+    );
+    const currentSeason = document.querySelector(
+      '[data-enhanced-season-row="current"]',
+    );
+
+    expect(columns).not.toBeNull();
+    expect(currentSeason).not.toBeNull();
+    expect(scroller).not.toContainElement(heading);
+    expect(scroller).not.toContainElement(columns as HTMLElement);
+    expect(scroller).toContainElement(currentSeason as HTMLElement);
+  });
+
+  it("presents completed seasons as collapsed year summaries", () => {
+    vi.spyOn(HTMLElement.prototype, "scrollTo").mockImplementation(
+      () => undefined,
+    );
+
+    render(
+      <div data-enhanced-shell="">
+        <EnhancedCareerScreen
+          onChoose={() => undefined}
+          view={progressedView()}
+        />
+      </div>,
+    );
+
+    const seasons = [
+      ...document.querySelectorAll(
+        'details[data-enhanced-season-row="season"]',
+      ),
+    ];
+
+    expect(seasons.length).toBeGreaterThan(0);
+    for (const season of seasons) {
+      expect(season).not.toHaveAttribute("open");
+      expect(season.querySelector("summary")).not.toBeNull();
+      expect(
+        season.querySelector("[data-career-season-economy]"),
+      ).not.toBeNull();
+    }
   });
 
   it("collapses optional challenge detail inside the mobile rail", () => {
@@ -280,6 +348,27 @@ function decidingView() {
     career,
     isRevealing: false,
     visibleSeasonCount: 0,
+  });
+}
+
+function progressedView() {
+  const initial = startCareer("issue-25:compact-history");
+  const decision = initial.currentDecision;
+
+  if (decision === null) {
+    throw new Error("Expected an initial decision");
+  }
+
+  const career = applyClassicChoice(initial, {
+    decisionId: decision.id,
+    decisionType: decision.type,
+    optionId: decision.options[0]!.id,
+  });
+
+  return createCareerPresentation({
+    career,
+    isRevealing: false,
+    visibleSeasonCount: career.seasons.length,
   });
 }
 

@@ -20,7 +20,7 @@ const HISTORY_BROWSE_KEYS = new Set([
 ]);
 
 export type TimelineFollowController = {
-  readonly containerRef: RefObject<HTMLElement | null>;
+  readonly containerRef: RefObject<HTMLDivElement | null>;
   readonly isFollowing: boolean;
   readonly onKeyDown: KeyboardEventHandler<HTMLElement>;
   readonly onTouchStart: TouchEventHandler<HTMLElement>;
@@ -32,7 +32,7 @@ export function useTimelineFollow(input: {
   readonly activeAge: number | null;
   readonly reducedMotion: boolean;
 }): TimelineFollowController {
-  const containerRef = useRef<HTMLElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isFollowing, setIsFollowing] = useState(true);
   const suspend = useCallback(() => {
     setIsFollowing(false);

@@ -262,14 +262,32 @@
     2rem minmax(0, 1fr) 2.625rem repeat(3, 2rem);
 }
 
+[data-scroll-region="career-timeline"]:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -3px;
+}
+
+[data-enhanced-season-row="season"] > summary {
+  cursor: pointer;
+}
+
+[data-enhanced-season-row="season"]
+  > summary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
 [data-enhanced-secondary-career-facts] > summary,
-[data-enhanced-challenge-disclosure] > summary {
+[data-enhanced-challenge-disclosure] > summary,
+[data-enhanced-season-row="season"] > summary {
   list-style: none;
 }
 
 [data-enhanced-secondary-career-facts]
   > summary::-webkit-details-marker,
 [data-enhanced-challenge-disclosure]
+  > summary::-webkit-details-marker,
+[data-enhanced-season-row="season"]
   > summary::-webkit-details-marker {
   display: none;
 }
@@ -361,6 +379,24 @@
 
   [data-enhanced-timeline] {
     padding: var(--space-2xs);
+  }
+
+  [data-enhanced-timeline] > div:first-child {
+    align-items: center;
+    margin-bottom: var(--space-3xs);
+  }
+
+  [data-enhanced-timeline]
+    > div:first-child
+    p:first-child {
+    display: none;
+  }
+
+  [data-enhanced-timeline]
+    > div:first-child
+    h1 {
+    margin-top: 0;
+    font-size: var(--text-base);
   }
 
   [data-enhanced-decision-rail] {
