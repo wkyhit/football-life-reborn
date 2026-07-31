@@ -164,6 +164,12 @@ describe("complete career narrative rendering", () => {
         ),
       ).toBeVisible();
 
+      if (!(seasonRow instanceof HTMLDetailsElement)) {
+        throw new Error("Expected collapsed season summary");
+      }
+
+      expect(seasonRow).not.toHaveAttribute("open");
+      fireEvent.click(seasonRow.querySelector("summary")!);
       expect(
         within(seasonRow).getByLabelText(
           `身价：€${season.marketValue.toLocaleString("en-US")}`,
@@ -492,6 +498,11 @@ describe("complete career narrative rendering", () => {
 
     for (const label of SEASON_LABELS) {
       expect(screen.getByText(label)).not.toBeVisible();
+    }
+    for (const season of enhanced.container.querySelectorAll(
+      'details[data-enhanced-season-row="season"]',
+    )) {
+      fireEvent.click(season.querySelector("summary")!);
     }
     for (const details of enhanced.container.querySelectorAll(
       "[data-enhanced-season-details]",
