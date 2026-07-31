@@ -311,6 +311,7 @@ function presentation(input: {
             options: input.options,
             title: input.panel === "academy" ? "青训报价" : "外租",
           },
+    recentEventResult: null,
     timeline,
     totals,
   };

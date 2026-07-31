@@ -11,7 +11,7 @@ import {
 } from "react";
 
 import {
-  applyClassicChoice,
+  applyClassicChoiceWithResult,
   startClassicCareer,
   type ClassicCareerState,
 } from "../domain/classicEngine";
@@ -551,10 +551,6 @@ function CareerExperience({
   const reveal = useSeasonReveal(initialCareer, {
     reducedMotion,
   });
-  const [
-    enhancedAnnouncement,
-    setEnhancedAnnouncement,
-  ] = useState<string | null>(null);
   const [replayCopyMessage, setReplayCopyMessage] =
     useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -574,23 +570,6 @@ function CareerExperience({
     pendingArchiveId.current =
       globalThis.crypto.randomUUID();
   }
-
-  useEffect(() => {
-    if (!reducedMotion) {
-      setEnhancedAnnouncement(null);
-      return;
-    }
-
-    if (reveal.isRevealing) {
-      setEnhancedAnnouncement(
-        `赛季更新完成，已记录 ${reveal.committedCareer.seasons.length} 个赛季`,
-      );
-    }
-  }, [
-    reducedMotion,
-    reveal.committedCareer.seasons.length,
-    reveal.isRevealing,
-  ]);
 
   useEffect(() => {
     const result = repository.save(reveal.committedCareer);
@@ -773,8 +752,10 @@ function CareerExperience({
   }
 
   const view = createCareerPresentation({
+    activeRevealItem: reveal.activeItem,
     career: reveal.committedCareer,
     isRevealing: reveal.isRevealing,
+    recentEventResult: reveal.recentEventResult,
     visibleSeasonCount: reveal.visibleSeasonCount,
   });
 
@@ -788,7 +769,7 @@ function CareerExperience({
       return;
     }
 
-    const nextCareer = applyClassicChoice(
+    const transition = applyClassicChoiceWithResult(
       reveal.committedCareer,
       {
         decisionId,
@@ -796,14 +777,7 @@ function CareerExperience({
         optionId,
       },
     );
-    reveal.commitCareer(nextCareer);
-    setEnhancedAnnouncement(
-      reducedMotion &&
-        nextCareer.seasons.length >
-          reveal.committedCareer.seasons.length
-        ? `赛季更新完成，已记录 ${nextCareer.seasons.length} 个赛季`
-        : null,
-    );
+    reveal.commitTransition(transition);
   };
 
   if (uiMode === "enhanced") {
@@ -823,14 +797,20 @@ function CareerExperience({
           onOpenArchive={() =>
             onOpenArchive(reveal.committedCareer)
           }
-          statusMessage={enhancedAnnouncement}
+          statusMessage={reveal.announcement}
           view={view}
         />
       </Suspense>
     );
   }
 
-  return <CareerScreen onChoose={onChoose} view={view} />;
+  return (
+    <CareerScreen
+      onChoose={onChoose}
+      statusMessage={reveal.announcement}
+      view={view}
+    />
+  );
 }
 
 type RecoveryIssue =

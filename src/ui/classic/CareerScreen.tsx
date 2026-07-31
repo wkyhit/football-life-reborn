@@ -11,11 +11,13 @@ import { ClubIdentity } from "./components/ClubIdentity";
 
 type CareerScreenProps = {
   readonly onChoose: (decisionId: string, optionId: string) => void;
+  readonly statusMessage?: string | null;
   readonly view: CareerPresentation;
 };
 
 export function CareerScreen({
   onChoose,
+  statusMessage,
   view,
 }: CareerScreenProps) {
   return (
@@ -24,6 +26,16 @@ export function CareerScreen({
       data-classic-career-shell=""
       id="main-content"
     >
+      {statusMessage ? (
+        <p
+          aria-atomic="true"
+          aria-live="polite"
+          className="sr-only"
+          role="status"
+        >
+          {statusMessage}
+        </p>
+      ) : null}
       <CareerHeader view={view} />
       <CareerTimeline view={view} />
       <CareerPanel onChoose={onChoose} view={view} />
@@ -341,6 +353,60 @@ function CareerPanel({
     );
   }
 
+  if (panel.kind === "event_result") {
+    return (
+      <aside
+        className="shrink-0 border-t border-zinc-800 bg-zinc-950 px-4 pb-5 pt-4"
+        data-classic-career-panel=""
+        data-classic-event-result-reveal=""
+      >
+        <div className="animate-rise">
+          <p className="text-[10px] font-bold tracking-wide text-emerald-500">
+            {panel.age} 岁 · 事件结果
+          </p>
+          <h2 className="mt-1 text-lg font-black text-zinc-50">
+            {panel.title}
+          </h2>
+          <p className="mt-1 text-xs font-bold text-zinc-500">
+            {panel.choiceLabel}
+          </p>
+          <p
+            className={`mt-3 rounded-xl border px-3 py-2.5 text-sm font-bold ${classicResultToneClass(panel.tone)}`}
+          >
+            {panel.summary}
+          </p>
+        </div>
+      </aside>
+    );
+  }
+
+  if (panel.kind === "milestone") {
+    return (
+      <aside
+        className="shrink-0 border-t border-zinc-800 bg-zinc-950 px-4 pb-5 pt-4"
+        data-classic-career-panel=""
+      >
+        <div
+          className="animate-rise"
+          data-classic-milestone-reveal=""
+        >
+          <p className="text-[10px] font-bold tracking-wide text-amber-500">
+            {panel.age} 岁 · {panel.club.shortName}
+          </p>
+          <h2 className="mt-1 text-lg font-black text-zinc-50">
+            {panel.title}
+          </h2>
+          <MilestoneNarrative
+            honors={panel.honors}
+            nationalTournaments={panel.nationalTournaments}
+            statuses={panel.statuses}
+            tierChange={panel.tierChange}
+          />
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside
       className="shrink-0 border-t border-zinc-800 bg-zinc-950"
@@ -348,6 +414,19 @@ function CareerPanel({
     >
       <div className="max-h-[46dvh] overflow-y-auto px-4 pb-5 pt-3">
         <div className="animate-rise">
+          {view.recentEventResult ? (
+            <div
+              className={`mb-3 rounded-lg border px-3 py-2 text-xs ${classicResultToneClass(view.recentEventResult.tone)}`}
+              data-classic-recent-event-result=""
+            >
+              <strong className="block">
+                {view.recentEventResult.title}
+              </strong>
+              <span className="mt-0.5 block">
+                {view.recentEventResult.summary}
+              </span>
+            </div>
+          ) : null}
           <div className="text-[10px] font-bold tracking-wide text-emerald-500">
             {panel.age} 岁 · 决策
           </div>
@@ -372,6 +451,81 @@ function CareerPanel({
       </div>
     </aside>
   );
+}
+
+function MilestoneNarrative({
+  honors,
+  nationalTournaments,
+  statuses,
+  tierChange,
+}: Pick<
+  Extract<
+    CareerPresentation["panel"],
+    { readonly kind: "milestone" }
+  >,
+  | "honors"
+  | "nationalTournaments"
+  | "statuses"
+  | "tierChange"
+>) {
+  return (
+    <ul className="mt-3 flex flex-wrap gap-2">
+      {honors.map((honor, index) => {
+        const identity =
+          honor.kind === "award"
+            ? honor.award
+            : honor.trophy;
+
+        return (
+          <li
+            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-xs font-bold text-amber-200"
+            key={`honor-${index}-${honor.label}`}
+          >
+            <HonorIdentity honor={identity} size={20} />
+            {honor.label}
+          </li>
+        );
+      })}
+      {nationalTournaments.map(({ label }, index) => (
+        <li
+          className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-2.5 py-2 text-xs font-bold text-sky-200"
+          key={`national-${index}-${label}`}
+        >
+          {label}
+        </li>
+      ))}
+      {statuses.map(({ label }, index) => (
+        <li
+          className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-2 text-xs font-bold text-rose-200"
+          key={`status-${index}-${label}`}
+        >
+          {label}
+        </li>
+      ))}
+      {tierChange ? (
+        <li className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-2 text-xs font-bold text-rose-200">
+          {tierChange.label}
+        </li>
+      ) : null}
+    </ul>
+  );
+}
+
+function classicResultToneClass(
+  tone: NonNullable<
+    CareerPresentation["recentEventResult"]
+  >["tone"],
+): string {
+  switch (tone) {
+    case "positive":
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
+    case "negative":
+      return "border-rose-500/30 bg-rose-500/10 text-rose-200";
+    case "warning":
+      return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+    case "neutral":
+      return "border-zinc-700 bg-zinc-800/70 text-zinc-300";
+  }
 }
 
 function DecisionOption({

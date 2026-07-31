@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyClassicChoice,
+  applyClassicChoiceWithResult,
   replayClassicCareer,
   startClassicCareer,
 } from "../../domain/classicEngine";
@@ -155,6 +156,121 @@ describe("Classic career presentation", () => {
       title: expected.label,
     });
     expect(accept?.subtitle).not.toBe(accept?.title);
+  });
+
+  it("projects the committed event result and milestone queue without re-resolving either", () => {
+    const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+      ({ id }) => id === "matrix-long-support-high",
+    );
+
+    if (fixture === undefined) {
+      throw new Error("Missing season-load golden fixture");
+    }
+
+    const eventChoiceIndex = fixture.choices.findIndex(
+      ({ optionId }) =>
+        optionId === "event:season_load:accept",
+    );
+    const before = replayClassicCareer({
+      choices: fixture.choices.slice(0, eventChoiceIndex),
+      contentVersion: fixture.contentVersion,
+      identity: fixture.identity,
+      mode: fixture.mode,
+      seed: fixture.seed,
+    });
+    const choice = fixture.choices[eventChoiceIndex];
+
+    if (choice === undefined) {
+      throw new Error("Missing season-load choice");
+    }
+
+    const resolved = applyClassicChoiceWithResult(before, {
+      ...choice,
+      forcedOutcome: "positive",
+    });
+    const seasonIndex = before.seasons.length;
+    const season = resolved.career.seasons[seasonIndex]!;
+    const career = {
+      ...resolved.career,
+      seasons: resolved.career.seasons.map((candidate, index) =>
+        index === seasonIndex
+          ? {
+              ...candidate,
+              awards: ["golden_boot" as const],
+              trophies: [
+                ...candidate.trophies,
+                "league" as const,
+              ],
+            }
+          : candidate,
+      ),
+    };
+    const eventView = createCareerPresentation({
+      activeRevealItem: {
+        dwellMs: 1_600,
+        kind: "event_result",
+        result: resolved.result,
+      },
+      career,
+      isRevealing: true,
+      recentEventResult: resolved.result,
+      visibleSeasonCount: career.seasons.length,
+    });
+
+    expect(eventView.panel).toMatchObject({
+      age: before.currentDecision?.age,
+      choiceLabel: "接受双倍训练",
+      kind: "event_result",
+      summary: "成为绝对主力",
+      title: "双倍训练结果",
+      tone: "positive",
+    });
+    expect(eventView.recentEventResult).toBeNull();
+
+    const milestoneView = createCareerPresentation({
+      activeRevealItem: {
+        dwellMs: 1_700,
+        kind: "milestone",
+        seasonIndex,
+      },
+      career,
+      isRevealing: true,
+      recentEventResult: resolved.result,
+      visibleSeasonCount: career.seasons.length,
+    });
+
+    expect(milestoneView.panel).toMatchObject({
+      age: season.age,
+      honors: expect.arrayContaining([
+        expect.objectContaining({
+          kind: "trophy",
+          label: "联赛冠军",
+          trophy: "league",
+        }),
+        expect.objectContaining({
+          award: "golden_boot",
+          kind: "award",
+          label: "金靴奖",
+        }),
+      ]),
+      kind: "milestone",
+      title: "赛季里程碑",
+    });
+
+    const immediateView = createCareerPresentation({
+      activeRevealItem: null,
+      career,
+      isRevealing: false,
+      recentEventResult: resolved.result,
+      visibleSeasonCount: career.seasons.length,
+    });
+
+    expect(immediateView.panel.kind).toBe("decision");
+    expect(immediateView.recentEventResult).toMatchObject({
+      summary: "成为绝对主力",
+      title: "双倍训练结果",
+      tone: "positive",
+    });
   });
 
   it("retains every season honor, national result, suspension, relegation, and observable tier change", () => {

@@ -3,6 +3,7 @@ import type {
   ClassicCareerState,
   ClassicDecision,
   ClassicDecisionOption,
+  ClassicDecisionResult,
 } from "../../domain/classicEngine";
 import type { PersonalAward } from "../../domain/awards";
 import {
@@ -27,6 +28,11 @@ import {
   type ClassicSeasonStats,
   type ClassicSquadRole,
 } from "../../domain/role";
+import {
+  createEventResultReveal,
+  type ClassicEventResultReveal,
+  type SeasonRevealQueueItem,
+} from "../../features/season-reveal/seasonReveal";
 
 export type CareerClubPresentation = {
   readonly abbreviation: string;
@@ -60,6 +66,20 @@ export type CareerDecisionPanelPresentation =
       readonly kind: "decision";
       readonly options: readonly CareerDecisionOptionPresentation[];
       readonly title: string;
+    }
+  | ({
+      readonly age: number;
+      readonly kind: "event_result";
+    } & ClassicEventResultReveal)
+  | {
+      readonly age: number;
+      readonly club: CareerClubPresentation;
+      readonly honors: readonly CareerSeasonHonorPresentation[];
+      readonly kind: "milestone";
+      readonly nationalTournaments: readonly CareerNationalTournamentPresentation[];
+      readonly statuses: readonly CareerSeasonStatusPresentation[];
+      readonly tierChange: CareerTierChangePresentation | null;
+      readonly title: "赛季里程碑";
     }
   | { readonly kind: "simulating" };
 
@@ -144,6 +164,7 @@ export type CareerPresentation = {
     >;
   };
   readonly panel: CareerDecisionPanelPresentation;
+  readonly recentEventResult: ClassicEventResultReveal | null;
   readonly timeline: readonly CareerTimelineRowPresentation[];
   readonly totals: {
     readonly appearances: number;
@@ -154,8 +175,10 @@ export type CareerPresentation = {
 };
 
 type CareerPresentationInput = {
+  readonly activeRevealItem?: SeasonRevealQueueItem | null;
   readonly career: ClassicCareerState;
   readonly isRevealing: boolean;
+  readonly recentEventResult?: ClassicDecisionResult | null;
   readonly visibleSeasonCount: number;
 };
 
@@ -253,8 +276,10 @@ const DECISION_COPY: Readonly<
 };
 
 export function createCareerPresentation({
+  activeRevealItem = null,
   career,
   isRevealing,
+  recentEventResult = null,
   visibleSeasonCount,
 }: CareerPresentationInput): CareerPresentation {
   const country = requireCountry(career.nationalityFifaCode);
@@ -264,11 +289,9 @@ export function createCareerPresentation({
   );
   const visibleSeasons = career.seasons.slice(0, safeVisibleCount);
   const latestVisibleSeason = visibleSeasons.at(-1);
-  const revealIsPartial =
-    isRevealing &&
-    safeVisibleCount > 0 &&
-    safeVisibleCount < career.seasons.length;
-  const headerSeason = revealIsPartial ? latestVisibleSeason : undefined;
+  const headerSeason = isRevealing
+    ? latestVisibleSeason
+    : undefined;
   const currentClubId =
     headerSeason?.teamId ?? career.currentClubId;
   const headerClub =
@@ -300,6 +323,23 @@ export function createCareerPresentation({
   const seasonsByAge = new Map(
     visibleSeasons.map((season) => [season.age, season]),
   );
+  const timeline = Array.from({ length: 24 }, (_, index) => {
+    const age = 16 + index;
+    const season = seasonsByAge.get(age);
+
+    if (season !== undefined) {
+      return seasonPresentation(
+        season,
+        seasonsByAge.get(age - 1),
+      );
+    }
+
+    if (age === currentDecisionAge) {
+      return { age, kind: "current" as const };
+    }
+
+    return { age, kind: "empty" as const };
+  });
 
   return {
     header: {
@@ -317,26 +357,16 @@ export function createCareerPresentation({
       name: `${country.nameZh}国家队`,
       stats: nationalStats,
     },
-    panel: isRevealing
-      ? { kind: "simulating" }
-      : decisionPresentation(career),
-    timeline: Array.from({ length: 24 }, (_, index) => {
-      const age = 16 + index;
-      const season = seasonsByAge.get(age);
-
-      if (season !== undefined) {
-        return seasonPresentation(
-          season,
-          seasonsByAge.get(age - 1),
-        );
-      }
-
-      if (age === currentDecisionAge) {
-        return { age, kind: "current" as const };
-      }
-
-      return { age, kind: "empty" as const };
+    panel: revealPanelPresentation({
+      activeRevealItem,
+      career,
+      isRevealing,
     }),
+    recentEventResult:
+      !isRevealing && recentEventResult !== null
+        ? createEventResultReveal(recentEventResult)
+        : null,
+    timeline,
     totals: {
       appearances: totals.appearances,
       assists: totals.assists,
@@ -347,6 +377,56 @@ export function createCareerPresentation({
       ),
     },
   };
+}
+
+function revealPanelPresentation(input: {
+  readonly activeRevealItem: SeasonRevealQueueItem | null;
+  readonly career: ClassicCareerState;
+  readonly isRevealing: boolean;
+}): CareerDecisionPanelPresentation {
+  if (!input.isRevealing) {
+    return decisionPresentation(input.career);
+  }
+
+  const item = input.activeRevealItem;
+
+  if (item?.kind === "event_result") {
+    const result = createEventResultReveal(item.result);
+
+    return result === null
+      ? { kind: "simulating" }
+      : {
+          ...result,
+          age: item.result.decision.age,
+          kind: "event_result",
+        };
+  }
+
+  if (item?.kind === "milestone") {
+    const season = input.career.seasons[item.seasonIndex];
+
+    if (season === undefined) {
+      return { kind: "simulating" };
+    }
+
+    const presentation = seasonPresentation(
+      season,
+      input.career.seasons[item.seasonIndex - 1],
+    );
+
+    return {
+      age: presentation.age,
+      club: presentation.club,
+      honors: presentation.honors,
+      kind: "milestone",
+      nationalTournaments: presentation.nationalTournaments,
+      statuses: presentation.statuses,
+      tierChange: presentation.tierChange,
+      title: "赛季里程碑",
+    };
+  }
+
+  return { kind: "simulating" };
 }
 
 function decisionPresentation(
@@ -511,7 +591,10 @@ function formatOutcomePreviews(
 function seasonPresentation(
   season: ClassicCareerSeason,
   previousSeason: ClassicCareerSeason | undefined,
-): CareerTimelineRowPresentation {
+): Extract<
+  CareerTimelineRowPresentation,
+  { readonly kind: "season" }
+> {
   const tierChange =
     previousSeason !== undefined &&
     previousSeason.teamId === season.teamId &&

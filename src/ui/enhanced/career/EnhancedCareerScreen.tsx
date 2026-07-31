@@ -480,6 +480,80 @@ function DecisionRail({
     );
   }
 
+  if (panel.kind === "event_result") {
+    return (
+      <aside
+        aria-labelledby="enhanced-event-result-heading"
+        className={railClass}
+        data-enhanced-decision-rail=""
+      >
+        {challenge ? (
+          <div className="mb-4">
+            <ChallengeProgressPanel {...challenge} />
+          </div>
+        ) : null}
+        <div
+          className="enhanced-reveal-enter"
+          data-enhanced-event-result-reveal=""
+        >
+          <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
+            EVENT RESULT · {panel.age} 岁
+          </p>
+          <h2
+            className="mt-1.5 text-[22px] font-extrabold leading-tight"
+            id="enhanced-event-result-heading"
+          >
+            {panel.title}
+          </h2>
+          <p className="mt-2 text-xs font-bold text-enhanced-supporting">
+            {panel.choiceLabel}
+          </p>
+          <p
+            className={`mt-4 rounded-[10px] border px-3 py-3 text-sm font-bold ${enhancedResultToneClass(panel.tone)}`}
+          >
+            {panel.summary}
+          </p>
+        </div>
+      </aside>
+    );
+  }
+
+  if (panel.kind === "milestone") {
+    return (
+      <aside
+        aria-labelledby="enhanced-milestone-heading"
+        className={railClass}
+        data-enhanced-decision-rail=""
+      >
+        {challenge ? (
+          <div className="mb-4">
+            <ChallengeProgressPanel {...challenge} />
+          </div>
+        ) : null}
+        <div
+          className="enhanced-reveal-enter"
+          data-enhanced-milestone-reveal=""
+        >
+          <p className="text-[10px] font-bold tracking-[0.12em] text-amber-300">
+            MILESTONE · {panel.age} 岁 · {panel.club.shortName}
+          </p>
+          <h2
+            className="mt-1.5 text-[22px] font-extrabold leading-tight"
+            id="enhanced-milestone-heading"
+          >
+            {panel.title}
+          </h2>
+          <MilestoneNarrative
+            honors={panel.honors}
+            nationalTournaments={panel.nationalTournaments}
+            statuses={panel.statuses}
+            tierChange={panel.tierChange}
+          />
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside
       aria-labelledby="enhanced-decision-heading"
@@ -489,6 +563,19 @@ function DecisionRail({
       {challenge ? (
         <div className="mb-4">
           <ChallengeProgressPanel {...challenge} />
+        </div>
+      ) : null}
+      {view.recentEventResult ? (
+        <div
+          className={`mb-4 rounded-[9px] border px-3 py-2.5 text-xs ${enhancedResultToneClass(view.recentEventResult.tone)}`}
+          data-enhanced-recent-event-result=""
+        >
+          <strong className="block">
+            {view.recentEventResult.title}
+          </strong>
+          <span className="mt-1 block">
+            {view.recentEventResult.summary}
+          </span>
         </div>
       ) : null}
       <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
@@ -516,6 +603,81 @@ function DecisionRail({
       </div>
     </aside>
   );
+}
+
+function MilestoneNarrative({
+  honors,
+  nationalTournaments,
+  statuses,
+  tierChange,
+}: Pick<
+  Extract<
+    CareerPresentation["panel"],
+    { readonly kind: "milestone" }
+  >,
+  | "honors"
+  | "nationalTournaments"
+  | "statuses"
+  | "tierChange"
+>) {
+  return (
+    <ul className="mt-4 flex flex-wrap gap-2">
+      {honors.map((honor, index) => {
+        const identity =
+          honor.kind === "award"
+            ? honor.award
+            : honor.trophy;
+
+        return (
+          <li
+            className="inline-flex items-center gap-2 rounded-[8px] border border-amber-400/25 bg-amber-400/10 px-2.5 py-2 text-xs font-bold text-amber-100"
+            key={`honor-${index}-${honor.label}`}
+          >
+            <HonorIdentity honor={identity} size={22} />
+            {honor.label}
+          </li>
+        );
+      })}
+      {nationalTournaments.map(({ label }, index) => (
+        <li
+          className="rounded-[8px] border border-cyan-400/25 bg-cyan-400/10 px-2.5 py-2 text-xs font-bold text-cyan-100"
+          key={`national-${index}-${label}`}
+        >
+          {label}
+        </li>
+      ))}
+      {statuses.map(({ label }, index) => (
+        <li
+          className="rounded-[8px] border border-rose-400/25 bg-rose-400/10 px-2.5 py-2 text-xs font-bold text-rose-100"
+          key={`status-${index}-${label}`}
+        >
+          {label}
+        </li>
+      ))}
+      {tierChange ? (
+        <li className="rounded-[8px] border border-rose-400/25 bg-rose-400/10 px-2.5 py-2 text-xs font-bold text-rose-100">
+          {tierChange.label}
+        </li>
+      ) : null}
+    </ul>
+  );
+}
+
+function enhancedResultToneClass(
+  tone: NonNullable<
+    CareerPresentation["recentEventResult"]
+  >["tone"],
+): string {
+  switch (tone) {
+    case "positive":
+      return "border-emerald-400/25 bg-emerald-400/10 text-emerald-100";
+    case "negative":
+      return "border-rose-400/25 bg-rose-400/10 text-rose-100";
+    case "warning":
+      return "border-amber-400/25 bg-amber-400/10 text-amber-100";
+    case "neutral":
+      return "border-white/10 bg-white/[0.04] text-zinc-300";
+  }
 }
 
 function DecisionOption({

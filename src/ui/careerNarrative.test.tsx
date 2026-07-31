@@ -54,9 +54,58 @@ describe("complete career narrative rendering", () => {
       ),
     ).toHaveLength(4);
   });
+
+  it("renders the same milestone hold with mode-specific motion", () => {
+    const view = completeNarrativeView({
+      dwellMs: 1_700,
+      kind: "milestone",
+      seasonIndex: 0,
+    });
+    const classic = render(
+      <CareerScreen onChoose={vi.fn()} view={view} />,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: "赛季里程碑",
+      }),
+    ).toBeVisible();
+    expect(
+      classic.container.querySelector(
+        "[data-classic-milestone-reveal]",
+      ),
+    ).toHaveClass("animate-rise");
+
+    classic.unmount();
+    const enhanced = render(
+      <EnhancedCareerScreen
+        onChoose={vi.fn()}
+        view={view}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: "赛季里程碑",
+      }),
+    ).toBeVisible();
+    expect(
+      enhanced.container.querySelector(
+        "[data-enhanced-milestone-reveal]",
+      ),
+    ).toHaveClass("enhanced-reveal-enter");
+  });
 });
 
-function completeNarrativeView() {
+function completeNarrativeView(
+  activeRevealItem:
+    | {
+        readonly dwellMs: number;
+        readonly kind: "milestone";
+        readonly seasonIndex: number;
+      }
+    | undefined = undefined,
+) {
   const initial = startClassicCareer({
     identity: {
       lastName: "叙事",
@@ -120,6 +169,9 @@ function completeNarrativeView() {
   };
 
   return createCareerPresentation({
+    ...(activeRevealItem === undefined
+      ? {}
+      : { activeRevealItem }),
     career,
     isRevealing: true,
     visibleSeasonCount: career.seasons.length,
