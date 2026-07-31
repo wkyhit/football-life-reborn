@@ -3,13 +3,14 @@ import type {
   CareerPresentation,
   CareerTimelineRowPresentation,
 } from "../../classic/careerPresentation";
+import { formatMarketValue } from "../../classic/careerPresentation";
+import { formatYuan } from "../../../domain/economy/economyPolicy";
 import {
   ChallengeProgressPanel,
   type ChallengeSurface,
 } from "../../../features/challenges/ChallengeProgressPanel";
 import {
   CareerDecisionEconomyDetails,
-  CareerEconomySummary,
   CareerEventResultNarrative,
   CareerMilestoneNarrative,
   CareerRecentEventResult,
@@ -77,7 +78,7 @@ export function EnhancedCareerScreen({
       />
       <CareerHeader view={view} />
       <div
-        className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,7fr)_380px] lg:grid-rows-1 lg:gap-6 lg:p-6"
+        className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,7fr)_380px] lg:grid-rows-1 lg:gap-6 lg:p-6"
         data-enhanced-career-layout=""
       >
         <CareerTimeline view={view} />
@@ -100,40 +101,40 @@ function CareerHeader({
 
   return (
     <header
-      className="shrink-0 border-b border-enhanced-line bg-enhanced-canvas px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] sm:px-6 lg:px-8 lg:py-4"
+      className="shrink-0 border-b border-enhanced-line bg-enhanced-canvas px-4 py-2 sm:px-6 lg:px-8 lg:py-3"
       data-enhanced-career-header=""
     >
       <div className="mx-auto w-full max-w-[1440px]">
-        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(20rem,auto)] lg:gap-5">
-          <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[10px] border border-enhanced-trophy/40 bg-enhanced-surface text-enhanced-trophy">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(20rem,auto)] lg:gap-5">
+          <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-[8px] border border-enhanced-trophy/40 bg-enhanced-surface text-enhanced-trophy">
             <span className="text-xs font-bold leading-none text-enhanced-trophy">
               能力
             </span>
-            <strong className="mt-1 text-2xl font-black leading-none tabular-nums">
+            <strong className="mt-0.5 text-xl font-black leading-none tabular-nums">
               {header.overall}
             </strong>
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-2 py-1 text-xs font-bold text-enhanced-ink-2">
+              <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-1.5 py-0.5 text-xs font-bold text-enhanced-ink-2">
                 {header.countryFlag} {header.countryCode}
               </span>
-              <span className="rounded-[6px] border border-enhanced-pitch/20 bg-enhanced-pitch/10 px-2 py-1 text-xs font-bold text-enhanced-pitch">
+              <span className="rounded-[6px] border border-enhanced-pitch/20 bg-enhanced-pitch/10 px-1.5 py-0.5 text-xs font-bold text-enhanced-pitch">
                 #{header.number} {header.position}
               </span>
             </div>
-            <div className="mt-2 flex min-w-0 items-center gap-2">
+            <div className="mt-1 flex min-w-0 items-center gap-2">
               {header.club ? (
                 <ClubIdentity club={header.club} size={22} />
               ) : null}
-              <span className="truncate text-lg font-extrabold">
+              <span className="truncate text-base font-extrabold">
                 {header.club?.shortName ?? "自由身"}
               </span>
             </div>
           </div>
 
-          <div className="shrink-0 border-l border-enhanced-line pl-3 text-right lg:pl-5">
+          <div className="shrink-0 border-l border-enhanced-line pl-2 text-right lg:pl-5">
             <div className="text-xs font-bold text-enhanced-supporting">
               年龄
             </div>
@@ -142,7 +143,7 @@ function CareerHeader({
             </div>
           </div>
 
-          <dl className="col-span-3 mt-3 grid grid-cols-4 divide-x divide-enhanced-line lg:col-span-1 lg:mt-0">
+          <dl className="hidden grid-cols-4 divide-x divide-enhanced-line lg:col-span-1 lg:grid">
             {(
               [
                 ["出场", totals.appearances],
@@ -162,13 +163,95 @@ function CareerHeader({
             ))}
           </dl>
         </div>
-        <CareerEconomySummary
-          economy={view.economy}
-          marketValue={header.marketValue}
-          variant="enhanced"
-        />
+        <div
+          className="mt-2 grid min-h-11 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] divide-x divide-enhanced-line rounded-[8px] border border-enhanced-line bg-enhanced-surface lg:grid-cols-3"
+          data-enhanced-primary-career-facts=""
+        >
+          <HeaderMetric
+            label="身价"
+            value={formatMarketValue(header.marketValue)}
+          />
+          <HeaderMetric
+            label="年薪"
+            value={
+              view.economy === null
+                ? "—"
+                : view.economy.annualSalary === null
+                  ? "暂无合同"
+                  : formatYuan(view.economy.annualSalary)
+            }
+          />
+          <HeaderMetric
+            className="hidden lg:block"
+            label="总收入"
+            value={
+              view.economy === null
+                ? "—"
+                : formatYuan(view.economy.totalIncome)
+            }
+          />
+          <details
+            className="relative lg:hidden"
+            data-enhanced-secondary-career-facts=""
+          >
+            <summary className="flex min-h-11 items-center justify-center px-2 text-center text-xs font-bold text-enhanced-pitch">
+              生涯累计与收入
+            </summary>
+            <div
+              className="absolute right-0 z-[var(--z-dropdown)] mt-1 rounded-[8px] border border-enhanced-line bg-enhanced-raised p-3"
+              data-enhanced-secondary-career-panel=""
+            >
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+                {(
+                  [
+                    ["出场", totals.appearances],
+                    ["进球", totals.goals],
+                    ["助攻", totals.assists],
+                    ["奖杯", totals.trophies],
+                    [
+                      "总收入",
+                      view.economy === null
+                        ? "—"
+                        : formatYuan(view.economy.totalIncome),
+                    ],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div key={label}>
+                    <dt className="text-xs text-enhanced-supporting">
+                      {label}
+                    </dt>
+                    <dd className="mt-0.5 text-sm font-bold tabular-nums">
+                      {value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </details>
+        </div>
       </div>
     </header>
+  );
+}
+
+function HeaderMetric({
+  className = "",
+  label,
+  value,
+}: {
+  readonly className?: string;
+  readonly label: string;
+  readonly value: string;
+}) {
+  return (
+    <dl className={`min-w-0 px-2 py-1.5 text-center ${className}`}>
+      <dt className="text-xs font-bold text-enhanced-supporting">
+        {label}
+      </dt>
+      <dd className="mt-0.5 min-w-0 truncate text-xs font-bold tabular-nums">
+        {value}
+      </dd>
+    </dl>
   );
 }
 
@@ -405,7 +488,7 @@ function DecisionRail({
         : null,
     );
   const railClass =
-    "min-h-0 max-h-[48dvh] overflow-y-auto overscroll-contain border-t border-enhanced-line bg-enhanced-surface px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-4 sm:px-6 lg:h-full lg:max-h-none lg:w-[380px] lg:rounded-[16px] lg:border lg:p-5";
+    "min-h-0 overflow-y-auto overscroll-contain border-t border-enhanced-line bg-enhanced-surface px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-3 sm:px-6 lg:h-full lg:max-h-none lg:w-[380px] lg:rounded-[16px] lg:border lg:p-5";
   const simulating = panel.kind === "simulating";
   const labelledBy =
     panel.kind === "event_result"
@@ -429,9 +512,23 @@ function DecisionRail({
       ref={decisionFocusRef}
     >
       {challenge ? (
-        <div className={simulating ? "mb-4 w-full" : "mb-4"}>
-          <ChallengeProgressPanel {...challenge} />
-        </div>
+        <>
+          <details
+            className="mb-3 lg:hidden"
+            data-enhanced-challenge-disclosure=""
+          >
+            <summary className="flex min-h-11 items-center justify-between border-y border-enhanced-line text-xs font-bold text-enhanced-pitch">
+              挑战进度
+              <span aria-hidden="true">＋</span>
+            </summary>
+            <ChallengeProgressPanel {...challenge} />
+          </details>
+          <div
+            className={`${simulating ? "mb-4 w-full" : "mb-4"} hidden lg:block`}
+          >
+            <ChallengeProgressPanel {...challenge} />
+          </div>
+        </>
       ) : null}
       {panel.kind === "simulating" ? (
         <p
@@ -496,7 +593,10 @@ function DecisionRail({
           <p className="mt-2 text-[13px] leading-[1.7] text-enhanced-supporting">
             {panel.description}
           </p>
-          <div className="mt-4 space-y-3">
+          <div
+            className="mt-3 space-y-3"
+            data-enhanced-decision-options=""
+          >
             {panel.options.map((option) => (
               <DecisionOption
                 key={option.id}

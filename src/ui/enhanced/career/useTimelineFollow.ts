@@ -72,10 +72,14 @@ export function useTimelineFollow(input: {
         (container.clientHeight - anchorRect.height) / 2,
     );
 
-    container.scrollTo({
-      behavior: input.reducedMotion ? "auto" : "smooth",
-      top,
-    });
+    if (typeof container.scrollTo === "function") {
+      container.scrollTo({
+        behavior: input.reducedMotion ? "auto" : "smooth",
+        top,
+      });
+    } else {
+      container.scrollTop = top;
+    }
   }, [input.activeAge, input.reducedMotion]);
 
   useLayoutEffect(() => {

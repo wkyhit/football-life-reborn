@@ -239,6 +239,52 @@
   padding-block: var(--timeline-edge-space, 0px);
 }
 
+[data-enhanced-secondary-career-facts] > summary,
+[data-enhanced-challenge-disclosure] > summary {
+  list-style: none;
+}
+
+[data-enhanced-secondary-career-facts]
+  > summary::-webkit-details-marker,
+[data-enhanced-challenge-disclosure]
+  > summary::-webkit-details-marker {
+  display: none;
+}
+
+[data-enhanced-secondary-career-panel] {
+  inline-size: min(
+    var(--career-disclosure-width),
+    calc(100vw - 2 * var(--space-sm))
+  );
+}
+
+@media (max-width: 1023px) {
+  [data-enhanced-career-layout] {
+    grid-template-rows:
+      minmax(var(--career-timeline-min-short), 1fr)
+      minmax(
+        var(--career-rail-min-height),
+        min(36dvh, var(--career-rail-max-height))
+      );
+  }
+
+  [data-enhanced-decision-rail] {
+    height: min(36dvh, var(--career-rail-max-height));
+    max-height: none;
+  }
+}
+
+@media (min-width: 375px) and (max-width: 1023px) {
+  [data-enhanced-career-layout] {
+    grid-template-rows:
+      minmax(var(--career-timeline-min-mobile), 1fr)
+      minmax(
+        var(--career-rail-min-height),
+        min(36dvh, var(--career-rail-max-height))
+      );
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
   [data-enhanced-shell]
     button:not([data-enhanced-action]):hover:not(:disabled),
