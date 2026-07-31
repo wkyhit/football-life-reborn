@@ -23,6 +23,19 @@ as a static Vite application:
 of truth for those build settings. The Vercel dashboard should not override
 them with a different command or output directory.
 
+## Deployment mapping
+
+| Git event | Vercel target | Required source |
+| --- | --- | --- |
+| Issue branch push | Preview | Exact pushed commit |
+| Final pull request head | Preview | Exact PR head commit |
+| Accepted `main` merge | Production | Exact merge commit |
+
+The issue branch is pushed after every completed slice so that it remains
+playable before the final pull request exists. The pull request is opened only
+after all issue slices pass. Opening it must not introduce a second deployment
+runner: its evidence points to the Preview for the exact PR head commit.
+
 ## Git Integration lifecycle
 
 Each TDD slice follows one delivery loop:
@@ -39,6 +52,34 @@ Each TDD slice follows one delivery loop:
 The final reviewed pull request is merged to `main`. Vercel then creates the
 Production deployment from that accepted `main` commit. No separate promotion
 build is allowed.
+
+## Required evidence block
+
+Every slice records one issue-timeline block with these fields:
+
+- Commit SHA: `<40-character Git SHA>`
+- Git ref: `<issue branch, PR head, or main>`
+- Deployment URL: `<unique vercel.app deployment URL>`
+- Target: `<Preview or Production>`
+- Status: `Ready`
+- Framework: `Vite`
+- Build duration: `<seconds>`
+- Build error scan: `<no errors or the exact blocking error>`
+- Browser verification: `<ego-browser task and passed assertions>`
+
+The dashboard deployment card must be unique for that commit and Git ref. Its
+source link must match the full pushed SHA, and its unique URL must load the
+behavior introduced by that slice.
+
+Do not start the next slice until the deployment is `Ready`, the source SHA and
+Git ref match, exactly one deployment card represents that branch push, the
+unique Preview passes the slice's `ego-browser` checks, and the evidence comment
+has been read back from GitHub.
+
+Stop instead of bypassing Git Integration when a deployment is missing,
+duplicated for the same branch SHA, canceled, errored, linked to another commit,
+or broken on its unique URL. A CLI deploy, manual rebuild, or second Actions
+workflow cannot be used to manufacture passing evidence.
 
 ## Credential boundary
 
