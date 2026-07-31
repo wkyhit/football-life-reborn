@@ -21,6 +21,7 @@ import {
   type ChallengeSurface,
 } from "../../../features/challenges/ChallengeProgressPanel";
 import {
+  CareerDecisionEssentials,
   CareerDecisionEconomyDetails,
   CareerEventResultNarrative,
   CareerRecentEventResult,
@@ -846,7 +847,7 @@ function DecisionOption({
         onClick={onChoose}
         type="button"
       >
-        <span className="flex items-center gap-3">
+        <span className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center">
             {option.club ? (
               <ClubIdentity club={option.club} size={34} />
@@ -870,19 +871,8 @@ function DecisionOption({
             >
               {option.subtitle}
             </span>
+            <CareerDecisionEssentials option={option} />
           </span>
-          {option.role ? (
-            <span className="shrink-0 text-right">
-              <span
-                className={`block text-xs font-bold ${roleToneClass(option.roleTone)}`}
-              >
-                {option.role}
-              </span>
-              <span className="block text-xs text-enhanced-supporting">
-                {option.stars}
-              </span>
-            </span>
-          ) : null}
           {selected ? (
             <span
               aria-hidden="true"
@@ -892,9 +882,6 @@ function DecisionOption({
             </span>
           ) : null}
         </span>
-        <span className="sr-only">
-          合同与完整故事可在本选项下方展开
-        </span>
       </button>
       <CareerDecisionEconomyDetails
         option={option}
@@ -902,19 +889,4 @@ function DecisionOption({
       />
     </div>
   );
-}
-
-function roleToneClass(
-  tone: CareerDecisionOptionPresentation["roleTone"],
-): string {
-  switch (tone) {
-    case "positive":
-      return "text-enhanced-success";
-    case "primary":
-      return "text-enhanced-pitch";
-    case "warning":
-      return "text-enhanced-trophy";
-    case "danger":
-      return "text-enhanced-alert";
-  }
 }

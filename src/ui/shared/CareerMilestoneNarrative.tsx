@@ -331,6 +331,78 @@ function EconomyMetric({
   );
 }
 
+export function CareerDecisionEssentials({
+  option,
+}: {
+  readonly option: CareerDecisionOptionPresentation;
+}) {
+  const primaryRisk =
+    option.consequences.find(
+      ({ tone }) => tone === "negative",
+    ) ??
+    option.consequences.find(
+      ({ tone }) => tone === "warning",
+    );
+
+  if (!option.contract && !option.role && !primaryRisk) {
+    return null;
+  }
+
+  return (
+    <span
+      className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-enhanced-line pt-2 text-xs font-bold"
+      data-enhanced-decision-essentials=""
+    >
+      {option.contract ? (
+        <span
+          className={contractToneClass(
+            option.contract.tone,
+            "enhanced",
+          )}
+          data-semantic-tone={option.contract.tone}
+        >
+          {option.contract.label}
+        </span>
+      ) : null}
+      {option.role ? (
+        <span
+          className={roleToneClass(option.roleTone)}
+          data-enhanced-decision-role=""
+        >
+          预计角色 · {option.role}
+          {option.roleTone === "primary" ? " · 核心" : ""}
+        </span>
+      ) : null}
+      {option.stars ? (
+        <span
+          aria-label={`俱乐部星级：${option.stars === "—" ? 0 : option.stars.length} 星`}
+          className="text-enhanced-trophy"
+          data-enhanced-decision-stars=""
+          role="img"
+        >
+          {option.stars}
+        </span>
+      ) : null}
+      {primaryRisk ? (
+        <span
+          className={consequenceToneClass(
+            primaryRisk.tone,
+            "enhanced",
+          )}
+          data-enhanced-decision-primary-risk=""
+          data-semantic-tone={primaryRisk.tone}
+        >
+          {`${primaryRisk.semanticLabel}${
+            primaryRisk.probabilityLabel === null
+              ? ""
+              : ` · ${primaryRisk.probabilityLabel}`
+          } · ${primaryRisk.text}`}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export function CareerDecisionEconomyDetails({
   option,
   variant,
@@ -745,6 +817,21 @@ function consequenceToneClass(
       return "text-yellow-400";
     case "negative":
       return "text-red-400";
+  }
+}
+
+function roleToneClass(
+  tone: CareerDecisionOptionPresentation["roleTone"],
+): string {
+  switch (tone) {
+    case "positive":
+      return "text-enhanced-success";
+    case "primary":
+      return "text-enhanced-pitch";
+    case "warning":
+      return "text-enhanced-trophy";
+    case "danger":
+      return "text-enhanced-alert";
   }
 }
 

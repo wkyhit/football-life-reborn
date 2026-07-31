@@ -289,26 +289,64 @@ describe("complete career narrative rendering", () => {
       const card = within(cardRoot);
 
       expect(card.getByText("英超")).toBeVisible();
-      expect(card.getByText(arsenal.role)).toBeVisible();
-      expect(card.getByText(arsenal.stars)).toBeVisible();
 
       if (variant === "enhanced") {
+        const details = cardRoot.querySelector(
+          "details[data-enhanced-decision-details]",
+        );
+
+        expect(details).not.toBeNull();
         expect(
-          card.getByText("年薪 ¥20,000"),
+          within(option).getByText("年薪 ¥20,000"),
+        ).toBeVisible();
+        expect(
+          within(option).getByText(
+            `预计角色 · ${arsenal.role}${
+              arsenal.roleTone === "primary"
+                ? " · 核心"
+                : ""
+            }`,
+          ),
+        ).toBeVisible();
+        expect(
+          within(option).getByRole("img", {
+            name: `俱乐部星级：${arsenal.stars.length} 星`,
+          }),
+        ).toBeVisible();
+        expect(
+          within(details as HTMLElement).getByText(
+            "年薪 ¥20,000",
+          ),
         ).not.toBeVisible();
         fireEvent.click(card.getByText("合同与完整故事"));
+        expect(
+          within(details as HTMLElement).getByText(
+            "年薪 ¥20,000",
+          ),
+        ).toBeVisible();
+      } else {
+        expect(card.getByText(arsenal.role)).toBeVisible();
+        expect(card.getByText(arsenal.stars)).toBeVisible();
+        expect(
+          cardRoot.querySelector(
+            "[data-enhanced-decision-essentials]",
+          ),
+        ).toBeNull();
+        expect(
+          card.getByText("年薪 ¥20,000"),
+        ).toBeVisible();
       }
 
-      expect(
-        card.getByText("年薪 ¥20,000"),
-      ).toBeVisible();
       expect(
         card.getByText(
           "荣誉机会：联赛 · 国内杯赛 · 洲际赛事",
         ),
       ).toBeVisible();
       expect(
-        card.getByText("年薪 ¥20,000").closest(
+        (variant === "enhanced"
+          ? within(option).getByText("年薪 ¥20,000")
+          : card.getByText("年薪 ¥20,000")
+        ).closest(
           "[data-semantic-tone]",
         ),
       ).toHaveAttribute("data-semantic-tone", "positive");
@@ -348,22 +386,40 @@ describe("complete career narrative rendering", () => {
       }
 
       const card = within(cardRoot);
+      const details = cardRoot.querySelector(
+        "details[data-enhanced-decision-details]",
+      );
 
       if (variant === "enhanced") {
-        expect(card.getByText(/^正向 · \d+%$/)).not.toBeVisible();
+        expect(details).not.toBeNull();
+        expect(
+          within(option).getByText(/^风险 · \d+% · 降为替补$/),
+        ).toHaveAttribute(
+          "data-enhanced-decision-primary-risk",
+        );
+        expect(
+          within(details as HTMLElement).getByText(
+            /^正向 · \d+%$/,
+          ),
+        ).not.toBeVisible();
         fireEvent.click(card.getByText("合同与完整故事"));
       }
 
+      const story =
+        variant === "enhanced"
+          ? within(details as HTMLElement)
+          : card;
+
       expect(
-        card.getByText(/^正向 · \d+%$/),
+        story.getByText(/^正向 · \d+%$/),
       ).toBeVisible();
       expect(
-        card.getByText(/^风险 · \d+%$/),
+        story.getByText(/^风险 · \d+%$/),
       ).toBeVisible();
-      expect(card.getByText("成为绝对主力")).toBeVisible();
-      expect(card.getByText("降为替补")).toBeVisible();
+      expect(story.getByText("成为绝对主力")).toBeVisible();
+      expect(story.getByText("降为替补")).toBeVisible();
       expect(
-        card.getByText(/^合同不变 · 年薪 ¥[\d,]+$/),
+        story.getByText(/^合同不变 · 年薪 ¥[\d,]+$/),
       ).toBeVisible();
 
       rendered.unmount();
@@ -398,14 +454,23 @@ describe("complete career narrative rendering", () => {
       }
 
       const retireCard = within(retireRoot);
+      const retireDetails = retireRoot.querySelector(
+        "details[data-enhanced-decision-details]",
+      );
 
       if (variant === "enhanced") {
+        expect(retireDetails).not.toBeNull();
         fireEvent.click(
           retireCard.getByText("合同与完整故事"),
         );
       }
 
-      const noContract = retireCard.getByText("退役后停止收入");
+      const noContract =
+        variant === "enhanced"
+          ? within(retireDetails as HTMLElement).getByText(
+              "退役后停止收入",
+            )
+          : retireCard.getByText("退役后停止收入");
       expect(noContract).toBeVisible();
       expect(
         noContract.closest("[data-semantic-tone]"),
@@ -459,8 +524,12 @@ describe("complete career narrative rendering", () => {
       }
 
       const option = within(optionRoot);
+      const details = optionRoot.querySelector(
+        "details[data-enhanced-decision-details]",
+      );
 
       if (variant === "enhanced") {
+        expect(details).not.toBeNull();
         expect(
           option.getByText(
             "加盟报价俱乐部，角色按新环境结算",
@@ -479,7 +548,10 @@ describe("complete career narrative rendering", () => {
       ).toBeVisible();
       expect(option.getByText("中性")).toBeVisible();
       expect(
-        option.getByText(/^预计年薪 ¥[\d,]+$/),
+        (variant === "enhanced"
+          ? within(details as HTMLElement)
+          : option
+        ).getByText(/^预计年薪 ¥[\d,]+$/),
       ).toBeVisible();
 
       rendered.unmount();
@@ -566,6 +638,13 @@ describe("complete career narrative rendering", () => {
     const selected = screen.getByRole("button", {
       name: /加盟 埃瓦尔/,
     });
+    const selectedOption = decision.panel.options.find(
+      ({ title }) => /加盟 埃瓦尔/.test(title),
+    );
+
+    if (selectedOption?.contract === null || selectedOption === undefined) {
+      throw new Error("Expected selected option contract");
+    }
 
     fireEvent.click(selected);
     rendered.rerender(
@@ -579,12 +658,30 @@ describe("complete career narrative rendering", () => {
       "[data-enhanced-decision-rail]",
     );
 
-    expect(
-      within(rail as HTMLElement).getByRole("button", {
+    const selectedReceipt = within(rail as HTMLElement).getByRole(
+      "button",
+      {
         name: /加盟 埃瓦尔/,
         pressed: true,
+      },
+    );
+
+    expect(selectedReceipt).toBeDisabled();
+    expect(
+      within(selectedReceipt).getByText(
+        selectedOption.contract.label,
+      ),
+    ).toBeVisible();
+    expect(
+      within(selectedReceipt).getByText(
+        "预计角色 · 绝对主力 · 核心",
+      ),
+    ).toBeVisible();
+    expect(
+      within(selectedReceipt).getByRole("img", {
+        name: "俱乐部星级：0 星",
       }),
-    ).toBeDisabled();
+    ).toBeVisible();
     expect(
       within(rail as HTMLElement).getByRole("heading", {
         name: result.panel.title,
