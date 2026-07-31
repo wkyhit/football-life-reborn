@@ -15,6 +15,7 @@ import {
 import { deriveDailyChallenge } from "../../../features/challenges/daily";
 import { evaluateChallengeProgress } from "../../../features/challenges/progress";
 import { createCareerPresentation } from "../../classic/careerPresentation";
+import { CareerScreen } from "../../classic/CareerScreen";
 import { EnhancedCareerScreen } from "./EnhancedCareerScreen";
 
 describe("EnhancedCareerScreen", () => {
@@ -151,7 +152,7 @@ describe("EnhancedCareerScreen", () => {
       "[data-enhanced-timeline] .enhanced-timeline-grid",
     );
     const currentSeason = document.querySelector(
-      '[data-enhanced-season-row="current"]',
+      '[role="row"][aria-current="step"]',
     );
 
     expect(columns).not.toBeNull();
@@ -159,6 +160,169 @@ describe("EnhancedCareerScreen", () => {
     expect(scroller).not.toContainElement(heading);
     expect(scroller).not.toContainElement(columns as HTMLElement);
     expect(scroller).toContainElement(currentSeason as HTMLElement);
+  });
+
+  it.each(["pointer", "Enter"] as const)(
+    "suspends timeline follow for deliberate %s history browsing",
+    (interaction) => {
+      vi.spyOn(HTMLElement.prototype, "scrollTo").mockImplementation(
+        () => undefined,
+      );
+
+      render(
+        <div data-enhanced-shell="">
+          <EnhancedCareerScreen
+            onChoose={() => undefined}
+            view={progressedView()}
+          />
+        </div>,
+      );
+
+      const scroller = screen.getByRole("region", {
+        name: "生涯年份",
+      });
+
+      if (interaction === "pointer") {
+        fireEvent.pointerDown(scroller, {
+          button: 0,
+          pointerType: "mouse",
+        });
+      } else {
+        fireEvent.keyDown(
+          scroller.querySelector(
+            'details[data-enhanced-season-row="season"] > summary',
+          )!,
+          { key: "Enter" },
+        );
+      }
+
+      expect(
+        screen.getByRole("button", { name: "回到最新" }),
+      ).toBeVisible();
+    },
+  );
+
+  it("exposes goalkeeper career metrics through a semantic timeline table", () => {
+    vi.spyOn(HTMLElement.prototype, "scrollTo").mockImplementation(
+      () => undefined,
+    );
+    const view = progressedGoalkeeperView();
+    const season = view.timeline.find(
+      (row) => row.kind === "season",
+    );
+
+    if (season?.kind !== "season") {
+      throw new Error("Expected a goalkeeper season");
+    }
+
+    const rendered = render(
+      <div data-enhanced-shell="">
+        <EnhancedCareerScreen
+          onChoose={() => undefined}
+          view={view}
+        />
+      </div>,
+    );
+    const table = screen.getByRole("table", {
+      name: "生涯赛季数据",
+    });
+    const semanticRow = table.querySelector(
+      `[data-career-season-row="${season.age}"]`,
+    );
+    const header = document.querySelector(
+      "[data-enhanced-career-header]",
+    );
+    const visualColumns = document.querySelector(
+      '[role="table"] > [aria-hidden="true"]',
+    );
+    const current = view.timeline.find(
+      (row) => row.kind === "current",
+    );
+
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map(({ textContent }) => textContent),
+    ).toEqual([
+      "年龄",
+      "俱乐部",
+      "能力",
+      "出场",
+      "零封",
+      "失球",
+    ]);
+    expect(within(table).getAllByRole("row")).toHaveLength(
+      view.timeline.length + 2,
+    );
+    expect(within(table).getByRole("rowgroup")).toContainElement(
+      semanticRow as HTMLElement,
+    );
+    expect(
+      within(semanticRow as HTMLElement).getByRole("rowheader", {
+        name: `${season.age} 岁`,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(semanticRow as HTMLElement)
+        .getAllByRole("cell")
+        .map(
+          (cell) =>
+            cell.getAttribute("aria-label") ?? cell.textContent,
+        ),
+    ).toEqual([
+      season.club.shortName,
+      String(season.overall),
+      String(season.stats.appearances),
+      String(season.stats.cleanSheets),
+      String(season.stats.goalsConceded),
+    ]);
+    if (current === undefined) {
+      throw new Error("Expected a current season");
+    }
+    const currentRow = within(table)
+      .getByRole("rowheader", {
+        name: `${current.age} 岁`,
+      })
+      .closest('[role="row"]');
+
+    expect(currentRow).toHaveAttribute("aria-current", "step");
+    expect(
+      within(currentRow as HTMLElement)
+        .getAllByRole("cell")
+        .map(
+          (cell) =>
+            cell.getAttribute("aria-label") ?? cell.textContent,
+        ),
+    ).toEqual(["决策中", "—", "—", "—", "—"]);
+    const details = semanticRow?.querySelector(
+      'details[data-enhanced-season-row="season"]',
+    );
+    const summary = details?.querySelector("summary");
+
+    expect(details).not.toHaveAttribute("role");
+    expect(summary).not.toHaveAttribute("role");
+    expect(summary).toHaveAccessibleName(
+      `${season.age} 岁赛季详情`,
+    );
+    expect(details).not.toHaveAttribute("open");
+    fireEvent.click(summary!);
+    expect(details).toHaveAttribute("open");
+    expect(within(header as HTMLElement).getAllByText("零封")).not.toHaveLength(0);
+    expect(within(header as HTMLElement).getAllByText("失球")).not.toHaveLength(0);
+    expect(visualColumns).toHaveTextContent("零封");
+    expect(visualColumns).toHaveTextContent("失球");
+
+    rendered.unmount();
+    render(<CareerScreen onChoose={() => undefined} view={view} />);
+    const classicHeader = document.querySelector(
+      "[data-classic-career-header]",
+    );
+
+    expect(
+      screen.queryByRole("table", { name: "生涯赛季数据" }),
+    ).toBeNull();
+    expect(within(classicHeader as HTMLElement).getByText("进球")).toBeVisible();
+    expect(within(classicHeader as HTMLElement).getByText("助攻")).toBeVisible();
   });
 
   it("presents completed seasons as collapsed year summaries", () => {
@@ -353,6 +517,36 @@ function decidingView() {
 
 function progressedView() {
   const initial = startCareer("issue-25:compact-history");
+  const decision = initial.currentDecision;
+
+  if (decision === null) {
+    throw new Error("Expected an initial decision");
+  }
+
+  const career = applyClassicChoice(initial, {
+    decisionId: decision.id,
+    decisionType: decision.type,
+    optionId: decision.options[0]!.id,
+  });
+
+  return createCareerPresentation({
+    career,
+    isRevealing: false,
+    visibleSeasonCount: career.seasons.length,
+  });
+}
+
+function progressedGoalkeeperView() {
+  const initial = startClassicCareer({
+    identity: {
+      lastName: "门将",
+      nationalityFifaCode: "CHN",
+      position: "GK",
+      preferredNumber: 1,
+    },
+    mode: "normal",
+    seed: "issue-25:goalkeeper-career-metrics",
+  });
   const decision = initial.currentDecision;
 
   if (decision === null) {

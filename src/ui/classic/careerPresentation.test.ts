@@ -180,6 +180,18 @@ describe("Classic career presentation", () => {
           income: firstSalary.income,
         },
         marketValue: firstSeason.marketValue,
+        stats: {
+          appearances: firstSeason.stats.appearances,
+          assists: firstSeason.stats.assists,
+          cleanSheets: firstSeason.stats.cleanSheets,
+          goals: firstSeason.stats.goals,
+          goalsConceded: firstSeason.stats.goalsConceded,
+        },
+      });
+      expect(partial.goalkeeper).toBe(position === "GK");
+      expect(partial.totals).toMatchObject({
+        cleanSheets: firstSeason.stats.cleanSheets,
+        goalsConceded: firstSeason.stats.goalsConceded,
       });
 
       const complete = createCareerPresentation({
@@ -425,7 +437,9 @@ describe("Classic career presentation", () => {
     expect(immediate.totals).toEqual({
       appearances: 0,
       assists: 0,
+      cleanSheets: 0,
       goals: 0,
+      goalsConceded: 0,
       trophies: 0,
     });
     expect(immediate.panel).toEqual({ kind: "simulating" });

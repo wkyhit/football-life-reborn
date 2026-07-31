@@ -86,6 +86,9 @@ describe("complete career narrative rendering", () => {
           formatYuan(view.economy.totalIncome),
         ),
       ).toBeVisible();
+      expect(
+        header.querySelector("[data-enhanced-exact-money]"),
+      ).toBeNull();
 
       const seasonView = within(seasonRow);
       expect(seasonView.getByText("身价")).toBeVisible();
@@ -101,6 +104,9 @@ describe("complete career narrative rendering", () => {
           formatYuan(season.economy.income),
         ),
       ).toBeVisible();
+      expect(
+        seasonRow.querySelector("[data-enhanced-exact-money]"),
+      ).toBeNull();
 
       rendered.unmount();
     },
@@ -136,16 +142,16 @@ describe("complete career narrative rendering", () => {
         throw new Error("Expected Enhanced economy surfaces");
       }
 
-      expect(
-        within(header).getByLabelText(
-          `身价：€${view.header.marketValue.toLocaleString("en-US")}`,
-        ),
-      ).toBeVisible();
-      expect(
-        within(header).getByLabelText(
-          `年薪：${formatYuan(view.economy.annualSalary)}`,
-        ),
-      ).toBeVisible();
+      expectExactMoneyDisclosure(
+        header,
+        "身价",
+        `€${view.header.marketValue.toLocaleString("en-US")}`,
+      );
+      expectExactMoneyDisclosure(
+        header,
+        "年薪",
+        formatYuan(view.economy.annualSalary),
+      );
       const careerDetails = header.querySelector(
         "[data-enhanced-career-economy-details]",
       );
@@ -163,23 +169,32 @@ describe("complete career narrative rendering", () => {
           `累计收入：${formatYuan(view.economy.totalIncome)}`,
         ),
       ).toBeVisible();
+      expectExactMoneyDisclosure(
+        careerDetails,
+        "累计收入",
+        formatYuan(view.economy.totalIncome),
+      );
 
-      if (!(seasonRow instanceof HTMLDetailsElement)) {
+      const seasonDisclosure = seasonRow.querySelector(
+        'details[data-enhanced-season-row="season"]',
+      );
+
+      if (!(seasonDisclosure instanceof HTMLDetailsElement)) {
         throw new Error("Expected collapsed season summary");
       }
 
-      expect(seasonRow).not.toHaveAttribute("open");
-      fireEvent.click(seasonRow.querySelector("summary")!);
-      expect(
-        within(seasonRow).getByLabelText(
-          `身价：€${season.marketValue.toLocaleString("en-US")}`,
-        ),
-      ).toBeVisible();
-      expect(
-        within(seasonRow).getByLabelText(
-          `年薪：${formatYuan(season.economy.annualSalary)}`,
-        ),
-      ).toBeVisible();
+      expect(seasonDisclosure).not.toHaveAttribute("open");
+      fireEvent.click(seasonDisclosure.querySelector("summary")!);
+      expectExactMoneyDisclosure(
+        seasonRow,
+        "身价",
+        `€${season.marketValue.toLocaleString("en-US")}`,
+      );
+      expectExactMoneyDisclosure(
+        seasonRow,
+        "年薪",
+        formatYuan(season.economy.annualSalary),
+      );
       const seasonDetails = seasonRow.querySelector(
         "[data-enhanced-season-details]",
       );
@@ -199,6 +214,11 @@ describe("complete career narrative rendering", () => {
           `收入：${formatYuan(season.economy.income)}`,
         ),
       ).toBeVisible();
+      expectExactMoneyDisclosure(
+        seasonDetails,
+        "收入",
+        formatYuan(season.economy.income),
+      );
 
       rendered.unmount();
     },
@@ -953,6 +973,39 @@ function formatYuan(value: number | null): string {
   }
 
   return `¥${value.toLocaleString("en-US")}`;
+}
+
+function expectExactMoneyDisclosure(
+  root: HTMLElement,
+  label: string,
+  fullValue: string,
+) {
+  const trigger = within(root).getByLabelText(
+    `${label}：${fullValue}`,
+  );
+  const disclosure = trigger.closest(
+    `details[data-enhanced-exact-money="${label}"]`,
+  );
+
+  if (!(disclosure instanceof HTMLDetailsElement)) {
+    throw new Error(`Expected ${label} exact-money disclosure`);
+  }
+
+  const exact = disclosure.querySelector(
+    "[data-enhanced-exact-money-value]",
+  );
+
+  expect(trigger.tagName).toBe("SUMMARY");
+  expect(trigger).toHaveClass("min-h-11", "min-w-11");
+  expect(trigger).toBeVisible();
+  expect(disclosure).not.toHaveAttribute("open");
+  expect(exact).toHaveTextContent(fullValue);
+  expect(exact).not.toBeVisible();
+  trigger.focus();
+  expect(trigger).toHaveFocus();
+  fireEvent.click(trigger);
+  expect(disclosure).toHaveAttribute("open");
+  expect(exact).toBeVisible();
 }
 
 function metricView(root: HTMLElement, label: string) {

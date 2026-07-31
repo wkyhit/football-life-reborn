@@ -172,6 +172,20 @@ export type CareerCurrencyPresentation = {
   readonly full: string;
 };
 
+export type CareerStatPresentation = Pick<
+  ClassicSeasonStats,
+  | "appearances"
+  | "assists"
+  | "cleanSheets"
+  | "goals"
+  | "goalsConceded"
+>;
+
+export type CareerMetricPresentation = {
+  readonly label: "出场" | "助攻" | "失球" | "进球" | "零封";
+  readonly value: number;
+};
+
 export type CareerSeasonStoryPresentation = {
   readonly choiceLabel: string;
   readonly contractSummary: string | null;
@@ -205,10 +219,7 @@ export type CareerTimelineRowPresentation =
       readonly marketValue: number;
       readonly nationalTournaments: readonly CareerNationalTournamentPresentation[];
       readonly overall: number;
-      readonly stats: Pick<
-        ClassicSeasonStats,
-        "appearances" | "assists" | "goals"
-      >;
+      readonly stats: CareerStatPresentation;
       readonly story: CareerSeasonStoryPresentation | null;
       readonly statuses: readonly CareerSeasonStatusPresentation[];
       readonly tierChange: CareerTierChangePresentation | null;
@@ -229,13 +240,11 @@ export type CareerPresentation = {
     readonly overall: number;
     readonly position: string;
   };
+  readonly goalkeeper: boolean;
   readonly nationalTeam: {
     readonly countryFlag: string;
     readonly name: string;
-    readonly stats: Pick<
-      ClassicSeasonStats,
-      "appearances" | "assists" | "goals"
-    >;
+    readonly stats: CareerStatPresentation;
   };
   readonly panel: CareerDecisionPanelPresentation;
   readonly recentEventResult: ClassicEventResultReveal | null;
@@ -243,7 +252,9 @@ export type CareerPresentation = {
   readonly totals: {
     readonly appearances: number;
     readonly assists: number;
+    readonly cleanSheets: number;
     readonly goals: number;
+    readonly goalsConceded: number;
     readonly trophies: number;
   };
 };
@@ -480,6 +491,7 @@ export function createCareerPresentation({
         career.overall,
       position: positionLabel(career.identity.position),
     },
+    goalkeeper: career.identity.position === "GK",
     nationalTeam: {
       countryFlag: countryFlag(country),
       name: `${country.nameZh}国家队`,
@@ -502,13 +514,32 @@ export function createCareerPresentation({
     totals: {
       appearances: totals.appearances,
       assists: totals.assists,
+      cleanSheets: totals.cleanSheets,
       goals: totals.goals,
+      goalsConceded: totals.goalsConceded,
       trophies: visibleSeasons.reduce(
         (sum, season) => sum + season.trophies.length,
         0,
       ),
     },
   };
+}
+
+export function getCareerMetricPresentation(
+  goalkeeper: boolean,
+  stats: CareerStatPresentation,
+): readonly CareerMetricPresentation[] {
+  return goalkeeper
+    ? [
+        { label: "出场", value: stats.appearances },
+        { label: "零封", value: stats.cleanSheets },
+        { label: "失球", value: stats.goalsConceded },
+      ]
+    : [
+        { label: "出场", value: stats.appearances },
+        { label: "进球", value: stats.goals },
+        { label: "助攻", value: stats.assists },
+      ];
 }
 
 function createTimelineAgeRange(input: {
@@ -1162,7 +1193,9 @@ function seasonPresentation(
     stats: {
       appearances: season.stats.appearances,
       assists: season.stats.assists,
+      cleanSheets: season.stats.cleanSheets,
       goals: season.stats.goals,
+      goalsConceded: season.stats.goalsConceded,
     },
     story,
     statuses: [

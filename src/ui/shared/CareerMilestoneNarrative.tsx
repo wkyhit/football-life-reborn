@@ -28,6 +28,95 @@ type SeasonRow = Extract<
   { readonly kind: "season" }
 >;
 
+export function ExactMoneyDisclosure({
+  currency,
+  fullValue,
+  label,
+  value,
+}: {
+  readonly currency?:
+    | CareerCurrencyPresentation["currency"]
+    | undefined;
+  readonly fullValue?: string | undefined;
+  readonly label: string;
+  readonly value: string;
+}) {
+  const accessibleLabel =
+    fullValue === undefined
+      ? undefined
+      : `${label}：${fullValue}`;
+
+  if (fullValue === undefined || fullValue === value) {
+    return (
+      <span
+        aria-label={accessibleLabel}
+        data-currency={currency}
+        title={fullValue}
+      >
+        {value}
+      </span>
+    );
+  }
+
+  return (
+    <details
+      className="group min-w-0"
+      data-enhanced-exact-money={label}
+    >
+      <summary
+        aria-label={accessibleLabel}
+        className="-mt-5 inline-flex min-h-11 min-w-11 max-w-full cursor-pointer list-none items-center justify-center gap-1 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-enhanced-focus"
+        data-currency={currency}
+        title={fullValue}
+      >
+        <span className="min-w-0 break-words">{value}</span>
+        <span
+          aria-hidden="true"
+          className="shrink-0 text-xs leading-none text-enhanced-pitch transition-transform group-open:rotate-45 motion-reduce:transition-none"
+        >
+          ＋
+        </span>
+      </summary>
+      <span
+        className="mt-1 block break-words text-xs font-medium leading-tight text-enhanced-supporting"
+        data-enhanced-exact-money-value=""
+      >
+        {fullValue}
+      </span>
+    </details>
+  );
+}
+
+export function EnhancedExactMoneyMetric({
+  currency,
+  fullValue,
+  label,
+  value,
+}: {
+  readonly currency?:
+    | CareerCurrencyPresentation["currency"]
+    | undefined;
+  readonly fullValue?: string | undefined;
+  readonly label: string;
+  readonly value: string;
+}) {
+  return (
+    <dl className="min-w-0 px-2 py-[2px] text-center">
+      <dt className="text-xs font-bold text-enhanced-supporting">
+        {label}
+      </dt>
+      <dd className="mt-[2px] min-w-0 break-words text-xs font-bold leading-tight tabular-nums">
+        <ExactMoneyDisclosure
+          currency={currency}
+          fullValue={fullValue}
+          label={label}
+          value={value}
+        />
+      </dd>
+    </dl>
+  );
+}
+
 export function CareerEconomySummary({
   economy,
   marketValue,
@@ -294,7 +383,7 @@ function EconomyMetric({
         className={
           compact
             ? enhanced
-              ? "text-[9px] font-bold text-enhanced-supporting"
+              ? "text-xs font-bold text-enhanced-supporting"
               : "text-[9px] font-medium text-zinc-500"
             : enhanced
               ? "text-xs font-bold text-enhanced-supporting"
@@ -305,7 +394,7 @@ function EconomyMetric({
       </dt>
       <dd
         aria-label={
-          fullValue === undefined
+          enhanced || fullValue === undefined
             ? undefined
             : `${label}：${fullValue}`
         }
@@ -316,16 +405,25 @@ function EconomyMetric({
         } ${
           compact
             ? enhanced
-              ? "text-[9px] text-enhanced-ink-2"
+              ? "text-xs text-enhanced-ink-2"
               : "text-[9px] text-zinc-300"
             : enhanced
               ? "mt-0.5 text-xs text-enhanced-strong"
               : "mt-0.5 text-[11px] text-zinc-200"
         }`}
-        data-currency={currency}
-        title={fullValue}
+        data-currency={enhanced ? undefined : currency}
+        title={enhanced ? undefined : fullValue}
       >
-        {value}
+        {enhanced ? (
+          <ExactMoneyDisclosure
+            currency={currency}
+            fullValue={fullValue}
+            label={label}
+            value={value}
+          />
+        ) : (
+          value
+        )}
       </dd>
     </div>
   );
