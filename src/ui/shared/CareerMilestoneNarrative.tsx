@@ -176,6 +176,33 @@ export function CareerSeasonEconomy({
                 variant="enhanced"
               />
             </dl>
+            {row.story ? (
+              <section
+                className="mt-2 border-t border-enhanced-line pt-2 text-xs"
+                data-enhanced-season-choice-story=""
+              >
+                <strong className="text-enhanced-pitch">
+                  年度选择
+                </strong>
+                <p className="mt-1 text-enhanced-strong">
+                  {row.story.decisionTitle} · {row.story.choiceLabel}
+                </p>
+                {row.story.outcome ? (
+                  <p
+                    className="mt-1 text-enhanced-strong"
+                    data-semantic-tone={row.story.outcome.tone}
+                  >
+                    结果：{row.story.outcome.title} ·{" "}
+                    {row.story.outcome.summary}
+                  </p>
+                ) : null}
+                {row.story.contractSummary ? (
+                  <p className="mt-1 font-bold text-enhanced-supporting">
+                    {row.story.contractSummary}
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
             <CareerSeasonNarrative
               contained
               row={row}

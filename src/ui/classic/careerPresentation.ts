@@ -1,9 +1,11 @@
-import type {
-  ClassicCareerSeason,
-  ClassicCareerState,
-  ClassicDecision,
-  ClassicDecisionOption,
-  ClassicDecisionResult,
+import {
+  applyClassicChoiceWithResult,
+  startClassicCareer,
+  type ClassicCareerSeason,
+  type ClassicCareerState,
+  type ClassicDecision,
+  type ClassicDecisionOption,
+  type ClassicDecisionResult,
 } from "../../domain/classicEngine";
 import type { PersonalAward } from "../../domain/awards";
 import {
@@ -170,6 +172,17 @@ export type CareerCurrencyPresentation = {
   readonly full: string;
 };
 
+export type CareerSeasonStoryPresentation = {
+  readonly choiceLabel: string;
+  readonly contractSummary: string | null;
+  readonly decisionTitle: string;
+  readonly outcome: {
+    readonly summary: string;
+    readonly title: string;
+    readonly tone: CareerEventPreviewTone;
+  } | null;
+};
+
 export type CareerTimelineRowPresentation =
   | {
       readonly age: number;
@@ -196,6 +209,7 @@ export type CareerTimelineRowPresentation =
         ClassicSeasonStats,
         "appearances" | "assists" | "goals"
       >;
+      readonly story: CareerSeasonStoryPresentation | null;
       readonly statuses: readonly CareerSeasonStatusPresentation[];
       readonly tierChange: CareerTierChangePresentation | null;
     };
@@ -362,6 +376,11 @@ export function createCareerPresentation({
       salary,
     ]),
   );
+  const storyBySeasonIndex = createVisibleSeasonStories({
+    career,
+    salaryBySeasonIndex,
+    visibleSeasonCount: safeVisibleCount,
+  });
   const latestVisibleSalary = visibleSeasonSalaries.at(-1);
   const headerSeason = isRevealing
     ? latestVisibleSeason
@@ -416,6 +435,7 @@ export function createCareerPresentation({
         season,
         seasonsByAge.get(age - 1),
         salaryBySeasonIndex.get(season.index) ?? null,
+        storyBySeasonIndex.get(season.index) ?? null,
       );
     }
 
@@ -547,6 +567,7 @@ function revealPanelPresentation(input: {
     const presentation = seasonPresentation(
       season,
       input.career.seasons[item.seasonIndex - 1],
+      null,
       null,
     );
 
@@ -850,6 +871,122 @@ function tryCreateEconomyProjection(
   }
 }
 
+function createVisibleSeasonStories(input: {
+  readonly career: ClassicCareerState;
+  readonly salaryBySeasonIndex: ReadonlyMap<
+    number,
+    CareerSeasonSalary
+  >;
+  readonly visibleSeasonCount: number;
+}): ReadonlyMap<number, CareerSeasonStoryPresentation> {
+  const stories = new Map<
+    number,
+    CareerSeasonStoryPresentation
+  >();
+
+  try {
+    let replayed = startClassicCareer({
+      contentVersion: input.career.contentVersion,
+      identity: input.career.identity,
+      mode: input.career.mode,
+      seed: input.career.seed,
+    });
+
+    for (const choice of input.career.choiceLog) {
+      const firstSeasonIndex = replayed.seasons.length;
+
+      if (firstSeasonIndex >= input.visibleSeasonCount) {
+        break;
+      }
+
+      const panel = decisionPresentation(replayed, null);
+      const decision = replayed.currentDecision;
+
+      if (panel.kind !== "decision" || decision === null) {
+        throw new RangeError(
+          "Career story replay reached a missing decision",
+        );
+      }
+
+      const selected = panel.options.find(
+        (option) => option.id === choice.optionId,
+      );
+      const transition = applyClassicChoiceWithResult(
+        replayed,
+        choice,
+      );
+      const firstSeason =
+        transition.career.seasons[firstSeasonIndex];
+
+      if (selected === undefined) {
+        throw new RangeError(
+          `Career story is missing option ${choice.optionId}`,
+        );
+      }
+
+      if (firstSeason !== undefined) {
+        const result = createEventResultReveal(
+          transition.result,
+        );
+
+        stories.set(firstSeason.index, {
+          choiceLabel: selected.title,
+          contractSummary: seasonContractSummary(
+            decision,
+            transition.result.option,
+            input.salaryBySeasonIndex.get(
+              firstSeason.index,
+            ) ?? null,
+          ),
+          decisionTitle: panel.title,
+          outcome:
+            result === null
+              ? null
+              : {
+                  summary: result.summary,
+                  title: result.title,
+                  tone: result.tone,
+                },
+        });
+      }
+
+      replayed = transition.career;
+    }
+  } catch (error) {
+    if (!(error instanceof RangeError)) {
+      throw error;
+    }
+
+    return new Map();
+  }
+
+  return stories;
+}
+
+function seasonContractSummary(
+  decision: ClassicDecision,
+  option: ClassicDecisionOption,
+  salary: CareerSeasonSalary | null,
+): string | null {
+  if (salary === null) {
+    return null;
+  }
+
+  const loan =
+    option.clubId !== undefined &&
+    (decision.type === "loan_offer" ||
+      (decision.type === "post_loan_not_retained" &&
+        option.id.startsWith("loan:")));
+  const status = loan
+    ? "母队合同不变"
+    : option.kind === "stay" ||
+        option.clubId === undefined
+      ? "合同不变"
+      : "新合同生效";
+
+  return `实际合同：${status} · 年薪 ${formatYuan(salary.annualSalary)}`;
+}
+
 export function formatMarketValue(
   valueEuro: number,
 ): string {
@@ -967,6 +1104,7 @@ function seasonPresentation(
   season: ClassicCareerSeason,
   previousSeason: ClassicCareerSeason | undefined,
   salary: CareerSeasonSalary | null,
+  story: CareerSeasonStoryPresentation | null,
 ): Extract<
   CareerTimelineRowPresentation,
   { readonly kind: "season" }
@@ -1026,6 +1164,7 @@ function seasonPresentation(
       assists: season.stats.assists,
       goals: season.stats.goals,
     },
+    story,
     statuses: [
       ...(season.suspended
         ? [

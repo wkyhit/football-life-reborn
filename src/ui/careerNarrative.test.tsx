@@ -204,6 +204,47 @@ describe("complete career narrative rendering", () => {
     },
   );
 
+  it("renders the persisted yearly choice story only inside Enhanced season detail", () => {
+    const view = committedEconomyView("ST");
+    const enhanced = render(
+      <EnhancedCareerScreen onChoose={vi.fn()} view={view} />,
+    );
+    const season = enhanced.container.querySelector(
+      'details[data-enhanced-season-row="season"]',
+    );
+
+    if (!(season instanceof HTMLDetailsElement)) {
+      throw new Error("Expected a completed season");
+    }
+
+    fireEvent.click(season.querySelector("summary")!);
+    fireEvent.click(
+      season.querySelector(
+        "[data-enhanced-season-details] > summary",
+      )!,
+    );
+    const story = season.querySelector<HTMLElement>(
+      "[data-enhanced-season-choice-story]",
+    );
+
+    expect(story).not.toBeNull();
+    expect(within(story!).getByText("年度选择")).toBeVisible();
+    expect(
+      within(story!).getByText(/^实际合同：/),
+    ).toBeVisible();
+
+    enhanced.unmount();
+    const classic = render(
+      <CareerScreen onChoose={vi.fn()} view={view} />,
+    );
+
+    expect(
+      classic.container.querySelector(
+        "[data-enhanced-season-choice-story]",
+      ),
+    ).toBeNull();
+  });
+
   it.each(["classic", "enhanced"] as const)(
     "renders the five-layer contract choice card in %s",
     (variant) => {
@@ -464,14 +505,64 @@ describe("complete career narrative rendering", () => {
               />,
             );
 
-      expect(
-        screen.getByText(
-          /^实际合同：新合同生效 · 年薪 ¥[\d,]+$/,
-        ),
-      ).toBeVisible();
+      const actualContract =
+        rendered.container.querySelector(
+          "[data-career-event-contract-result]",
+        );
+
+      expect(actualContract).toBeVisible();
+      expect(actualContract).toHaveTextContent(
+        /^实际合同：新合同生效 · 年薪 ¥[\d,]+$/,
+      );
       rendered.unmount();
     },
   );
+
+  it("keeps the selected event card beside its actual result", () => {
+    const decision = eventTransferDecisionView();
+    const result = eventTransferActualView();
+
+    if (
+      decision.panel.kind !== "decision" ||
+      result.panel.kind !== "event_result"
+    ) {
+      throw new Error("Expected event decision and result views");
+    }
+
+    const rendered = render(
+      <EnhancedCareerScreen
+        onChoose={() => true}
+        view={decision}
+      />,
+    );
+    const selected = screen.getByRole("button", {
+      name: /加盟 埃瓦尔/,
+    });
+
+    fireEvent.click(selected);
+    rendered.rerender(
+      <EnhancedCareerScreen
+        onChoose={() => true}
+        view={result}
+      />,
+    );
+
+    const rail = rendered.container.querySelector(
+      "[data-enhanced-decision-rail]",
+    );
+
+    expect(
+      within(rail as HTMLElement).getByRole("button", {
+        name: /加盟 埃瓦尔/,
+        pressed: true,
+      }),
+    ).toBeDisabled();
+    expect(
+      within(rail as HTMLElement).getByRole("heading", {
+        name: result.panel.title,
+      }),
+    ).toBeVisible();
+  });
 
   it("shows identical season honors and statuses in Classic and Enhanced", () => {
     const view = completeNarrativeView();
@@ -844,6 +935,33 @@ function eventTransferActualView() {
     career: transition.career,
     isRevealing: true,
     visibleSeasonCount: transition.career.seasons.length,
+  });
+}
+
+function eventTransferDecisionView() {
+  const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+    ({ id }) => id === "special-journeyman",
+  );
+
+  if (fixture === undefined) {
+    throw new Error("Missing event-transfer fixture");
+  }
+
+  const choiceIndex = fixture.choices.findIndex(
+    ({ optionId }) => optionId === "join:eibar",
+  );
+  const career = replayClassicCareer({
+    choices: fixture.choices.slice(0, choiceIndex),
+    contentVersion: fixture.contentVersion,
+    identity: fixture.identity,
+    mode: fixture.mode,
+    seed: fixture.seed,
+  });
+
+  return createCareerPresentation({
+    career,
+    isRevealing: false,
+    visibleSeasonCount: career.seasons.length,
   });
 }
 

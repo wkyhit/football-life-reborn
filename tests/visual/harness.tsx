@@ -434,6 +434,7 @@ function season(
     nationalTournaments: [],
     overall,
     stats: { appearances, assists, goals },
+    story: null,
     statuses: [],
     tierChange: null,
   };

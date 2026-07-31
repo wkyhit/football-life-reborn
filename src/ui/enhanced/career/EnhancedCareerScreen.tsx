@@ -51,9 +51,8 @@ type EnhancedCareerScreenProps = {
 
 type ChoiceReceipt = {
   readonly decisionId: string;
-  readonly optionId: string;
+  readonly option: CareerDecisionOptionPresentation;
   readonly selectedAt: number;
-  readonly title: string;
 };
 
 const MINIMUM_CHOICE_RECEIPT_MS = 150;
@@ -117,9 +116,8 @@ export function EnhancedCareerScreen({
 
       setChoiceReceipt({
         decisionId,
-        optionId: option.id,
+        option,
         selectedAt: performance.now(),
-        title: option.title,
       });
     } catch (error) {
       choiceGuardRef.current = null;
@@ -681,20 +679,24 @@ function DecisionRail({
       ref={decisionFocusRef}
     >
       {choiceReceipt ? (
-        <div
+        <p
           aria-atomic="true"
           aria-live="polite"
-          className="mb-3 border-l-2 border-enhanced-pitch bg-enhanced-pitch/[0.06] px-3 py-2 text-xs text-enhanced-strong"
+          className="sr-only"
           data-enhanced-choice-receipt=""
           id="enhanced-choice-receipt"
           role="status"
         >
-          <strong className="block text-enhanced-pitch">
-            已选择：{choiceReceipt.title}
-          </strong>
-          <span className="mt-1 block text-enhanced-supporting">
-            正在提交本次选择
-          </span>
+          已选择：{choiceReceipt.option.title}。正在提交本次选择
+        </p>
+      ) : null}
+      {choiceReceipt && panel.kind !== "decision" ? (
+        <div className="mb-3 w-full">
+          <DecisionOption
+            disabled
+            option={choiceReceipt.option}
+            selected
+          />
         </div>
       ) : null}
       {challenge ? (
@@ -781,7 +783,7 @@ function DecisionRail({
                 selected={
                   choiceReceipt?.decisionId ===
                     panel.decisionId &&
-                  choiceReceipt.optionId === option.id
+                  choiceReceipt.option.id === option.id
                 }
               />
             ))}
@@ -815,7 +817,7 @@ function DecisionOption({
   selected,
 }: {
   readonly disabled: boolean;
-  readonly onChoose: () => void;
+  readonly onChoose?: () => void;
   readonly option: CareerDecisionOptionPresentation;
   readonly selected: boolean;
 }) {
