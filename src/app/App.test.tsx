@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   render,
   screen,
@@ -19,6 +20,7 @@ import {
 import {
   ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
   LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+  createClassicSessionRepository,
 } from "../storage/classicSessionRepository";
 import {
   ECONOMY_MIGRATION_BACKUP_KEY,
@@ -166,6 +168,66 @@ describe("Classic navigation", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  it("commits one Enhanced transition when a stale option receives repeated activation", async () => {
+    window.history.replaceState({}, "", "/?ui=enhanced");
+    const initial = startClassicCareer({
+      identity: {
+        lastName: "事务",
+        nationalityFifaCode: "CHN",
+        position: "ST",
+        preferredNumber: 9,
+      },
+      mode: "normal",
+      seed: "issue-23:choice-transaction",
+    });
+    const repository = createClassicSessionRepository(
+      window.localStorage,
+    );
+    expect(repository.save(initial)).toEqual({ ok: true });
+    const user = userEvent.setup();
+
+    render(<App />);
+    await user.click(
+      await screen.findByRole("button", {
+        name: "继续上次生涯",
+      }),
+    );
+    const option = (
+      await screen.findAllByRole("button", {
+        name: /^加盟 /,
+      })
+    )[0]!;
+
+    act(() => {
+      option.dispatchEvent(
+        new MouseEvent("click", {
+          bubbles: true,
+          detail: 1,
+        }),
+      );
+      option.dispatchEvent(
+        new MouseEvent("click", {
+          bubbles: true,
+          detail: 2,
+        }),
+      );
+    });
+
+    expect(
+      screen.getByText(/已选择：/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("赛季进行中")).toBeInTheDocument();
+    await waitFor(() => {
+      const loaded = repository.load();
+
+      expect(loaded.status).toBe("ready");
+
+      if (loaded.status === "ready") {
+        expect(loaded.state.choiceLog).toHaveLength(1);
+      }
+    });
   });
 
   it("migrates a valid v1 Classic session before resuming it and retains the rollback source", () => {

@@ -686,6 +686,7 @@ function CareerExperience({
   const [replayCopyMessage, setReplayCopyMessage] =
     useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const choiceTransactionRef = useRef<string | null>(null);
   const pendingArchiveId = useRef<string | null>(null);
   const challengeProgress =
     challenge === null
@@ -783,6 +784,25 @@ function CareerExperience({
     onArchiveChanged,
     onSaveError,
     reveal.committedCareer,
+  ]);
+
+  useEffect(() => {
+    if (reveal.isRevealing) {
+      return;
+    }
+
+    const decisionId =
+      reveal.committedCareer.currentDecision?.id ?? null;
+
+    if (
+      choiceTransactionRef.current !== null &&
+      choiceTransactionRef.current !== decisionId
+    ) {
+      choiceTransactionRef.current = null;
+    }
+  }, [
+    reveal.committedCareer.currentDecision?.id,
+    reveal.isRevealing,
   ]);
 
   if (
@@ -919,21 +939,30 @@ function CareerExperience({
     const decision = reveal.committedCareer.currentDecision;
 
     if (
+      choiceTransactionRef.current !== null ||
       decision === null ||
       decision.id !== decisionId
     ) {
-      return;
+      return false;
     }
 
-    const transition = applyClassicChoiceWithResult(
-      reveal.committedCareer,
-      {
-        decisionId,
-        decisionType: decision.type,
-        optionId,
-      },
-    );
-    reveal.commitTransition(transition);
+    choiceTransactionRef.current = decisionId;
+
+    try {
+      const transition = applyClassicChoiceWithResult(
+        reveal.committedCareer,
+        {
+          decisionId,
+          decisionType: decision.type,
+          optionId,
+        },
+      );
+      reveal.commitTransition(transition);
+      return true;
+    } catch (error) {
+      choiceTransactionRef.current = null;
+      throw error;
+    }
   };
 
   if (uiMode === "enhanced") {

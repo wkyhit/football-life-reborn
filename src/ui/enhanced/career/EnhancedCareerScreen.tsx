@@ -1,3 +1,9 @@
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import type {
   CareerDecisionOptionPresentation,
   CareerPresentation,
@@ -28,11 +34,20 @@ type EnhancedCareerScreenProps = {
   readonly onChoose: (
     decisionId: string,
     optionId: string,
-  ) => void;
+  ) => boolean | void;
   readonly onOpenArchive?: () => void;
   readonly statusMessage?: string | null;
   readonly view: CareerPresentation;
 };
+
+type ChoiceReceipt = {
+  readonly decisionId: string;
+  readonly optionId: string;
+  readonly selectedAt: number;
+  readonly title: string;
+};
+
+const MINIMUM_CHOICE_RECEIPT_MS = 150;
 
 export function EnhancedCareerScreen({
   challenge,
@@ -41,6 +56,67 @@ export function EnhancedCareerScreen({
   statusMessage,
   view,
 }: EnhancedCareerScreenProps) {
+  const choiceGuardRef = useRef<string | null>(null);
+  const [choiceReceipt, setChoiceReceipt] =
+    useState<ChoiceReceipt | null>(null);
+  const nextDecisionId =
+    view.panel.kind === "decision"
+      ? view.panel.decisionId
+      : null;
+
+  useEffect(() => {
+    if (
+      choiceReceipt === null ||
+      nextDecisionId === null ||
+      nextDecisionId === choiceReceipt.decisionId
+    ) {
+      return;
+    }
+
+    const elapsed =
+      performance.now() - choiceReceipt.selectedAt;
+    const delay = Math.max(
+      0,
+      MINIMUM_CHOICE_RECEIPT_MS - elapsed,
+    );
+    const timer = window.setTimeout(() => {
+      choiceGuardRef.current = null;
+      setChoiceReceipt(null);
+    }, delay);
+
+    return () => window.clearTimeout(timer);
+  }, [choiceReceipt, nextDecisionId]);
+
+  const choose = (
+    decisionId: string,
+    option: CareerDecisionOptionPresentation,
+  ) => {
+    if (choiceGuardRef.current !== null) {
+      return;
+    }
+
+    choiceGuardRef.current = decisionId;
+
+    try {
+      const accepted = onChoose(decisionId, option.id);
+
+      if (accepted === false) {
+        choiceGuardRef.current = null;
+        return;
+      }
+
+      setChoiceReceipt({
+        decisionId,
+        optionId: option.id,
+        selectedAt: performance.now(),
+        title: option.title,
+      });
+    } catch (error) {
+      choiceGuardRef.current = null;
+      throw error;
+    }
+  };
+
   return (
     <main
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
@@ -83,7 +159,8 @@ export function EnhancedCareerScreen({
       >
         <CareerTimeline view={view} />
         <DecisionRail
-          onChoose={onChoose}
+          choiceReceipt={choiceReceipt}
+          onChoose={choose}
           view={view}
           {...(challenge === undefined ? {} : { challenge })}
         />
@@ -209,7 +286,7 @@ function CareerHeader({
                     ["助攻", totals.assists],
                     ["奖杯", totals.trophies],
                     [
-                      "总收入",
+                      "累计收入",
                       view.economy === null
                         ? "—"
                         : formatYuan(view.economy.totalIncome),
@@ -473,11 +550,16 @@ function SeasonNumber({
 
 function DecisionRail({
   challenge,
+  choiceReceipt,
   onChoose,
   view,
 }: {
   readonly challenge?: ChallengeSurface;
-  readonly onChoose: EnhancedCareerScreenProps["onChoose"];
+  readonly choiceReceipt: ChoiceReceipt | null;
+  readonly onChoose: (
+    decisionId: string,
+    option: CareerDecisionOptionPresentation,
+  ) => void;
   readonly view: CareerPresentation;
 }) {
   const { panel } = view;
@@ -503,6 +585,7 @@ function DecisionRail({
     <aside
       aria-label={simulating ? "赛季状态" : undefined}
       aria-labelledby={labelledBy}
+      aria-busy={choiceReceipt === null ? undefined : true}
       className={`${railClass}${
         simulating
           ? " flex flex-col items-center justify-center"
@@ -511,6 +594,23 @@ function DecisionRail({
       data-enhanced-decision-rail=""
       ref={decisionFocusRef}
     >
+      {choiceReceipt ? (
+        <div
+          aria-atomic="true"
+          aria-live="polite"
+          className="mb-3 border-l-2 border-enhanced-pitch bg-enhanced-pitch/[0.06] px-3 py-2 text-xs text-enhanced-strong"
+          data-enhanced-choice-receipt=""
+          id="enhanced-choice-receipt"
+          role="status"
+        >
+          <strong className="block text-enhanced-pitch">
+            已选择：{choiceReceipt.title}
+          </strong>
+          <span className="mt-1 block text-enhanced-supporting">
+            正在提交本次选择
+          </span>
+        </div>
+      ) : null}
       {challenge ? (
         <>
           <details
@@ -599,11 +699,17 @@ function DecisionRail({
           >
             {panel.options.map((option) => (
               <DecisionOption
+                disabled={choiceReceipt !== null}
                 key={option.id}
                 onChoose={() =>
-                  onChoose(panel.decisionId, option.id)
+                  onChoose(panel.decisionId, option)
                 }
                 option={option}
+                selected={
+                  choiceReceipt?.decisionId ===
+                    panel.decisionId &&
+                  choiceReceipt.optionId === option.id
+                }
               />
             ))}
           </div>
@@ -614,16 +720,32 @@ function DecisionRail({
 }
 
 function DecisionOption({
+  disabled,
   onChoose,
   option,
+  selected,
 }: {
+  readonly disabled: boolean;
   readonly onChoose: () => void;
   readonly option: CareerDecisionOptionPresentation;
+  readonly selected: boolean;
 }) {
   return (
     <button
-      className="block min-h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left outline-none transition-[transform,opacity] focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:translate-y-px motion-reduce:transform-none motion-reduce:transition-opacity"
+      aria-describedby={
+        disabled ? "enhanced-choice-receipt" : undefined
+      }
+      aria-pressed={selected}
+      className={`block min-h-12 w-full rounded-[10px] border p-3 text-left outline-none transition-[transform,opacity] focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:translate-y-px motion-reduce:transform-none motion-reduce:transition-opacity ${
+        selected
+          ? "border-enhanced-pitch bg-enhanced-pitch/[0.08] text-enhanced-pitch"
+          : "border-enhanced-line bg-enhanced-surface"
+      }`}
       data-career-decision-option=""
+      data-choice-state={
+        selected ? "selected" : disabled ? "pending-sibling" : "idle"
+      }
+      disabled={disabled}
       onClick={onChoose}
       type="button"
     >
@@ -662,6 +784,14 @@ function DecisionOption({
             <span className="block text-xs text-enhanced-supporting">
               {option.stars}
             </span>
+          </span>
+        ) : null}
+        {selected ? (
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-base font-black text-enhanced-pitch"
+          >
+            ✓
           </span>
         ) : null}
       </span>

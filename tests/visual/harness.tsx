@@ -118,7 +118,7 @@ createRoot(root).render(
   <StrictMode>
     {fixture.kind === "career" && uiMode === "enhanced" ? (
       <EnhancedCareerScreen
-        onChoose={() => undefined}
+        onChoose={() => true}
         view={fixture.view}
       />
     ) : fixture.kind === "career" ? (
