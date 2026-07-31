@@ -27,13 +27,13 @@ export function ChallengeProgressPanel({
   return (
     <section
       aria-label={`${progress.title}挑战进度`}
-      className="rounded-[12px] border border-emerald-400/20 bg-emerald-400/[0.055] p-3 text-zinc-100"
+      className="rounded-[12px] border border-enhanced-pitch/20 bg-enhanced-pitch/[0.055] p-3 text-enhanced-strong"
       data-challenge-family={daily.family}
       data-challenge-status={progress.status}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[9px] font-bold tracking-[0.12em] text-emerald-400">
+          <p className="text-[9px] font-bold tracking-[0.12em] text-enhanced-pitch">
             DAILY · {daily.calendarDate}
           </p>
           <h2 className="mt-0.5 truncate text-[15px] font-extrabold">
@@ -66,11 +66,11 @@ export function ChallengeProgressPanel({
               <span className="block text-[11px] font-bold">
                 {rule.label}
               </span>
-              <span className="mt-0.5 block text-[10px] leading-[1.45] text-zinc-400">
+              <span className="mt-0.5 block text-[10px] leading-[1.45] text-enhanced-supporting">
                 {rule.detail}
               </span>
             </span>
-            <span className="pt-0.5 text-[10px] font-bold tabular-nums text-zinc-300">
+            <span className="pt-0.5 text-[10px] font-bold tabular-nums text-enhanced-ink-2">
               {rule.current} / {rule.target}
             </span>
           </li>
@@ -88,22 +88,22 @@ function statusClass(
 
   switch (status) {
     case "active":
-      return `${base} border-sky-400/30 bg-sky-400/10 text-sky-300`;
+      return `${base} border-enhanced-line bg-enhanced-raised text-enhanced-ink-2`;
     case "completed":
-      return `${base} border-emerald-400/30 bg-emerald-400/10 text-emerald-300`;
+      return `${base} border-enhanced-pitch/30 bg-enhanced-pitch/10 text-enhanced-pitch`;
     case "failed":
-      return `${base} border-red-400/30 bg-red-400/10 text-red-300`;
+      return `${base} border-enhanced-alert/30 bg-enhanced-alert/10 text-enhanced-alert`;
   }
 }
 
 function ruleStateClass(state: ChallengeRuleState): string {
   switch (state) {
     case "failed":
-      return "text-red-300";
+      return "text-enhanced-alert";
     case "met":
-      return "text-emerald-300";
+      return "text-enhanced-pitch";
     case "pending":
-      return "text-zinc-500";
+      return "text-enhanced-neutral";
   }
 }
 

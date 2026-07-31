@@ -86,8 +86,8 @@ function CareerHeader({
       data-enhanced-career-header=""
     >
       <div className="mx-auto flex w-full max-w-[1440px] items-center gap-3 lg:gap-5">
-        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[10px] border border-amber-500/40 bg-amber-800/50 text-amber-50">
-          <span className="text-[9px] font-bold leading-none text-amber-200">
+        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[10px] border border-enhanced-trophy/40 bg-enhanced-trophy/50 text-enhanced-trophy">
+          <span className="text-[9px] font-bold leading-none text-enhanced-trophy">
             能力
           </span>
           <strong className="mt-0.5 text-2xl font-black leading-none tabular-nums">
@@ -97,10 +97,10 @@ function CareerHeader({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded-[6px] border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-bold text-zinc-300">
+            <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-1.5 py-0.5 text-[10px] font-bold text-enhanced-ink-2">
               {header.countryFlag} {header.countryCode}
             </span>
-            <span className="rounded-[6px] border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+            <span className="rounded-[6px] border border-enhanced-pitch/20 bg-enhanced-pitch/10 px-1.5 py-0.5 text-[10px] font-bold text-enhanced-pitch">
               #{header.number} {header.position}
             </span>
           </div>
@@ -116,7 +116,7 @@ function CareerHeader({
 
         {onOpenArchive ? (
           <button
-            className="min-h-10 shrink-0 rounded-[9px] border border-white/10 bg-white/[0.04] px-3 text-xs font-bold text-zinc-300"
+            className="min-h-10 shrink-0 rounded-[9px] border border-enhanced-line bg-enhanced-surface px-3 text-xs font-bold text-enhanced-ink-2"
             onClick={onOpenArchive}
             type="button"
           >
@@ -124,19 +124,19 @@ function CareerHeader({
           </button>
         ) : null}
 
-        <div className="shrink-0 border-l border-white/10 pl-3 text-right lg:pl-5">
+        <div className="shrink-0 border-l border-enhanced-line pl-3 text-right lg:pl-5">
           <div className="text-[10px] font-bold text-enhanced-supporting">
             年龄
           </div>
           <div className="text-xl font-black tabular-nums">
             {header.age}
           </div>
-          <div className="text-[11px] font-bold text-emerald-300">
+          <div className="text-[11px] font-bold text-enhanced-pitch">
             {formatMarketValue(header.marketValue)}
           </div>
         </div>
 
-        <dl className="hidden shrink-0 grid-cols-4 divide-x divide-white/10 lg:grid">
+        <dl className="hidden shrink-0 grid-cols-4 divide-x divide-enhanced-line lg:grid">
           {(
             [
               ["出场", totals.appearances],
@@ -157,7 +157,7 @@ function CareerHeader({
         </dl>
       </div>
 
-      <dl className="mt-3 grid grid-cols-4 divide-x divide-white/10 lg:hidden">
+      <dl className="mt-3 grid grid-cols-4 divide-x divide-enhanced-line lg:hidden">
         {(
           [
             ["出场", totals.appearances],
@@ -192,13 +192,13 @@ function CareerTimeline({
   return (
     <section
       aria-labelledby="enhanced-timeline-heading"
-      className="min-h-0 overflow-y-auto overscroll-contain px-4 py-4 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-emerald-300 sm:px-6 lg:rounded-[16px] lg:border lg:border-white/10 lg:bg-white/[0.025] lg:p-5"
+      className="min-h-0 overflow-y-auto overscroll-contain px-4 py-4 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-enhanced-focus sm:px-6 lg:rounded-[16px] lg:border lg:border-enhanced-line lg:bg-enhanced-surface lg:p-5"
       data-enhanced-timeline=""
       tabIndex={0}
     >
       <div className="mb-3 flex items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
+          <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
             SEASON ARCHIVE
           </p>
           <h1
@@ -210,15 +210,15 @@ function CareerTimeline({
         </div>
         <p className="text-right text-[11px] font-bold text-enhanced-supporting">
           已记录{" "}
-          <span className="text-zinc-300 tabular-nums">
+          <span className="text-enhanced-ink-2 tabular-nums">
             {recordedSeasons}
           </span>{" "}
           赛季
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-white/10 bg-black/10">
-        <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-white/10 px-2.5 py-2 text-[9px] font-bold text-enhanced-supporting">
+      <div className="overflow-hidden rounded-[10px] border border-enhanced-line bg-enhanced-canvas/10">
+        <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-enhanced-line px-2.5 py-2 text-[9px] font-bold text-enhanced-supporting">
           <span>岁</span>
           <span>俱乐部</span>
           <span className="text-center">能力</span>
@@ -227,11 +227,11 @@ function CareerTimeline({
           <span className="text-right">助</span>
         </div>
 
-        <div className="divide-y divide-white/[0.07]">
+        <div className="divide-y divide-enhanced-line-soft">
           {view.timeline.map((row) => (
             <TimelineRow key={row.age} row={row} />
           ))}
-          <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 bg-white/[0.025] px-2.5 py-2">
+          <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 bg-enhanced-surface px-2.5 py-2">
             <span className="text-center text-sm">
               {view.nationalTeam.countryFlag}
             </span>
@@ -266,16 +266,16 @@ function TimelineRow({
   if (row.kind === "current") {
     return (
       <div
-        className={`${gridClass} bg-emerald-500/[0.06]`}
+        className={`${gridClass} bg-enhanced-pitch/[0.06]`}
         data-enhanced-season-row="current"
       >
-        <span className="text-xs font-black tabular-nums text-emerald-300">
+        <span className="text-xs font-black tabular-nums text-enhanced-pitch">
           {row.age}
         </span>
-        <span className="flex min-w-0 items-center gap-2 text-xs font-bold text-emerald-300">
+        <span className="flex min-w-0 items-center gap-2 text-xs font-bold text-enhanced-pitch">
           <span
             aria-hidden="true"
-            className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400"
+            className="h-1.5 w-1.5 shrink-0 rounded-full bg-enhanced-pitch"
           />
           决策中
         </span>
@@ -312,7 +312,7 @@ function TimelineRow({
       className={gridClass}
       data-enhanced-season-row="season"
     >
-      <span className="text-xs font-black tabular-nums text-zinc-400">
+      <span className="text-xs font-black tabular-nums text-enhanced-supporting">
         {row.age}
       </span>
       <span className="flex min-w-0 items-center gap-2">
@@ -327,7 +327,7 @@ function TimelineRow({
         </span>
       </span>
       <span className="text-center">
-        <span className="inline-block min-w-8 rounded-[6px] border border-amber-500/35 bg-amber-700/40 px-1 py-0.5 text-[11px] font-black tabular-nums text-amber-100">
+        <span className="inline-block min-w-8 rounded-[6px] border border-enhanced-trophy/35 bg-enhanced-trophy/40 px-1 py-0.5 text-[11px] font-black tabular-nums text-enhanced-trophy">
           {row.overall}
         </span>
       </span>
@@ -357,7 +357,7 @@ function SeasonNumber({
   readonly children: number;
 }) {
   return (
-    <span className="text-right text-xs tabular-nums text-zinc-300">
+    <span className="text-right text-xs tabular-nums text-enhanced-ink-2">
       {children}
     </span>
   );
@@ -374,7 +374,7 @@ function DecisionRail({
 }) {
   const { panel } = view;
   const railClass =
-    "min-h-0 max-h-[48dvh] overflow-y-auto overscroll-contain border-t border-white/10 bg-enhanced-surface px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:px-6 lg:h-full lg:max-h-none lg:w-[380px] lg:rounded-[16px] lg:border lg:p-5";
+    "min-h-0 max-h-[48dvh] overflow-y-auto overscroll-contain border-t border-enhanced-line bg-enhanced-surface px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:px-6 lg:h-full lg:max-h-none lg:w-[380px] lg:rounded-[16px] lg:border lg:p-5";
 
   if (panel.kind === "simulating") {
     return (
@@ -391,12 +391,12 @@ function DecisionRail({
         <p
           aria-atomic="true"
           aria-live="polite"
-          className="flex items-center gap-2 text-sm font-bold text-zinc-400"
+          className="flex items-center gap-2 text-sm font-bold text-enhanced-supporting"
           role="status"
         >
           <span
             aria-hidden="true"
-            className="h-2 w-2 rounded-full bg-emerald-400"
+            className="h-2 w-2 rounded-full bg-enhanced-pitch"
           />
           赛季进行中
         </p>
@@ -446,7 +446,7 @@ function DecisionRail({
           className="enhanced-reveal-enter"
           data-enhanced-milestone-reveal=""
         >
-          <p className="text-[10px] font-bold tracking-[0.12em] text-amber-300">
+          <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-trophy">
             MILESTONE · {panel.age} 岁 · {panel.club.shortName}
           </p>
           <h2
@@ -484,7 +484,7 @@ function DecisionRail({
           variant="enhanced"
         />
       ) : null}
-      <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
+      <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
         DECISION RAIL · {panel.age} 岁
       </p>
       <h2
@@ -493,7 +493,7 @@ function DecisionRail({
       >
         {panel.title}
       </h2>
-      <p className="mt-2 text-[13px] leading-[1.7] text-zinc-400">
+      <p className="mt-2 text-[13px] leading-[1.7] text-enhanced-supporting">
         {panel.description}
       </p>
       <div className="mt-4 space-y-2.5">
@@ -520,7 +520,7 @@ function DecisionOption({
 }) {
   return (
     <button
-      className="block min-h-12 w-full rounded-[10px] border border-white/10 bg-white/[0.045] p-3 text-left outline-none transition-colors hover:border-emerald-400/40 hover:bg-emerald-400/[0.06] focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:scale-[0.97] motion-reduce:transform-none motion-reduce:transition-none"
+      className="block min-h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left outline-none transition-colors hover:border-enhanced-pitch/40 hover:bg-enhanced-pitch/[0.06] focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:scale-[0.97] motion-reduce:transform-none motion-reduce:transition-none"
       onClick={onChoose}
       type="button"
     >
@@ -531,7 +531,7 @@ function DecisionOption({
           ) : (
             <span
               aria-hidden="true"
-              className="text-lg text-emerald-300"
+              className="text-lg text-enhanced-pitch"
             >
               ›
             </span>
@@ -571,13 +571,13 @@ function roleToneClass(
 ): string {
   switch (tone) {
     case "positive":
-      return "text-lime-300";
+      return "text-enhanced-success";
     case "primary":
-      return "text-emerald-300";
+      return "text-enhanced-pitch";
     case "warning":
-      return "text-amber-300";
+      return "text-enhanced-trophy";
     case "danger":
-      return "text-red-300";
+      return "text-enhanced-alert";
   }
 }
 

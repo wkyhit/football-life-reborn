@@ -113,17 +113,17 @@ function ReplayErrorScreen({
 }) {
   return (
     <main
-      className="flex min-h-dvh items-center bg-enhanced-canvas px-5 py-10 text-zinc-100"
+      className="flex min-h-dvh items-center bg-enhanced-canvas px-5 py-10 text-enhanced-strong"
       data-replay-error-kind={route.kind}
       data-replay-route="error"
       id="main-content"
     >
       <section
         aria-labelledby="replay-error-heading"
-        className="mx-auto w-full max-w-lg rounded-[16px] border border-red-400/20 bg-zinc-900 p-6 shadow-2xl"
+        className="mx-auto w-full max-w-lg rounded-[16px] border border-enhanced-alert/20 bg-enhanced-surface p-6"
         role="alert"
       >
-        <p className="text-[10px] font-bold tracking-[0.14em] text-red-300">
+        <p className="text-[10px] font-bold tracking-[0.14em] text-enhanced-alert">
           REPLAY RECOVERY
         </p>
         <h1
@@ -132,14 +132,14 @@ function ReplayErrorScreen({
         >
           {route.title}
         </h1>
-        <p className="mt-3 text-sm leading-6 text-zinc-300">
+        <p className="mt-3 text-sm leading-6 text-enhanced-ink-2">
           {route.detail}
         </p>
-        <p className="mt-3 rounded-[10px] bg-black/20 p-3 text-xs leading-5 text-zinc-400">
+        <p className="mt-3 rounded-[10px] bg-enhanced-canvas p-3 text-xs leading-5 text-enhanced-supporting">
           {route.recovery}
         </p>
         <button
-          className="mt-6 min-h-12 w-full rounded-[10px] bg-emerald-400 px-4 text-sm font-extrabold text-zinc-950"
+          className="mt-6 min-h-12 w-full rounded-[10px] bg-enhanced-pitch px-4 text-sm font-extrabold text-enhanced-canvas"
           onClick={returnToEntry}
           type="button"
         >

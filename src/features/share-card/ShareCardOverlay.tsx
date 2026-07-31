@@ -88,7 +88,7 @@ export function ShareCardOverlay({
 
   return (
     <Dialog
-      className="fixed inset-0 z-50 flex flex-col bg-black/85 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex flex-col bg-enhanced-canvas"
       data-classic-share-overlay=""
       initialFocusRef={nameInputRef}
       labelledBy="share-card-title"
@@ -99,19 +99,19 @@ export function ShareCardOverlay({
           生涯战绩卡
         </h2>
         {challenge ? (
-          <p className="mb-3 text-center text-[12px] font-extrabold text-emerald-300">
+          <p className="mb-3 text-center text-[12px] font-extrabold text-enhanced-pitch">
             {challenge.title} · {challenge.calendarDate}
           </p>
         ) : null}
         <div className="flex items-center gap-2">
           <label
-            className="shrink-0 text-[12px] font-bold text-zinc-400"
+            className="shrink-0 text-[12px] font-bold text-enhanced-supporting"
             htmlFor="share-card-name"
           >
             卡上名字
           </label>
           <input
-            className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 text-[14px] font-bold text-zinc-100 outline-none focus:border-emerald-500"
+            className="h-9 min-w-0 flex-1 rounded-lg border border-enhanced-line bg-enhanced-surface px-2.5 text-[14px] font-bold text-enhanced-strong outline-none focus:border-enhanced-pitch"
             id="share-card-name"
             maxLength={12}
             onChange={(event) =>
@@ -125,32 +125,32 @@ export function ShareCardOverlay({
 
         <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
           {previewUrl === null ? (
-            <div className="mx-auto flex aspect-[1080/1720] w-full max-w-sm items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-[13px] font-bold text-zinc-400">
+            <div className="mx-auto flex aspect-[1080/1720] w-full max-w-sm items-center justify-center rounded-xl border border-enhanced-raised bg-enhanced-canvas text-[13px] font-bold text-enhanced-supporting">
               {renderError ? "生成失败，请重试" : "正在生成…"}
             </div>
           ) : (
             <img
               alt="生涯战绩卡"
-              className="mx-auto w-full max-w-sm rounded-xl border border-zinc-800"
+              className="mx-auto w-full max-w-sm rounded-xl border border-enhanced-raised"
               data-share-card-name={previewName}
               src={previewUrl}
             />
           )}
         </div>
 
-        <p className="mt-3 text-center text-[14px] font-bold text-amber-300">
+        <p className="mt-3 text-center text-[14px] font-bold text-enhanced-trophy">
           长按图片保存，或下载后发给朋友
         </p>
         <div className="mt-2.5 grid shrink-0 grid-cols-2 gap-2">
           <button
-            className="h-12 rounded-xl border border-zinc-700 px-5 text-[15px] text-zinc-100 transition-colors active:bg-zinc-800 disabled:cursor-not-allowed disabled:text-zinc-600"
+            className="h-12 rounded-xl border border-enhanced-line px-5 text-[15px] text-enhanced-strong transition-colors active:bg-enhanced-raised disabled:cursor-not-allowed disabled:text-enhanced-neutral"
             onClick={onClose}
             type="button"
           >
             关闭
           </button>
           <button
-            className="h-12 rounded-xl bg-emerald-500 px-5 text-[15px] font-bold text-zinc-950 transition-colors active:bg-emerald-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+            className="h-12 rounded-xl bg-enhanced-pitch px-5 text-[15px] font-bold text-enhanced-canvas transition-colors active:bg-enhanced-pitch disabled:cursor-not-allowed disabled:bg-enhanced-raised disabled:text-enhanced-neutral"
             disabled={previewUrl === null}
             onClick={() => {
               if (previewUrl === null) {

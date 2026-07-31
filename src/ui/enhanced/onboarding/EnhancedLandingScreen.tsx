@@ -46,13 +46,13 @@ export function EnhancedLandingScreen({
       <section className="mx-auto flex w-full max-w-6xl flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-12">
         <div className="flex flex-col justify-between border-b border-enhanced-line pb-8 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-12">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
+            <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
               FOOTBALL LIFE · ENHANCED
             </p>
             <h1 className="mt-5 max-w-xl text-[32px] font-extrabold leading-[1.12] sm:text-5xl">
               从这里继续你的足球人生
             </h1>
-            <p className="mt-5 max-w-lg text-[15px] leading-[1.7] text-zinc-400">
+            <p className="mt-5 max-w-lg text-[15px] leading-[1.7] text-enhanced-supporting">
               从 16 岁的第一份报价开始，把每个赛季写进同一本档案。
               相同 seed 和选择会重放出完全相同的职业生涯。
             </p>
@@ -79,13 +79,13 @@ export function EnhancedLandingScreen({
         <div className="flex min-h-0 flex-col justify-center py-8 lg:overflow-y-auto lg:py-3">
           {hasResume ? (
             <button
-              className="mb-6 min-h-14 rounded-[10px] border border-emerald-400/40 bg-emerald-400/[0.07] px-4 text-left"
+              className="mb-6 min-h-14 rounded-[10px] border border-enhanced-pitch/40 bg-enhanced-pitch/[0.07] px-4 text-left"
               onClick={onResume}
               type="button"
             >
               <span
                 aria-hidden="true"
-                className="block text-[10px] font-bold tracking-[0.12em] text-emerald-400"
+                className="block text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch"
               >
                 LOCAL SAVE
               </span>
@@ -116,8 +116,8 @@ export function EnhancedLandingScreen({
                     aria-pressed={selected}
                     className={
                       selected
-                        ? "min-h-16 rounded-[10px] border border-emerald-400 bg-emerald-400/10 px-2 text-emerald-300"
-                        : "min-h-16 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-2 text-zinc-400"
+                        ? "min-h-16 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 px-2 text-enhanced-pitch"
+                        : "min-h-16 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-2 text-enhanced-supporting"
                     }
                     key={value}
                     onClick={() => setMode(value)}
@@ -172,7 +172,7 @@ export function EnhancedLandingScreen({
                   return (
                     <button
                       aria-label={`开始${definition.title}挑战`}
-                      className="group min-h-14 rounded-[10px] border border-emerald-400/20 bg-emerald-400/[0.05] px-3 py-2 text-left outline-none transition-colors hover:border-emerald-400/50 focus-visible:ring-2 focus-visible:ring-emerald-300"
+                      className="group min-h-14 rounded-[10px] border border-enhanced-pitch/20 bg-enhanced-pitch/[0.05] px-3 py-2 text-left outline-none transition-colors hover:border-enhanced-pitch/50 focus-visible:ring-2 focus-visible:ring-enhanced-focus"
                       key={challenge.id}
                       onClick={() =>
                         onBeginChallenge(challenge, mode)
@@ -181,16 +181,16 @@ export function EnhancedLandingScreen({
                     >
                       <span className="flex items-center justify-between gap-3">
                         <span>
-                          <span className="block text-[13px] font-extrabold text-zinc-100">
+                          <span className="block text-[13px] font-extrabold text-enhanced-strong">
                             {definition.title}
                           </span>
-                          <span className="mt-0.5 block line-clamp-1 text-[10px] text-zinc-400">
+                          <span className="mt-0.5 block line-clamp-1 text-[10px] text-enhanced-supporting">
                             {definition.description}
                           </span>
                         </span>
                         <span
                           aria-hidden="true"
-                          className="shrink-0 text-emerald-300"
+                          className="shrink-0 text-enhanced-pitch"
                         >
                           ›
                         </span>

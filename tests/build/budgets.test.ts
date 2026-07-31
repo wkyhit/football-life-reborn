@@ -29,6 +29,8 @@ const ENHANCED_SHELL_BUDGET_BYTES = 512;
 const ENHANCED_ONBOARDING_BUDGET_BYTES = 6_000;
 const ENHANCED_CAREER_BUDGET_BYTES = 4_000;
 const ENHANCED_ROUTE_BUDGET_BYTES = 9_000;
+const FONT_ASSET_COUNT = 4;
+const FONT_ASSET_BUDGET_BYTES = 64 * 1024;
 const CLASSIC_VISUAL_DIRECTORY = join(
   process.cwd(),
   "tests",
@@ -76,9 +78,48 @@ describe("Production artifact budgets", () => {
           ".png",
           ".svg",
           ".webmanifest",
+          ".woff2",
         ].includes(extname(path)),
       ),
     ).toBe(true);
+  });
+
+  it("bundles only the approved Latin font assets under their transfer ceiling", () => {
+    const files = walkFiles(DIST_DIRECTORY)
+      .filter((path) => extname(path) === ".woff2")
+      .sort();
+    const names = files.map((path) =>
+      relative(DIST_DIRECTORY, path),
+    );
+
+    expect(files).toHaveLength(FONT_ASSET_COUNT);
+    expect(names).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          "big-shoulders-display-latin-700-normal",
+        ),
+        expect.stringContaining(
+          "geist-latin-400-normal",
+        ),
+        expect.stringContaining(
+          "geist-latin-700-normal",
+        ),
+        expect.stringContaining(
+          "geist-mono-latin-500-normal",
+        ),
+      ]),
+    );
+    expect(
+      files.reduce(
+        (total, path) => total + statSync(path).size,
+        0,
+      ),
+    ).toBeLessThanOrEqual(FONT_ASSET_BUDGET_BYTES);
+    expect(
+      walkFiles(DIST_DIRECTORY).some(
+        (path) => extname(path) === ".woff",
+      ),
+    ).toBe(false);
   });
 
   it("keeps the initial route under transfer budgets", () => {

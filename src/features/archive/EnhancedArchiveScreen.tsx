@@ -332,10 +332,10 @@ export function EnhancedArchiveScreen({
       id="main-content"
       tabIndex={-1}
     >
-      <header className="sticky top-0 z-10 border-b border-enhanced-line bg-enhanced-canvas/95 px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))] backdrop-blur sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-10 border-b border-enhanced-line bg-enhanced-canvas px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-6xl items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
+            <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
               LOCAL CAREER LIBRARY
             </p>
             <h1 className="mt-1 text-2xl font-extrabold">
@@ -387,7 +387,7 @@ export function EnhancedArchiveScreen({
           </button>
           {undoToken ? (
             <button
-              className="min-h-11 rounded-[10px] border border-amber-400/40 bg-amber-400/10 px-4 text-sm font-bold text-amber-200"
+              className="min-h-11 rounded-[10px] border border-enhanced-trophy/40 bg-enhanced-trophy/10 px-4 text-sm font-bold text-enhanced-trophy"
               onClick={undoDelete}
               type="button"
             >
@@ -402,7 +402,7 @@ export function EnhancedArchiveScreen({
         {status ? (
           <p
             aria-live="polite"
-            className="mt-4 rounded-[10px] border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-zinc-300"
+            className="mt-4 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 py-2 text-sm text-enhanced-ink-2"
             role="status"
           >
             {status}
@@ -422,14 +422,14 @@ export function EnhancedArchiveScreen({
           <ul className="mt-4 grid gap-3 lg:grid-cols-2">
             {entries.map((entry) => (
               <li
-                className="rounded-[14px] border border-white/10 bg-enhanced-surface p-4"
+                className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4"
                 key={entry.id}
               >
                 <div className="flex items-start gap-3">
                   <input
                     aria-label={`选择 ${entry.displayName} 用于比较`}
                     checked={selectedIds.includes(entry.id)}
-                    className="mt-1 h-5 w-5 accent-emerald-400"
+                    className="mt-1 h-5 w-5 accent-enhanced-pitch"
                     onChange={() => toggleSelected(entry.id)}
                     type="checkbox"
                   />
@@ -439,11 +439,11 @@ export function EnhancedArchiveScreen({
                         {entry.displayName}
                       </h2>
                       {entry.id === activeArchiveId ? (
-                        <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
+                        <span className="rounded-full bg-enhanced-pitch/10 px-2 py-0.5 text-[10px] font-bold text-enhanced-pitch">
                           当前
                         </span>
                       ) : null}
-                      <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-bold text-zinc-400">
+                      <span className="rounded-full border border-enhanced-line px-2 py-0.5 text-[10px] font-bold text-enhanced-supporting">
                         {entry.status === "retired"
                           ? "已退役"
                           : "进行中"}
@@ -455,7 +455,7 @@ export function EnhancedArchiveScreen({
                       {entry.progress.age} 岁 ·{" "}
                       {entry.progress.seasonCount} 赛季
                     </p>
-                    <p className="mt-1 truncate font-mono text-[10px] text-zinc-600">
+                    <p className="mt-1 truncate font-enhanced-mono text-[10px] text-enhanced-neutral">
                       {entry.seed}
                     </p>
                   </div>
@@ -470,7 +470,7 @@ export function EnhancedArchiveScreen({
                       <input
                         aria-label="新的生涯名称"
                         autoFocus
-                        className="h-11 w-full rounded-[9px] border border-emerald-400 bg-black/20 px-3 text-sm outline-none"
+                        className="h-11 w-full rounded-[9px] border border-enhanced-pitch bg-enhanced-canvas px-3 text-sm outline-none"
                         maxLength={80}
                         onChange={(event) =>
                           setRenameValue(event.target.value)
@@ -597,8 +597,8 @@ function ArchiveAction({
       aria-label={label}
       className={
         danger
-          ? "min-h-10 rounded-[8px] border border-red-400/20 bg-red-400/[0.06] px-2 text-xs font-bold text-red-300"
-          : "min-h-10 rounded-[8px] border border-white/10 bg-white/[0.035] px-2 text-xs font-bold text-zinc-300"
+          ? "min-h-10 rounded-[8px] border border-enhanced-alert/20 bg-enhanced-alert/[0.06] px-2 text-xs font-bold text-enhanced-alert"
+          : "min-h-10 rounded-[8px] border border-enhanced-line bg-enhanced-surface px-2 text-xs font-bold text-enhanced-ink-2"
       }
       onClick={onClick}
       type="button"
@@ -755,7 +755,7 @@ function BranchCreator({
             分叉决策
             <select
               aria-label="分叉决策"
-              className="mt-2 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-sm text-zinc-100"
+              className="mt-2 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-sm text-enhanced-strong"
               onChange={(event) => {
                 setCheckpointId(event.target.value);
                 setSelectedOptionId(null);
@@ -773,7 +773,7 @@ function BranchCreator({
           <label className="mt-4 block text-xs font-bold text-enhanced-supporting">
             分支名称
             <input
-              className="mt-2 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-sm text-zinc-100"
+              className="mt-2 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-sm text-enhanced-strong"
               maxLength={80}
               onChange={(event) =>
                 setDisplayName(event.target.value)
@@ -793,8 +793,8 @@ function BranchCreator({
                 aria-pressed={selectedOptionId === option.id}
                 className={
                   selectedOptionId === option.id
-                    ? "min-h-12 rounded-[10px] border border-emerald-400 bg-emerald-400/10 px-4 text-left text-sm font-bold text-emerald-200"
-                    : "min-h-12 rounded-[10px] border border-white/10 bg-white/[0.035] px-4 text-left text-sm font-bold"
+                    ? "min-h-12 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 px-4 text-left text-sm font-bold text-enhanced-pitch"
+                    : "min-h-12 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-4 text-left text-sm font-bold"
                 }
                 key={option.id}
                 onClick={() => setSelectedOptionId(option.id)}
@@ -805,7 +805,7 @@ function BranchCreator({
             ))}
           </div>
           {error ? (
-            <p className="mt-3 text-sm text-red-300" role="alert">
+            <p className="mt-3 text-sm text-enhanced-alert" role="alert">
               {error}
             </p>
           ) : null}
@@ -872,7 +872,7 @@ function BranchComparison({
         onBack={onBack}
         title="平行人生对比"
       >
-        <p className="text-sm text-red-300">
+        <p className="text-sm text-enhanced-alert">
           这两个生涯不能比较：
           {comparison.reasons
             .map((reason) => reason.code)
@@ -925,7 +925,7 @@ function BranchComparison({
           title="国家队结果"
         />
         <ClubCard comparison={comparison} />
-        <section className="rounded-[14px] border border-white/10 bg-enhanced-surface p-4">
+        <section className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4">
           <h2 className="text-sm font-extrabold">生涯结局</h2>
           <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
             <p>{comparison.ending.left ?? "进行中"}</p>
@@ -957,7 +957,7 @@ function SubPage({
       <header className="border-b border-enhanced-line px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-6xl items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
+            <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
               {eyebrow}
             </p>
             <h1 className="mt-1 text-2xl font-extrabold">
@@ -988,7 +988,7 @@ function BranchName({
   readonly name: string;
 }) {
   return (
-    <div className="rounded-[12px] border border-white/10 bg-enhanced-surface p-3">
+    <div className="rounded-[12px] border border-enhanced-line bg-enhanced-surface p-3">
       <p className="text-[10px] font-bold text-enhanced-supporting">
         {label}
       </p>
@@ -1009,7 +1009,7 @@ function CurveCard({
   readonly title: string;
 }) {
   return (
-    <section className="rounded-[14px] border border-white/10 bg-enhanced-surface p-4">
+    <section className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4">
       <h2 className="text-sm font-extrabold">{title}</h2>
       {points.length === 0 ? (
         <p className="mt-4 text-xs text-enhanced-supporting">
@@ -1029,7 +1029,7 @@ function CurveCard({
             <tbody>
               {points.map((point) => (
                 <tr
-                  className="border-t border-white/[0.06]"
+                  className="border-t border-enhanced-line-soft"
                   key={point.age}
                 >
                   <td className="py-1.5">{point.age}</td>
@@ -1039,7 +1039,7 @@ function CurveCard({
                   <td className="py-1.5 text-right">
                     {formatCurveValue(point.right, marketValue)}
                   </td>
-                  <td className="py-1.5 text-right text-emerald-300">
+                  <td className="py-1.5 text-right text-enhanced-pitch">
                     {formatCurveValue(point.delta, marketValue)}
                   </td>
                 </tr>
@@ -1060,7 +1060,7 @@ function MetricCard({
   readonly title: string;
 }) {
   return (
-    <section className="rounded-[14px] border border-white/10 bg-enhanced-surface p-4">
+    <section className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4">
       <h2 className="text-sm font-extrabold">{title}</h2>
       <div className="mt-3 space-y-2">
         {Object.entries(metrics).map(([key, metric]) => (
@@ -1092,7 +1092,7 @@ function CategoryCard({
   );
 
   return (
-    <section className="rounded-[14px] border border-white/10 bg-enhanced-surface p-4">
+    <section className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4">
       <h2 className="text-sm font-extrabold">{title}</h2>
       {visibleRows.length === 0 ? (
         <p className="mt-3 text-xs text-enhanced-supporting">
@@ -1120,7 +1120,7 @@ function ClubCard({
   readonly comparison: ReadyBranchComparison;
 }) {
   return (
-    <section className="rounded-[14px] border border-white/10 bg-enhanced-surface p-4">
+    <section className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4">
       <h2 className="text-sm font-extrabold">效力俱乐部</h2>
       <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
         {[comparison.clubs.left, comparison.clubs.right].map(
@@ -1194,7 +1194,7 @@ function LedgerView({
               .reverse()
               .map((entry) => (
                 <li
-                  className="rounded-[10px] border border-white/10 bg-enhanced-surface p-3 text-xs"
+                  className="rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-xs"
                   key={entry.id}
                 >
                   <p className="font-bold">

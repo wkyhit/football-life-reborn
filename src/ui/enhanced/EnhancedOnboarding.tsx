@@ -171,7 +171,7 @@ function EnhancedIdentityScreen({
               </span>
               <input
                 autoComplete="name"
-                className="mt-1 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-[15px] font-bold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25"
+                className="mt-1 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-[15px] font-bold outline-none focus:border-enhanced-pitch focus:ring-2 focus:ring-enhanced-focus/25"
                 maxLength={8}
                 onChange={(event) =>
                   updateIdentity({
@@ -187,7 +187,7 @@ function EnhancedIdentityScreen({
               </span>
               <input
                 aria-invalid={!validNumber}
-                className="mt-1 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-center text-[15px] font-bold outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25"
+                className="mt-1 h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface px-3 text-center text-[15px] font-bold outline-none focus:border-enhanced-pitch focus:ring-2 focus:ring-enhanced-focus/25"
                 inputMode="numeric"
                 onChange={(event) =>
                   updateIdentity({
@@ -217,8 +217,8 @@ function EnhancedIdentityScreen({
                     aria-pressed={selected}
                     className={
                       selected
-                        ? "min-h-12 rounded-[10px] border border-emerald-400 bg-emerald-400/10 text-sm font-bold text-emerald-300"
-                        : "min-h-12 rounded-[10px] border border-enhanced-line bg-enhanced-surface text-sm font-bold text-zinc-400"
+                        ? "min-h-12 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 text-sm font-bold text-enhanced-pitch"
+                        : "min-h-12 rounded-[10px] border border-enhanced-line bg-enhanced-surface text-sm font-bold text-enhanced-supporting"
                     }
                     key={foot}
                     onClick={() =>
@@ -309,7 +309,7 @@ function EnhancedPositionScreen({
                     aria-pressed={selected}
                     className={
                       selected
-                        ? "min-h-20 rounded-[10px] border border-emerald-400 bg-emerald-400/10 p-3 text-left"
+                        ? "min-h-20 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 p-3 text-left"
                         : "min-h-20 rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left"
                     }
                     data-enhanced-position={position}
@@ -365,13 +365,13 @@ function EnhancedStepHeader({
     <header className="shrink-0 border-b border-enhanced-line px-4 pb-4 pt-[max(20px,env(safe-area-inset-top))] sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-5xl items-end justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
+          <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
             PLAYER SETUP · 0{step}
           </p>
           <h1 className="mt-1 text-[22px] font-extrabold">
             {title}
           </h1>
-          <p className="mt-1 text-[13px] text-zinc-400">
+          <p className="mt-1 text-[13px] text-enhanced-supporting">
             {description}
           </p>
         </div>
@@ -404,7 +404,7 @@ function EnhancedStepFooter({
         返回
       </button>
       <button
-        className="min-h-12 rounded-[10px] bg-enhanced-pitch px-5 text-sm font-bold text-enhanced-pitch-ink disabled:bg-zinc-800 disabled:text-zinc-600"
+        className="min-h-12 rounded-[10px] bg-enhanced-pitch px-5 text-sm font-bold text-enhanced-pitch-ink disabled:bg-enhanced-raised disabled:text-enhanced-neutral"
         disabled={nextDisabled}
         onClick={onNext}
         type="button"

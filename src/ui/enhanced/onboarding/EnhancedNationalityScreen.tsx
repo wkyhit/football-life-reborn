@@ -66,13 +66,13 @@ export function EnhancedNationalityScreen({
       <header className="shrink-0 border-b border-enhanced-line px-4 pb-4 pt-[max(20px,env(safe-area-inset-top))] sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-5xl items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
+            <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
               PLAYER SETUP · 01
             </p>
             <h1 className="mt-1 text-[22px] font-extrabold">
               选择国籍
             </h1>
-            <p className="mt-1 text-[13px] text-zinc-400">
+            <p className="mt-1 text-[13px] text-enhanced-supporting">
               国家队门槛不同，但 61 个选择都能走完整生涯
             </p>
           </div>
@@ -85,7 +85,7 @@ export function EnhancedNationalityScreen({
       <section className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 py-4 sm:px-6 lg:px-8">
         <input
           aria-label="搜索国家"
-          className="h-12 shrink-0 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-4 text-[15px] text-enhanced-strong outline-none placeholder:text-enhanced-supporting focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25"
+          className="h-12 shrink-0 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-4 text-[15px] text-enhanced-strong outline-none placeholder:text-enhanced-supporting focus:border-enhanced-pitch focus:ring-2 focus:ring-enhanced-focus/25"
           onChange={(event) => setQuery(event.target.value)}
           placeholder="搜索中文、英文或 FIFA code"
           type="search"
@@ -111,8 +111,8 @@ export function EnhancedNationalityScreen({
                 aria-pressed={selected}
                 className={
                   selected
-                    ? "min-h-11 shrink-0 rounded-full border border-emerald-400 bg-emerald-400/10 px-4 text-xs font-bold text-emerald-300"
-                    : "min-h-11 shrink-0 rounded-full border border-enhanced-line bg-enhanced-surface px-4 text-xs font-bold text-zinc-400"
+                    ? "min-h-11 shrink-0 rounded-full border border-enhanced-pitch bg-enhanced-pitch/10 px-4 text-xs font-bold text-enhanced-pitch"
+                    : "min-h-11 shrink-0 rounded-full border border-enhanced-line bg-enhanced-surface px-4 text-xs font-bold text-enhanced-supporting"
                 }
                 key={option.id}
                 onClick={() => setFilter(option.id)}
@@ -190,7 +190,7 @@ export function EnhancedNationalityScreen({
             返回
           </button>
           <button
-            className="min-h-12 rounded-[10px] bg-enhanced-pitch px-5 text-sm font-bold text-enhanced-pitch-ink disabled:bg-zinc-800 disabled:text-zinc-600"
+            className="min-h-12 rounded-[10px] bg-enhanced-pitch px-5 text-sm font-bold text-enhanced-pitch-ink disabled:bg-enhanced-raised disabled:text-enhanced-neutral"
             disabled={state.player.nationality === null}
             onClick={() =>
               dispatch({ type: "continue_setup" })
@@ -220,7 +220,7 @@ function CountryButton({
       aria-pressed={selected}
       className={
         selected
-          ? "flex min-h-14 items-center gap-2 rounded-[10px] border border-emerald-400 bg-emerald-400/10 p-2.5 text-left"
+          ? "flex min-h-14 items-center gap-2 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 p-2.5 text-left"
           : "flex min-h-14 items-center gap-2 rounded-[10px] border border-enhanced-line bg-enhanced-surface p-2.5 text-left"
       }
       data-country-confederation={country.confederation}
@@ -242,7 +242,7 @@ function CountryButton({
       {selected ? (
         <span
           aria-hidden="true"
-          className="ml-auto text-emerald-300"
+          className="ml-auto text-enhanced-pitch"
         >
           ✓
         </span>

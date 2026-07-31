@@ -1,0 +1,15 @@
+[
+  {
+    "date": "2026-07-31",
+    "scope": "app",
+    "brief": "Football Life Reborn Enhanced application",
+    "genre": "playful",
+    "macrostructure": "Narrative Workflow / Workbench / Index-First",
+    "theme": "custom",
+    "theme_axes": "dark / display-condensed-bold / chromatic-green",
+    "vibe": "night-match ledger, playful, exact, restrained",
+    "enrichment": "tier-a",
+    "design_system": "design.md",
+    "approved_issue_comment": "https://github.com/wkyhit/football-life-reborn/issues/8#issuecomment-5138676207"
+  }
+]
