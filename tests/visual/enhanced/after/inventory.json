@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-31T03:19:23Z",
+  "baselineCommit": "808f463fc1c5cdabcc72c1f5a1521a33b45e30e8",
+  "runner": "ego-browser",
+  "taskSpaceId": 24,
+  "slice": 3,
+  "status": "candidate",
+  "viewportWidths": [
+    320,
+    375,
+    414,
+    768,
+    1280,
+    1440
+  ],
+  "assertions": {
+    "documentHorizontalOverflowPx": 0,
+    "minimumInteractiveTargetPx": 44,
+    "sharedActionLabelWhiteSpace": "nowrap",
+    "setupProgress": [
+      "1.0 / 3.0",
+      "2.0 / 3.0",
+      "3.0 / 3.0"
+    ]
+  },
+  "entries": [
+    {
+      "id": "landing",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/ui/enhanced/onboarding/EnhancedLandingScreen.tsx",
+        "src/ui/enhanced/components/EnhancedAppBar.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/landing-320x844.png",
+        "tests/visual/enhanced/after/landing-375x812.png",
+        "tests/visual/enhanced/after/landing-414x896.png",
+        "tests/visual/enhanced/after/landing-768x1024.png",
+        "tests/visual/enhanced/after/landing-1280x830.png",
+        "tests/visual/enhanced/after/landing-1440x900.png"
+      ]
+    },
+    {
+      "id": "setup-nationality",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/ui/enhanced/onboarding/EnhancedNationalityScreen.tsx",
+        "src/ui/enhanced/components/EnhancedAppBar.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/setup-nationality-320x844.png",
+        "tests/visual/enhanced/after/setup-nationality-375x812.png",
+        "tests/visual/enhanced/after/setup-nationality-414x896.png",
+        "tests/visual/enhanced/after/setup-nationality-768x1024.png",
+        "tests/visual/enhanced/after/setup-nationality-1280x830.png",
+        "tests/visual/enhanced/after/setup-nationality-1440x900.png"
+      ]
+    },
+    {
+      "id": "setup-identity",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/ui/enhanced/EnhancedOnboarding.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/setup-identity-390x844.png"
+      ]
+    },
+    {
+      "id": "setup-position",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/ui/enhanced/EnhancedOnboarding.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/setup-position-390x844.png"
+      ]
+    },
+    {
+      "id": "empty",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/ui/enhanced/components/EnhancedStateSurface.tsx",
+        "src/ui/enhanced/onboarding/EnhancedNationalityScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/empty-390x844.png"
+      ]
+    },
+    {
+      "id": "loading",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/app/App.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/loading-390x844.png"
+      ]
+    },
+    {
+      "id": "error",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/app/App.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/save-error-390x844.png"
+      ]
+    },
+    {
+      "id": "recovery",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/app/App.tsx",
+        "src/ui/enhanced/recovery/EnhancedRecoveryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/recovery-390x844.png"
+      ]
+    },
+    {
+      "id": "install",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/ui/enhanced/components/EnhancedStateSurface.tsx",
+        "src/ui/enhanced/onboarding/EnhancedLandingScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/install-390x844.png"
+      ]
+    }
+  ]
+}

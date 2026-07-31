@@ -124,9 +124,39 @@
   }
 }
 
+@keyframes enhanced-state-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
 .enhanced-reveal-enter {
   animation: enhanced-reveal-enter var(--dur-long)
     var(--ease-out) both;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-enhanced-action="primary"]:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  [data-enhanced-action="secondary"]:hover:not(:disabled) {
+    color: var(--color-accent);
+    border-color: color-mix(
+      in oklch,
+      var(--color-accent) 50%,
+      transparent
+    );
+  }
+
+  [data-enhanced-action="danger"]:hover:not(:disabled) {
+    border-color: var(--color-error);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -137,6 +167,11 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  [data-interaction-state="loading"],
+  [data-enhanced-state="loading"] {
+    animation: none !important;
   }
 }
 

@@ -10,6 +10,8 @@ import type {
 import type { PacingMode } from "../../domain/pacing";
 import type { DailyChallenge } from "../../features/challenges/daily";
 import { JerseyPreview } from "../classic/JerseyPreview";
+import { EnhancedAction } from "./components/EnhancedAction";
+import { EnhancedAppBar } from "./components/EnhancedAppBar";
 import { EnhancedLandingScreen } from "./onboarding/EnhancedLandingScreen";
 import { EnhancedNationalityScreen } from "./onboarding/EnhancedNationalityScreen";
 import {
@@ -140,10 +142,13 @@ function EnhancedIdentityScreen({
   return (
     <main
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
+      data-enhanced-stage="2.0"
       data-enhanced-setup-shell="identity"
+      data-hallmark-macrostructure="Narrative Workflow"
       id="main-content"
       tabIndex={-1}
     >
+      {/* Hallmark · genre: playful · macrostructure: Narrative Workflow · theme: custom (tuned) · design-system: design.md · designed-as-app */}
       <EnhancedStepHeader
         description="姓名、号码和惯用脚只定义你的身份，不改变模拟数值"
         step={2}
@@ -286,10 +291,13 @@ function EnhancedPositionScreen({
   return (
     <main
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
+      data-enhanced-stage="3.0"
       data-enhanced-setup-shell="position"
+      data-hallmark-macrostructure="Narrative Workflow"
       id="main-content"
       tabIndex={-1}
     >
+      {/* Hallmark · genre: playful · macrostructure: Narrative Workflow · theme: custom (tuned) · design-system: design.md · designed-as-app */}
       <EnhancedStepHeader
         description="位置决定赛季数据结构、竞争方式和奖项资格"
         step={3}
@@ -362,24 +370,23 @@ function EnhancedStepHeader({
   readonly title: string;
 }) {
   return (
-    <header className="shrink-0 border-b border-enhanced-line px-4 pb-4 pt-[max(20px,env(safe-area-inset-top))] sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-5xl items-end justify-between gap-4">
-        <div>
-          <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
-            PLAYER SETUP · 0{step}
-          </p>
-          <h1 className="mt-1 text-[22px] font-extrabold">
+    <>
+      <EnhancedAppBar
+        context={`Player setup · ${step}.0`}
+        currentLabel={title}
+        stage={{ current: step, total: 3 }}
+      />
+      <div className="shrink-0 border-b border-enhanced-line px-4 py-3 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
+          <h1 className="[overflow-wrap:anywhere] text-[22px] font-bold">
             {title}
           </h1>
-          <p className="mt-1 text-[13px] text-enhanced-supporting">
+          <p className="mt-1 text-sm leading-relaxed text-enhanced-supporting">
             {description}
           </p>
         </div>
-        <span className="shrink-0 text-xs font-bold text-enhanced-supporting">
-          {step} / 3
-        </span>
       </div>
-    </header>
+    </>
   );
 }
 
@@ -396,21 +403,20 @@ function EnhancedStepFooter({
 }) {
   return (
     <footer className="mt-4 grid shrink-0 grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-enhanced-line pt-3">
-      <button
-        className="min-h-12 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-5 text-sm font-bold"
+      <EnhancedAction
+        className="min-h-12"
         onClick={onBack}
-        type="button"
       >
         返回
-      </button>
-      <button
-        className="min-h-12 rounded-[10px] bg-enhanced-pitch px-5 text-sm font-bold text-enhanced-pitch-ink disabled:bg-enhanced-raised disabled:text-enhanced-neutral"
+      </EnhancedAction>
+      <EnhancedAction
+        className="min-h-12 w-full"
         disabled={nextDisabled}
         onClick={onNext}
-        type="button"
+        tone="primary"
       >
         {nextLabel}
-      </button>
+      </EnhancedAction>
     </footer>
   );
 }

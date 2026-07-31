@@ -6,6 +6,9 @@ import {
   getDailyChallenges,
   type DailyChallenge,
 } from "../../../features/challenges/daily";
+import { EnhancedAction } from "../components/EnhancedAction";
+import { EnhancedAppBar } from "../components/EnhancedAppBar";
+import { EnhancedInstallSurface } from "../components/EnhancedStateSurface";
 
 type EnhancedLandingScreenProps = {
   readonly archiveCount?: number;
@@ -38,21 +41,41 @@ export function EnhancedLandingScreen({
 
   return (
     <main
-      className="min-h-dvh bg-enhanced-canvas px-4 py-[max(24px,env(safe-area-inset-top))] text-enhanced-strong sm:px-6 lg:flex lg:h-dvh lg:items-stretch lg:overflow-hidden lg:px-10 lg:py-10"
+      className="flex min-h-dvh flex-col bg-enhanced-canvas text-enhanced-strong lg:h-dvh lg:overflow-hidden"
+      data-enhanced-stage="0.0"
       data-enhanced-setup-shell="landing"
+      data-hallmark-macrostructure="Narrative Workflow"
       id="main-content"
       tabIndex={-1}
     >
-      <section className="mx-auto flex w-full max-w-6xl flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-12">
+      <EnhancedAppBar
+        actions={
+          onOpenArchive ? (
+            <button
+              aria-label="生涯档案"
+              className="min-h-11 whitespace-nowrap px-2 text-enhanced-ink-2"
+              onClick={onOpenArchive}
+              type="button"
+            >
+              档案 {archiveCount} / 20
+            </button>
+          ) : null
+        }
+        context="Entry · 0.0"
+        currentLabel="入口"
+      />
+
+      {/* Hallmark · genre: playful · macrostructure: Narrative Workflow · theme: custom (tuned) · design-system: design.md · designed-as-app */}
+      <section className="mx-auto flex min-h-0 w-full max-w-[var(--shell-max)] flex-1 flex-col px-4 py-8 sm:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-12 lg:px-8 lg:py-10">
         <div className="flex flex-col justify-between border-b border-enhanced-line pb-8 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-12">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
+            <p className="font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-pitch">
               FOOTBALL LIFE · ENHANCED
             </p>
-            <h1 className="mt-5 max-w-xl text-[32px] font-extrabold leading-[1.12] sm:text-5xl">
+            <h1 className="mt-5 max-w-xl [overflow-wrap:anywhere] text-[32px] font-bold leading-[1.12] sm:text-5xl">
               从这里继续你的足球人生
             </h1>
-            <p className="mt-5 max-w-lg text-[15px] leading-[1.7] text-enhanced-supporting">
+            <p className="mt-5 max-w-lg text-base leading-[1.7] text-enhanced-supporting">
               从 16 岁的第一份报价开始，把每个赛季写进同一本档案。
               相同 seed 和选择会重放出完全相同的职业生涯。
             </p>
@@ -68,36 +91,38 @@ export function EnhancedLandingScreen({
                 <dd className="text-xl font-extrabold tabular-nums">
                   {value}
                 </dd>
-                <dt className="mt-0.5 text-[10px] font-bold text-enhanced-supporting">
+                <dt className="mt-0.5 text-xs font-bold text-enhanced-supporting">
                   {label}
                 </dt>
               </div>
             ))}
           </dl>
+          <div className="mt-8 max-w-[28ch] border-t border-enhanced-line pt-5 lg:mb-2">
+            <p className="text-2xl font-bold leading-tight">
+              相同 seed，相同人生。
+            </p>
+            <p className="mt-2 font-enhanced-display text-lg font-bold uppercase tracking-[0.04em] text-enhanced-supporting">
+              Football Life
+            </p>
+          </div>
         </div>
 
         <div className="flex min-h-0 flex-col justify-center py-8 lg:overflow-y-auto lg:py-3">
           {hasResume ? (
-            <button
-              className="mb-6 min-h-14 rounded-[10px] border border-enhanced-pitch/40 bg-enhanced-pitch/[0.07] px-4 text-left"
+            <EnhancedAction
+              className="mb-6 min-h-14 w-full justify-between px-4 text-left"
               onClick={onResume}
-              type="button"
+              tone="secondary"
             >
-              <span
-                aria-hidden="true"
-                className="block text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch"
-              >
-                LOCAL SAVE
-              </span>
-              <span className="mt-1 flex items-center justify-between gap-3 text-[15px] font-bold">
+              <span className="flex w-full items-center justify-between gap-3">
                 继续上次生涯
                 <span aria-hidden="true">›</span>
               </span>
-            </button>
+            </EnhancedAction>
           ) : null}
 
           <fieldset>
-            <legend className="text-[11px] font-bold text-enhanced-supporting">
+            <legend className="text-xs font-bold text-enhanced-supporting">
               生涯节奏
             </legend>
             <div className="mt-2 grid grid-cols-3 gap-2">
@@ -134,7 +159,7 @@ export function EnhancedLandingScreen({
                         </span>
                       ) : null}
                     </span>
-                    <span className="mt-0.5 block text-[10px]">
+                    <span className="mt-0.5 block text-xs">
                       {detail}
                       {selected ? " · 已选择" : ""}
                     </span>
@@ -157,7 +182,7 @@ export function EnhancedLandingScreen({
                   今日挑战
                 </h2>
                 <time
-                  className="text-[10px] font-bold tabular-nums text-enhanced-supporting"
+                  className="font-enhanced-mono text-xs tabular-nums text-enhanced-supporting"
                   dateTime={challenges[0]?.calendarDate}
                 >
                   {challenges[0]?.calendarDate}
@@ -184,7 +209,7 @@ export function EnhancedLandingScreen({
                           <span className="block text-[13px] font-extrabold text-enhanced-strong">
                             {definition.title}
                           </span>
-                          <span className="mt-0.5 block line-clamp-1 text-[10px] text-enhanced-supporting">
+                          <span className="mt-0.5 block line-clamp-1 text-xs text-enhanced-supporting">
                             {definition.description}
                           </span>
                         </span>
@@ -203,41 +228,31 @@ export function EnhancedLandingScreen({
           ) : null}
 
           <div className="mt-5 border-t border-enhanced-line pt-4">
-            <p className="mb-2 text-[10px] font-bold tracking-[0.1em] text-enhanced-supporting">
+            <p className="mb-2 font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-supporting">
               ORDINARY CAREER
             </p>
             <div className="grid gap-2">
-            <button
-              className="min-h-12 rounded-[10px] bg-enhanced-pitch px-5 text-[15px] font-bold text-enhanced-pitch-ink"
-              onClick={() => onBegin(mode)}
-              type="button"
-            >
-              开始普通生涯
-            </button>
-            <button
-              className="min-h-12 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-5 text-[15px] font-bold"
-              onClick={() => onRandom(mode)}
-              type="button"
-            >
-              随机球员
-            </button>
-            {onOpenArchive ? (
-              <button
-                aria-label="生涯档案"
-                className="min-h-12 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-5 text-[15px] font-bold"
-                onClick={onOpenArchive}
-                type="button"
+              <EnhancedAction
+                className="min-h-12 w-full"
+                onClick={() => onBegin(mode)}
+                tone="primary"
               >
-                生涯档案
-                <span className="ml-2 text-xs text-enhanced-supporting">
-                  {archiveCount} / 20
-                </span>
-              </button>
-            ) : null}
+                开始普通生涯
+              </EnhancedAction>
+              <EnhancedAction
+                className="min-h-12 w-full"
+                onClick={() => onRandom(mode)}
+              >
+                随机球员
+              </EnhancedAction>
             </div>
           </div>
 
-          <p className="mt-4 text-center text-[11px] leading-relaxed text-enhanced-supporting">
+          <div className="mt-5">
+            <EnhancedInstallSurface />
+          </div>
+
+          <p className="mt-4 text-center text-xs leading-relaxed text-enhanced-supporting">
             数据只保存在本机。随机球员同样由当前 seed 确定。
           </p>
         </div>

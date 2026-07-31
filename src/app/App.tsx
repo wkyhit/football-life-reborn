@@ -101,12 +101,70 @@ const EnhancedShell = lazy(async () => {
   return { default: module.EnhancedShell };
 });
 
+const EnhancedRecoveryScreen = lazy(async () => {
+  const module = await import(
+    "../ui/enhanced/recovery/EnhancedRecoveryScreen"
+  );
+  return { default: module.EnhancedRecoveryScreen };
+});
+
 const ShareCardOverlay = lazy(async () => {
   const module = await import(
     "../features/share-card/ShareCardOverlay"
   );
   return { default: module.ShareCardOverlay };
 });
+
+function EnhancedLoadingFallback({
+  label,
+  overlay = false,
+}: {
+  readonly label: string;
+  readonly overlay?: boolean;
+}) {
+  if (overlay) {
+    return (
+      <div
+        aria-busy="true"
+        className="fixed inset-x-4 bottom-4 z-[var(--z-modal)] mx-auto flex min-h-14 max-w-md items-center gap-3 border border-enhanced-line bg-enhanced-raised px-4 text-enhanced-strong"
+        data-enhanced-state="loading"
+        role="status"
+      >
+        <span
+          aria-hidden="true"
+          className="h-2 w-2 shrink-0 bg-enhanced-pitch motion-safe:animate-[enhanced-state-pulse_var(--dur-long)_var(--ease-in-out)_infinite]"
+        />
+        <span className="text-sm font-bold">{label}</span>
+      </div>
+    );
+  }
+
+  return (
+    <main
+      aria-busy="true"
+      className="min-h-dvh bg-enhanced-canvas px-4 py-8 text-enhanced-strong sm:px-6 sm:py-12"
+      data-enhanced-state="loading"
+      id="main-content"
+      role="status"
+    >
+      <section className="mx-auto grid w-full max-w-[var(--shell-max)] gap-4 border-y border-enhanced-line py-8">
+        <p className="flex items-center gap-2 font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-supporting">
+          <span
+            aria-hidden="true"
+            className="h-2 w-2 shrink-0 bg-enhanced-pitch motion-safe:animate-[enhanced-state-pulse_var(--dur-long)_var(--ease-in-out)_infinite]"
+          />
+          Loading
+        </p>
+        <h1 className="[overflow-wrap:anywhere] text-xl font-bold">
+          {label}
+        </h1>
+        <p className="text-base leading-relaxed text-enhanced-supporting">
+          正在读取本机记录，请稍候。
+        </p>
+      </section>
+    </main>
+  );
+}
 
 type SetupScreenProps = {
   readonly dispatch: Dispatch<CareerAction>;
@@ -185,7 +243,11 @@ export function App() {
 
   if (replayRoute.status !== "absent") {
     return (
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={
+          <EnhancedLoadingFallback label="正在打开回放" />
+        }
+      >
         <EnhancedShell>
           <ReplayRouteScreen route={replayRoute} />
         </EnhancedShell>
@@ -195,7 +257,11 @@ export function App() {
 
   if (uiMode === "enhanced") {
     return (
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={
+          <EnhancedLoadingFallback label="正在打开足球人生" />
+        }
+      >
         <EnhancedShell>
           <CareerController uiMode="enhanced" />
         </EnhancedShell>
@@ -323,25 +389,46 @@ function CareerController({
       : null;
 
   if (recovery !== null) {
+    const onStartNew = () => {
+      discardClassicSession();
+      setRecovery(null);
+      setClassicCareer(null);
+      dispatch({
+        seed: seedFromSearch(window.location.search),
+        type: "reset_career",
+      });
+    };
+
+    if (uiMode === "enhanced") {
+      return (
+        <Suspense
+          fallback={
+            <EnhancedLoadingFallback label="正在读取恢复记录" />
+          }
+        >
+          <EnhancedRecoveryScreen
+            onStartNew={onStartNew}
+            recovery={recovery}
+          />
+        </Suspense>
+      );
+    }
+
     return (
       <RecoveryScreen
         recovery={recovery}
-        onStartNew={() => {
-          discardClassicSession();
-          setRecovery(null);
-          setClassicCareer(null);
-          dispatch({
-            seed: seedFromSearch(window.location.search),
-            type: "reset_career",
-          });
-        }}
+        onStartNew={onStartNew}
       />
     );
   }
 
   if (uiMode === "enhanced" && archiveOpen) {
     return (
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={
+          <EnhancedLoadingFallback label="正在打开生涯档案" />
+        }
+      >
         <EnhancedArchiveScreen
           activeArchiveId={activeArchiveId}
           onActiveDeleted={(id) => {
@@ -379,7 +466,14 @@ function CareerController({
       </a>
       {saveError ? (
         <p
-          className="fixed inset-x-4 top-4 z-40 mx-auto max-w-lg rounded-[12px] border border-china bg-canvas px-4 py-3 text-sm text-primary shadow-xl"
+          className={
+            uiMode === "enhanced"
+              ? "fixed inset-x-4 top-4 z-[var(--z-toast)] mx-auto max-w-lg border border-enhanced-alert bg-enhanced-raised px-4 py-3 text-sm text-enhanced-strong"
+              : "fixed inset-x-4 top-4 z-40 mx-auto max-w-lg rounded-[12px] border border-china bg-canvas px-4 py-3 text-sm text-primary shadow-xl"
+          }
+          data-enhanced-state={
+            uiMode === "enhanced" ? "error" : undefined
+          }
           role="alert"
         >
           本地保存失败：{saveError}
@@ -387,7 +481,11 @@ function CareerController({
       ) : null}
       {uiMode === "enhanced" &&
       (enhancedEntryPending || classicCareer === null) ? (
-        <Suspense fallback={null}>
+        <Suspense
+          fallback={
+            <EnhancedLoadingFallback label="正在准备球员设置" />
+          }
+        >
           <EnhancedOnboarding
             archiveCount={archiveCount}
             dispatch={dispatch}
@@ -726,7 +824,14 @@ function CareerExperience({
           view={view}
         />
         {shareOpen ? (
-          <Suspense fallback={null}>
+          <Suspense
+            fallback={
+              <EnhancedLoadingFallback
+                label="正在生成分享卡片"
+                overlay
+              />
+            }
+          >
             <ShareCardOverlay
               {...(challenge === null ||
               challengeProgress === null
@@ -782,7 +887,11 @@ function CareerExperience({
 
   if (uiMode === "enhanced") {
     return (
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={
+          <EnhancedLoadingFallback label="正在载入生涯记录" />
+        }
+      >
         <EnhancedCareerScreen
           {...(challenge === null ||
           challengeProgress === null
