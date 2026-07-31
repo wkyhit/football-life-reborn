@@ -57,6 +57,7 @@ describe("Production artifact budgets", () => {
       readFileSync(join(process.cwd(), "vercel.json"), "utf8"),
     ) as {
       readonly headers?: readonly unknown[];
+      readonly rewrites?: readonly unknown[];
     };
 
     expect(vercelConfig).toMatchObject({
@@ -65,7 +66,13 @@ describe("Production artifact budgets", () => {
       framework: "vite",
       outputDirectory: "dist",
     });
-    expect(vercelConfig.headers).toHaveLength(1);
+    expect(vercelConfig.headers).toHaveLength(2);
+    expect(vercelConfig.rewrites).toEqual([
+      {
+        destination: "/index.html",
+        source: "/(.*)",
+      },
+    ]);
     expect(existsSync(MANIFEST_PATH)).toBe(true);
     expect(
       walkFiles(DIST_DIRECTORY).every((path) =>

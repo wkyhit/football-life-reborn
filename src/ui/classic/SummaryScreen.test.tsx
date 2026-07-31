@@ -36,9 +36,15 @@ describe("SummaryScreen", () => {
       name: "八字名字正好上限",
     });
     expect(name).toHaveClass("truncate");
-    expect(
-      container.querySelector("[data-classic-summary-scroll]"),
-    ).toHaveClass("overflow-y-auto");
+    const scrollRegion = screen.getByRole("region", {
+      name: "生涯总结",
+    });
+    expect(scrollRegion).toHaveClass(
+      "overflow-y-auto",
+      "outline-none",
+      "focus-visible:outline-2",
+    );
+    expect(scrollRegion).toHaveAttribute("tabindex", "0");
     expect(
       screen.getByRole("region", { name: "荣誉室" }).children[1]
         ?.children,

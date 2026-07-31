@@ -168,8 +168,7 @@ describe("Static metadata artifacts", () => {
     ).toBeLessThan(1_000_000);
   });
 
-  it("ships restrictive static security headers", () => {
-    const headers = readArtifact("_headers", "utf8");
+  it("ships Vercel security and cache policy without provider artifacts", () => {
     const vercelConfig = JSON.parse(
       readFileSync(
         join(process.cwd(), "vercel.json"),
@@ -184,46 +183,50 @@ describe("Static metadata artifacts", () => {
         readonly source: string;
       }[];
     };
+    const globalRule = vercelConfig.headers.find(
+      ({ source }) => source === "/(.*)",
+    );
+    const assetRule = vercelConfig.headers.find(
+      ({ source }) => source === "/assets/(.*)",
+    );
+    const globalHeaders = Object.fromEntries(
+      globalRule?.headers.map(({ key, value }) => [
+        key,
+        value,
+      ]) ?? [],
+    );
+    const assetHeaders = Object.fromEntries(
+      assetRule?.headers.map(({ key, value }) => [
+        key,
+        value,
+      ]) ?? [],
+    );
 
-    expect(headers).toContain("/*");
-    expect(headers).toContain(
-      "Content-Security-Policy: default-src 'self';",
+    expect(existsSync(join(PUBLIC_DIRECTORY, "_headers"))).toBe(
+      false,
     );
-    expect(headers).toContain("script-src 'self'");
-    expect(headers).toContain(
-      "style-src 'self' 'unsafe-inline'",
+    expect(existsSync(join(DIST_DIRECTORY, "_headers"))).toBe(
+      false,
     );
-    expect(headers).toContain(
-      "img-src 'self' blob: data:",
+    expect(globalHeaders).toMatchObject({
+      "Cache-Control": "public, max-age=0, must-revalidate",
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Permissions-Policy":
+        "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+    });
+    expect(globalHeaders["Content-Security-Policy"]).toContain(
+      "default-src 'self'",
     );
-    expect(headers).toContain("object-src 'none'");
-    expect(headers).toContain("base-uri 'self'");
-    expect(headers).toContain("form-action 'self'");
-    expect(headers).toContain("frame-ancestors 'none'");
-    expect(headers).not.toContain("'unsafe-eval'");
-    expect(headers).toContain(
-      "Referrer-Policy: strict-origin-when-cross-origin",
+    expect(globalHeaders["Content-Security-Policy"]).not.toContain(
+      "'unsafe-eval'",
     );
-    expect(headers).toContain(
-      "X-Content-Type-Options: nosniff",
-    );
-    expect(headers).toContain("X-Frame-Options: DENY");
-    expect(headers).toContain(
-      "Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()",
-    );
-    expect(headers).toContain(
-      "Cross-Origin-Opener-Policy: same-origin",
-    );
-    expect(vercelConfig.headers).toHaveLength(1);
-    expect(vercelConfig.headers[0]?.source).toBe("/(.*)");
-    expect(
-      Object.fromEntries(
-        vercelConfig.headers[0]?.headers.map(({ key, value }) => [
-          key,
-          value,
-        ]) ?? [],
-      ),
-    ).toEqual(parseStaticHeaders(headers));
+    expect(assetHeaders).toEqual({
+      "Cache-Control":
+        "public, max-age=31536000, immutable",
+    });
   });
 });
 
@@ -338,27 +341,4 @@ function expectPngArtifact(
   ]);
   expect(png.readUInt32BE(16)).toBe(width);
   expect(png.readUInt32BE(20)).toBe(height);
-}
-
-function parseStaticHeaders(
-  document: string,
-): Readonly<Record<string, string>> {
-  return Object.fromEntries(
-    document
-      .split("\n")
-      .slice(1)
-      .filter((line) => line.trim().length > 0)
-      .map((line) => {
-        const separator = line.indexOf(":");
-
-        if (separator < 0) {
-          throw new Error(`Invalid static header line: ${line}`);
-        }
-
-        return [
-          line.slice(0, separator).trim(),
-          line.slice(separator + 1).trim(),
-        ];
-      }),
-  );
 }

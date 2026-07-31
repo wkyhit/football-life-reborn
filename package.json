@@ -20,6 +20,7 @@
     "test": "vitest run",
     "test:budget": "npm run build && vitest run --config vitest.budget.config.ts",
     "test:e2e": "playwright test",
+    "test:deployment": "vitest run tests/deployment",
     "test:golden": "vitest run tests/golden/classicParity.test.ts",
     "test:performance": "vitest run tests/performance/economy-release-budgets.test.ts",
     "test:property": "vitest run tests/property/careerInvariants.test.ts",
