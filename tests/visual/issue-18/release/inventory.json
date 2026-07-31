@@ -1,0 +1,116 @@
+{
+  "capturedAt": "2026-07-31T16:31:00+08:00",
+  "issue": 18,
+  "runner": {
+    "name": "ego-browser",
+    "taskSpaceId": 26,
+    "version": "1.2.3"
+  },
+  "source": {
+    "branch": "issue-18-contract-economy-story",
+    "parentCommit": "9fa5c07350b425290b34a655727846c1d88afcf1",
+    "url": "http://127.0.0.1:5173/"
+  },
+  "screenshots": [
+    {
+      "file": "tests/visual/issue-18/release/enhanced-loan-320x844.png",
+      "fixture": "career-deciding",
+      "height": 844,
+      "mode": "enhanced",
+      "sha256": "2b42fbd3b13865a052b06009a0e8182a2caa94b3448a5d8aabd4c90cca435c57",
+      "verdict": "pass",
+      "width": 320
+    },
+    {
+      "file": "tests/visual/issue-18/release/enhanced-retirement-1440x900.png",
+      "fixture": "special-veteran-no-offers",
+      "height": 900,
+      "mode": "enhanced",
+      "sha256": "2a961bd1817179e44cf6563ffe866c2651f96892e6a3b2cf2070fe16befd589d",
+      "verdict": "pass",
+      "width": 1440
+    }
+  ],
+  "responsiveMatrix": {
+    "decisionFixture": "career-deciding",
+    "modes": [
+      "classic",
+      "enhanced"
+    ],
+    "results": {
+      "horizontalOverflowCount": 0,
+      "missingControlNameCount": 0,
+      "minimumClassicDecisionButtonHeightPx": 65,
+      "minimumEnhancedDecisionButtonHeightPx": 68.5
+    },
+    "widths": [
+      320,
+      375,
+      414,
+      768,
+      1280,
+      1440
+    ]
+  },
+  "browserAcceptance": [
+    {
+      "evidence": "A keyboard-only Enhanced setup selected China, entered the attacker identity, selected ST on the pitch, and started the career. The first academy choice revealed two seasons and restored focus to the next transfer decision.",
+      "scenario": "attacker, ordinary event, club transfer, keyboard",
+      "verdict": "pass"
+    },
+    {
+      "evidence": "With prefers-reduced-motion: reduce, the committed transfer skipped intermediate reveals, left zero intermediate reveal nodes, announced the next choice, and restored focus to a decision option.",
+      "scenario": "reduced motion and focus restore",
+      "verdict": "pass"
+    },
+    {
+      "evidence": "The Enhanced loan decision rendered three scan-safe loan choices at every required width; the 320px screenshot has zero document overflow.",
+      "scenario": "loan",
+      "verdict": "pass"
+    },
+    {
+      "evidence": "A real suspension-redemption career showed suspension, zero-income seasons, league/cup/continental champions, Golden Ball, Golden Boot, and national honors with zero document overflow.",
+      "scenario": "suspension, major champion, season honors",
+      "verdict": "pass"
+    },
+    {
+      "evidence": "The veteran-no-offers career rendered the deterministic ending, P95 simulated-career percentile, total income, narrative, honors, and club trail at 390px and 1440px with zero document overflow.",
+      "scenario": "retirement ending",
+      "verdict": "pass"
+    },
+    {
+      "evidence": "A goalkeeper-legend replay rendered read-only deterministic replay, goalkeeper metrics, simulated-career percentile, total income, a 516-character self-contained URL, and no /api/ request.",
+      "scenario": "goalkeeper and replay",
+      "verdict": "pass"
+    },
+    {
+      "evidence": "A v2 active session was converted to a v1 envelope and reloaded. Startup retained the v1 bytes, wrote backup and receipt, produced schema v2 economy-v1 data, restored two choices and total income 40000, created one archive, and remained byte-stable on the next reload.",
+      "scenario": "old-save migration and reload",
+      "verdict": "pass"
+    },
+    {
+      "evidence": "Archive UI created a branch at an earlier checkpoint with inherited income 20000 versus parent income 40000, exported 7618 bytes, deleted the branch, and imported the same career back with economy-v1 metadata.",
+      "scenario": "archive, branch, export and import",
+      "verdict": "pass"
+    },
+    {
+      "evidence": "The Enhanced native share-card dialog opened as a labelled modal, kept every Tab target inside, closed with Escape, and restored focus to Save share card.",
+      "scenario": "reader semantics, focus trap and restore",
+      "verdict": "pass"
+    }
+  ],
+  "automatedGates": {
+    "budget": "2 files, 13 tests passed after production build",
+    "fullSuite": "59 files, 359 tests passed",
+    "golden": "36 fixtures; 40 tests passed",
+    "lint": "passed",
+    "performance": "3 tests passed",
+    "property": "10000 football careers passed",
+    "typecheck": "passed"
+  },
+  "visualVerdict": {
+    "critical": 0,
+    "major": 0,
+    "result": "pass"
+  }
+}

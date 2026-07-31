@@ -234,6 +234,11 @@ type IndexReadResult =
     }
   | Exclude<ArchiveListResult, { readonly ok: true }>;
 
+type LegacyArchiveIndexCache = {
+  entries: readonly CareerArchiveEntry[] | null;
+  raw: string | null;
+};
+
 export function archivePayloadStorageKey(
   id: string,
 ): string {
@@ -255,10 +260,16 @@ export function createArchiveRepository(
   const now =
     options.now ?? (() => new Date().toISOString());
   const deletedArchives = new Map<string, DeletedArchive>();
+  const legacyIndexCache: LegacyArchiveIndexCache = {
+    entries: null,
+    raw: null,
+  };
   let nextUndoToken = 1;
+  const readRepositoryIndex = () =>
+    readIndex(storage, legacyIndexCache);
 
   const list = (): ArchiveListResult => {
-    const index = readIndex(storage);
+    const index = readRepositoryIndex();
 
     if (!index.ok) {
       return index;
@@ -272,7 +283,7 @@ export function createArchiveRepository(
 
   return {
     create(input) {
-      const index = readIndex(storage);
+      const index = readRepositoryIndex();
 
       if (!index.ok) {
         return index;
@@ -348,7 +359,7 @@ export function createArchiveRepository(
     },
 
     delete(id) {
-      const index = readIndex(storage);
+      const index = readRepositoryIndex();
 
       if (!index.ok) {
         return index;
@@ -424,7 +435,7 @@ export function createArchiveRepository(
     list,
 
     load(id) {
-      const index = readIndex(storage);
+      const index = readRepositoryIndex();
 
       if (!index.ok) {
         return index.reason === "unavailable"
@@ -598,7 +609,7 @@ export function createArchiveRepository(
     },
 
     rename(id, nextDisplayName) {
-      const index = readIndex(storage);
+      const index = readRepositoryIndex();
 
       if (!index.ok) {
         return index;
@@ -648,7 +659,7 @@ export function createArchiveRepository(
         return { ok: false, reason: "undo_not_found" };
       }
 
-      const index = readIndex(storage);
+      const index = readRepositoryIndex();
 
       if (!index.ok) {
         return index;
@@ -699,7 +710,7 @@ export function createArchiveRepository(
     },
 
     update(id, career) {
-      const index = readIndex(storage);
+      const index = readRepositoryIndex();
 
       if (!index.ok) {
         return index;
@@ -804,6 +815,7 @@ function createEntry(input: {
 
 function readIndex(
   storage: ArchiveStorageLike,
+  legacyCache: LegacyArchiveIndexCache,
 ): IndexReadResult {
   let raw: string | null;
 
@@ -846,6 +858,9 @@ function readIndex(
   let entries: CareerArchiveEntry[];
 
   if (parsed.schemaVersion === ARCHIVE_SCHEMA_VERSION) {
+    legacyCache.entries = null;
+    legacyCache.raw = null;
+
     if (!parsed.entries.every(isArchiveEntry)) {
       return {
         detail: "Archive index does not match schema version 2",
@@ -863,23 +878,35 @@ function readIndex(
       };
     }
 
-    entries = [];
+    if (
+      legacyCache.raw === raw &&
+      legacyCache.entries !== null
+    ) {
+      entries = [...legacyCache.entries];
+    } else {
+      // Retained v1 payloads are immutable rollback inputs. Cache their
+      // derived list metadata until the exact v1 index bytes change.
+      entries = [];
 
-    for (const legacyEntry of parsed.entries) {
-      const economy = readLegacyArchiveEconomy(
-        storage,
-        legacyEntry.id,
-      );
+      for (const legacyEntry of parsed.entries) {
+        const economy = readLegacyArchiveEconomy(
+          storage,
+          legacyEntry.id,
+        );
 
-      if (!economy.ok) {
-        return economy;
+        if (!economy.ok) {
+          return economy;
+        }
+
+        entries.push({
+          ...(legacyEntry as LegacyCareerArchiveEntry),
+          economyPolicyVersion: ECONOMY_POLICY_VERSION,
+          totalIncome: economy.economy.totalIncome,
+        });
       }
 
-      entries.push({
-        ...(legacyEntry as LegacyCareerArchiveEntry),
-        economyPolicyVersion: ECONOMY_POLICY_VERSION,
-        totalIncome: economy.economy.totalIncome,
-      });
+      legacyCache.entries = entries;
+      legacyCache.raw = raw;
     }
   } else {
     return {

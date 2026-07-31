@@ -1,7 +1,24 @@
 # Economy migration and benchmark runbook
 
-Status: economy migration v1 and percentile benchmark implemented
-Issue #18 Slice 6
+Status: accepted release contract
+Issue #18 Slices 3, 6, and 8
+
+## Architecture decision record
+
+Decision status: accepted on 2026-07-31.
+
+Contract economy remains a deterministic projection beside the frozen
+football state. New writes use schema v2; v1 active sessions, archives,
+transfers, and replay inputs remain readable through explicit,
+versioned adapters. Migration preserves the original bytes, writes a
+recoverable backup before any v2 target, and records completion only
+after read-back succeeds.
+
+This keeps football RNG, the Classic content version, and the existing
+football state hash unchanged while allowing contract and income data
+to evolve independently. The trade-off is a one-time replay cost for
+legacy data. That cost is bounded below and must not be moved into UI
+components or replaced by cached totals as the reconstruction source.
 
 ## Compatibility matrix
 
@@ -18,6 +35,14 @@ Every v1 reader maps the missing policy field to
 `createCareerEconomyProjection`; no reader estimates income from cached
 index values. New envelopes include `economyPolicyVersion`. Archive
 indexes cache `totalIncome` only for list rendering.
+
+Within one repository instance, a successfully backfilled v1 archive
+index is cached against its exact raw index bytes. The first list may
+read and replay each indexed v1 payload; repeated lists read only the
+v2 and v1 index keys. Any v1 index-byte change invalidates the cache,
+and a v2 index always takes precedence. This is safe because retained
+v1 payloads are immutable rollback inputs; archive detail loading still
+reads and validates the selected payload.
 
 The football career state, Classic content version, RNG cursor, and
 football `stateHash` remain unchanged. Economy compatibility is checked
@@ -92,6 +117,30 @@ Repository, transfer, and replay suites separately freeze their v1
 readers, v2 writers, policy-version checks, derived economy equality,
 and unchanged football hashes.
 
+## Release performance budgets
+
+Run the deterministic budget suite from the repository root:
+
+```sh
+npm run test:performance
+```
+
+`tests/performance/economy-release-budgets.test.ts` freezes three
+release workloads:
+
+- all 14 long-mode golden careers projected 25 times after warm-up in
+  at most 1,500 ms;
+- a maximum-capacity migration of 20 v1 archives in at most 120 storage
+  reads and 45 storage writes, with no deletes;
+- a maximum-capacity v1 archive list that may read all 20 payloads once
+  but performs only the two index reads on subsequent lists.
+
+The elapsed-time budget intentionally has wide CI headroom;
+deterministic fixture count and storage-operation budgets are the
+primary regression signals. Tightening a budget requires evidence from
+both local and CI runs. Raising one requires an Issue decision and an
+explanation in this runbook.
+
 ## Percentile benchmark
 
 Regenerate the frozen table from the repository root:
@@ -125,3 +174,36 @@ boundaries. Regenerate and review the artifact whenever Classic
 content, the economy policy, or the benchmark contract changes. A
 digest change without an intentional input-version change is a
 reproducibility failure.
+
+## Issue #9 handoff gate
+
+Issue #9 may begin only after the Issue #18 branch passes and records:
+
+```sh
+npm run test:golden
+npm run test:property
+npm run test:performance
+npm test
+npm run test:budget
+npm run typecheck
+npm run lint
+```
+
+Browser evidence must use the project-designated `ego-browser` and
+cover Classic and Enhanced at 390×844 and 1280×830, the
+320/375/414/768/1280/1440 width matrix, attacker and goalkeeper paths,
+the required event/transfer/loan/suspension/honor/retirement stories,
+keyboard and focus behavior, reader semantics, reduced motion, reload,
+v1 migration, import, replay, and branching consistency. Playwright and
+Chrome output are not accepted as Issue #18 browser evidence.
+
+The handoff comment must include the exact Issue #18 commit, Preview
+deployment URL, command results, `ego-browser` task-space evidence, and
+any intentional Classic screenshot delta. Production deployment,
+promotion, rollback rehearsal, and the final public story journey
+remain Issue #9 work.
+
+No temporary compatibility branch remains in the economy path. The v1
+readers and migration adapters are deliberate versioned support
+surfaces and must be removed only by a separately approved retention
+decision.
