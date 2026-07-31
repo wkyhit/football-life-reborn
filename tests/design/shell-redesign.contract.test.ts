@@ -71,9 +71,9 @@ describe("Enhanced shell and setup redesign contract", () => {
 
     expect(inventory).toMatchObject({
       runner: "ego-browser",
-      slice: 3,
       viewportWidths: [320, 375, 414, 768, 1280, 1440],
     });
+    expect(inventory.slice).toBeGreaterThanOrEqual(3);
     expect(inventory.entries.map((entry) => entry.id)).toEqual(
       expect.arrayContaining([
         "landing",

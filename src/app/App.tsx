@@ -31,7 +31,6 @@ import {
 import { evaluateChallengeProgress } from "../features/challenges/progress";
 import { createReplayUrl } from "../features/replay/codec";
 import { createReplayPayload } from "../features/replay/replay";
-import { ReplayRouteScreen } from "../features/replay/ReplayRouteScreen";
 import { resolveReplayRoute } from "../features/replay/route";
 import { useSeasonReveal } from "../features/season-reveal/seasonReveal";
 import {
@@ -106,6 +105,20 @@ const EnhancedRecoveryScreen = lazy(async () => {
     "../ui/enhanced/recovery/EnhancedRecoveryScreen"
   );
   return { default: module.EnhancedRecoveryScreen };
+});
+
+const EnhancedSummaryScreen = lazy(async () => {
+  const module = await import(
+    "../ui/enhanced/summary/EnhancedSummaryScreen"
+  );
+  return { default: module.EnhancedSummaryScreen };
+});
+
+const ReplayRouteScreen = lazy(async () => {
+  const module = await import(
+    "../features/replay/ReplayRouteScreen"
+  );
+  return { default: module.ReplayRouteScreen };
 });
 
 const ShareCardOverlay = lazy(async () => {
@@ -768,68 +781,78 @@ function CareerExperience({
               challengeId: challenge.id,
             }),
           );
+    const copyReplay =
+      replayUrl === null
+        ? undefined
+        : () => {
+            if (navigator.clipboard === undefined) {
+              setReplayCopyMessage(
+                "复制失败，请手动选择回放链接",
+              );
+              return;
+            }
+
+            void navigator.clipboard
+              .writeText(replayUrl)
+              .then(() =>
+                setReplayCopyMessage("回放链接已复制"),
+              )
+              .catch(() =>
+                setReplayCopyMessage(
+                  "复制失败，请手动选择回放链接",
+                ),
+              );
+          };
+    const summaryProps = {
+      ...(challenge === null ||
+      challengeProgress === null ||
+      replayUrl === null ||
+      copyReplay === undefined
+        ? {}
+        : {
+            challenge: {
+              daily: challenge,
+              progress: challengeProgress,
+              replayUrl,
+            },
+            onCopyReplay: copyReplay,
+            replayCopyMessage,
+          }),
+      onRestart: () => {
+        setShareOpen(false);
+        onRestart();
+      },
+      onShare: () => setShareOpen(true),
+      view,
+    };
 
     return (
       <>
         {uiMode === "enhanced" ? (
-          <button
-            className="fixed right-4 top-[max(12px,env(safe-area-inset-top))] z-30 min-h-10 rounded-[9px] border border-white/10 bg-zinc-900/95 px-3 text-xs font-bold text-zinc-200 shadow-lg"
-            onClick={() =>
-              onOpenArchive(reveal.committedCareer)
+          <Suspense
+            fallback={
+              <EnhancedLoadingFallback label="正在整理生涯记录" />
             }
-            type="button"
           >
-            生涯档案
-          </button>
-        ) : null}
-        <SummaryScreen
-          {...(challenge === null ||
-          challengeProgress === null ||
-          replayUrl === null
-            ? {}
-            : {
-                challenge: {
-                  daily: challenge,
-                  progress: challengeProgress,
-                  replayUrl,
-                },
-                onCopyReplay: () => {
-                  if (navigator.clipboard === undefined) {
-                    setReplayCopyMessage(
-                      "复制失败，请手动选择回放链接",
-                    );
-                    return;
-                  }
-
-                  void navigator.clipboard
-                    .writeText(replayUrl)
-                    .then(() =>
-                      setReplayCopyMessage(
-                        "回放链接已复制",
-                      ),
-                    )
-                    .catch(() =>
-                      setReplayCopyMessage(
-                        "复制失败，请手动选择回放链接",
-                      ),
-                    );
-                },
-                replayCopyMessage,
-              })}
-          onRestart={() => {
-            setShareOpen(false);
-            onRestart();
-          }}
-          onShare={() => setShareOpen(true)}
-          view={view}
-        />
+            <EnhancedSummaryScreen
+              {...summaryProps}
+              onOpenArchive={() =>
+                onOpenArchive(reveal.committedCareer)
+              }
+            />
+          </Suspense>
+        ) : (
+          <SummaryScreen {...summaryProps} />
+        )}
         {shareOpen ? (
           <Suspense
             fallback={
-              <EnhancedLoadingFallback
-                label="正在生成分享卡片"
-                overlay
-              />
+              uiMode === "enhanced" ? (
+                <EnhancedLoadingFallback
+                  label="正在生成分享卡片"
+                  overlay
+                />
+              ) : null
             }
           >
             <ShareCardOverlay
@@ -847,6 +870,11 @@ function CareerExperience({
               qrPayload={
                 replayUrl ??
                 new URL("/", window.location.href).href
+              }
+              variant={
+                uiMode === "enhanced"
+                  ? "enhanced"
+                  : "classic"
               }
               view={view}
             />

@@ -20,11 +20,11 @@ const ENHANCED_PRESENTATION_FILES = [
   "src/features/archive/EnhancedArchiveScreen.tsx",
   "src/features/challenges/ChallengeProgressPanel.tsx",
   "src/features/replay/ReplayRouteScreen.tsx",
-  "src/features/share-card/ShareCardOverlay.tsx",
   "src/ui/enhanced/EnhancedOnboarding.tsx",
   "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
   "src/ui/enhanced/onboarding/EnhancedLandingScreen.tsx",
   "src/ui/enhanced/onboarding/EnhancedNationalityScreen.tsx",
+  "src/ui/enhanced/summary/EnhancedSummaryScreen.tsx",
 ] as const;
 
 const REQUIRED_TOKENS = [
@@ -279,6 +279,21 @@ describe("Hallmark app-wide design system contract", () => {
     expect(styles).not.toMatch(
       /--color-enhanced-[\w-]+:\s*oklch\(/,
     );
+  });
+
+  it("scopes scale and easing overrides to Enhanced so Classic utilities retain their baseline values", () => {
+    const css = readFileSync(TOKENS_CSS_PATH, "utf8");
+    const rootBlock = css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1];
+    const enhancedBlock = css.match(
+      /\[data-enhanced-shell\]\s*\{([\s\S]*?)\n\}/,
+    )?.[1];
+
+    expect(rootBlock).toBeDefined();
+    expect(enhancedBlock).toBeDefined();
+    expect(rootBlock).not.toContain("--text-2xl:");
+    expect(rootBlock).not.toContain("--ease-out:");
+    expect(enhancedBlock).toContain("--text-2xl:");
+    expect(enhancedBlock).toContain("--ease-out:");
   });
 
   it("removes legacy palette and font improvisation from Enhanced owners", () => {

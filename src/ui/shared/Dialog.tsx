@@ -13,6 +13,7 @@ type DialogProps = Omit<
   readonly initialFocusRef?: RefObject<HTMLElement | null>;
   readonly labelledBy: string;
   readonly onClose: () => void;
+  readonly variant?: "classic" | "enhanced";
 };
 
 const FOCUSABLE_SELECTOR = [
@@ -29,6 +30,7 @@ export function Dialog({
   initialFocusRef,
   labelledBy,
   onClose,
+  variant = "classic",
   ...dialogProps
 }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -107,6 +109,7 @@ export function Dialog({
       {...dialogProps}
       aria-labelledby={labelledBy}
       aria-modal="true"
+      data-dialog-variant={variant}
       onKeyDown={handleKeyDown}
       ref={dialogRef}
       role="dialog"

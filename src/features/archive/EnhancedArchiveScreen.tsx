@@ -8,7 +8,9 @@ import {
   replayClassicCareer,
   type ClassicCareerState,
   type ClassicChoiceLogEntry,
+  type ClassicDecisionType,
 } from "../../domain/classicEngine";
+import { CLASSIC_CATALOG } from "../../domain/catalog/classicCatalog";
 import {
   createCareerBranch,
   type DecisionCheckpoint,
@@ -28,6 +30,10 @@ import {
   importCareerTransfer,
   serializeCareerTransfer,
 } from "../../storage/careerTransfer";
+import { EnhancedAction } from "../../ui/enhanced/components/EnhancedAction";
+import { EnhancedAppBar } from "../../ui/enhanced/components/EnhancedAppBar";
+import { EnhancedStateSurface } from "../../ui/enhanced/components/EnhancedStateSurface";
+import { createCareerPresentation } from "../../ui/classic/careerPresentation";
 
 export type EnhancedArchiveScreenProps = {
   readonly activeArchiveId: string | null;
@@ -329,38 +335,42 @@ export function EnhancedArchiveScreen({
     <main
       className="min-h-dvh bg-enhanced-canvas text-enhanced-strong"
       data-enhanced-archive-screen=""
+      data-hallmark-macrostructure="Index-First"
       id="main-content"
       tabIndex={-1}
     >
-      <header className="sticky top-0 z-10 border-b border-enhanced-line bg-enhanced-canvas px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-6xl items-end justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
-              LOCAL CAREER LIBRARY
-            </p>
-            <h1 className="mt-1 text-2xl font-extrabold">
-              生涯档案
-            </h1>
-            <p className="mt-1 text-xs text-enhanced-supporting">
-              {entries.length} / {ARCHIVE_CAPACITY} 个本地生涯
-            </p>
-          </div>
-          <button
-            className="min-h-11 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-4 text-sm font-bold"
-            onClick={onBack}
-            type="button"
-          >
-            返回
-          </button>
-        </div>
-      </header>
+      {/* Hallmark · genre: playful · macrostructure: Index-First · theme: custom (tuned) · design-system: design.md · designed-as-app */}
+      <EnhancedAppBar
+        actions={
+          <EnhancedAction onClick={onBack}>返回</EnhancedAction>
+        }
+        context={`${entries.length} / ${ARCHIVE_CAPACITY} local careers`}
+        currentLabel="生涯档案"
+      />
 
       <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8">
+        <header className="grid gap-3 border-b-2 border-enhanced-line pb-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <div>
+            <p className="font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-pitch">
+              Local career library
+            </p>
+            <h1 className="mt-2 font-enhanced-display text-4xl font-bold">
+              生涯档案
+            </h1>
+            <p className="mt-2 max-w-[60ch] text-base leading-relaxed text-enhanced-supporting">
+              本地保存、导出与比较每一条确定性生涯记录。
+            </p>
+          </div>
+          <p className="font-enhanced-mono text-sm text-enhanced-ink-2">
+            {String(entries.length).padStart(2, "0")} /{" "}
+            {String(ARCHIVE_CAPACITY).padStart(2, "0")}
+          </p>
+        </header>
         <section
           aria-label="档案工具"
-          className="flex flex-wrap items-center gap-2 border-b border-enhanced-line pb-4"
+          className="flex flex-wrap items-center gap-3 border-b border-enhanced-line py-5"
         >
-          <label className="min-h-11 cursor-pointer rounded-[10px] bg-enhanced-pitch px-4 py-3 text-sm font-bold text-enhanced-pitch-ink">
+          <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-[var(--radius-input)] border border-enhanced-pitch bg-enhanced-pitch px-4 text-sm font-bold text-enhanced-pitch-ink">
             导入生涯 JSON
             <input
               accept=".json,application/json"
@@ -369,8 +379,7 @@ export function EnhancedArchiveScreen({
               type="file"
             />
           </label>
-          <button
-            className="min-h-11 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
+          <EnhancedAction
             disabled={selectedIds.length !== 2}
             onClick={() => {
               if (selectedIds.length === 2) {
@@ -381,20 +390,17 @@ export function EnhancedArchiveScreen({
                 });
               }
             }}
-            type="button"
           >
             比较已选人生
-          </button>
+          </EnhancedAction>
           {undoToken ? (
-            <button
-              className="min-h-11 rounded-[10px] border border-enhanced-trophy/40 bg-enhanced-trophy/10 px-4 text-sm font-bold text-enhanced-trophy"
+            <EnhancedAction
               onClick={undoDelete}
-              type="button"
             >
               撤销删除
-            </button>
+            </EnhancedAction>
           ) : null}
-          <span className="ml-auto text-[11px] text-enhanced-supporting">
+          <span className="ml-auto text-xs text-enhanced-supporting">
             选择两个兼容生涯进行比较
           </span>
         </section>
@@ -410,29 +416,38 @@ export function EnhancedArchiveScreen({
         ) : null}
 
         {entries.length === 0 ? (
-          <section className="py-20 text-center">
-            <h2 className="text-lg font-bold">
-              还没有生涯档案
-            </h2>
-            <p className="mt-2 text-sm text-enhanced-supporting">
-              开始一段 Enhanced 生涯后会自动保存在这里。
-            </p>
-          </section>
+          <div className="py-8">
+            <EnhancedStateSurface
+              description="开始一段 Enhanced 生涯后会自动保存在这里；也可以导入先前导出的 JSON。"
+              eyebrow="Archive empty"
+              state="empty"
+              title="还没有生涯档案"
+            />
+          </div>
         ) : (
-          <ul className="mt-4 grid gap-3 lg:grid-cols-2">
-            {entries.map((entry) => (
+          <ul className="mt-6 divide-y divide-enhanced-line border-y border-enhanced-line">
+            {entries.map((entry, index) => (
               <li
-                className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4"
+                className="grid gap-4 py-5 lg:grid-cols-[3.5rem_minmax(0,1fr)_minmax(22rem,0.8fr)] lg:items-start"
+                data-enhanced-archive-record=""
                 key={entry.id}
               >
+                <p
+                  aria-hidden="true"
+                  className="font-enhanced-mono text-xs text-enhanced-pitch"
+                >
+                  R{String(index + 1).padStart(2, "0")}
+                </p>
                 <div className="flex items-start gap-3">
-                  <input
-                    aria-label={`选择 ${entry.displayName} 用于比较`}
-                    checked={selectedIds.includes(entry.id)}
-                    className="mt-1 h-5 w-5 accent-enhanced-pitch"
-                    onChange={() => toggleSelected(entry.id)}
-                    type="checkbox"
-                  />
+                  <label className="flex h-11 w-11 shrink-0 cursor-pointer items-start justify-start pt-1">
+                    <input
+                      aria-label={`选择 ${entry.displayName} 用于比较`}
+                      checked={selectedIds.includes(entry.id)}
+                      className="h-5 w-5 accent-enhanced-pitch"
+                      onChange={() => toggleSelected(entry.id)}
+                      type="checkbox"
+                    />
+                  </label>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="truncate text-base font-extrabold">
@@ -593,18 +608,14 @@ function ArchiveAction({
   readonly onClick: () => void;
 }) {
   return (
-    <button
+    <EnhancedAction
       aria-label={label}
-      className={
-        danger
-          ? "min-h-10 rounded-[8px] border border-enhanced-alert/20 bg-enhanced-alert/[0.06] px-2 text-xs font-bold text-enhanced-alert"
-          : "min-h-10 rounded-[8px] border border-enhanced-line bg-enhanced-surface px-2 text-xs font-bold text-enhanced-ink-2"
-      }
+      className="min-h-11 w-full px-2 text-xs"
       onClick={onClick}
-      type="button"
+      tone={danger ? "danger" : "secondary"}
     >
       {children}
-    </button>
+    </EnhancedAction>
   );
 }
 
@@ -680,10 +691,25 @@ function BranchCreator({
     loaded.career,
     checkpoint,
   );
+  const decisionPresentation = createCareerPresentation({
+    career: decisionState,
+    isRevealing: false,
+    visibleSeasonCount: decisionState.seasons.length,
+  });
+  const optionLabelById = new Map(
+    decisionPresentation.panel.kind === "decision"
+      ? decisionPresentation.panel.options.map((option) => [
+          option.id,
+          option.title,
+        ])
+      : [],
+  );
   const originalChoice =
     loaded.career.choiceLog[
       checkpoint.choiceLogLength
     ]!;
+  const originalOptionLabel =
+    optionLabelById.get(originalChoice.optionId) ?? "原路线";
   const alternatives =
     decisionState.currentDecision?.options.filter(
       (option) => option.id !== originalChoice.optionId,
@@ -764,8 +790,9 @@ function BranchCreator({
             >
               {branchable.map((candidate) => (
                 <option key={candidate.id} value={candidate.id}>
-                  {candidate.age} 岁 · {candidate.decisionType} ·
-                  第 {candidate.choiceLogLength + 1} 次决定
+                  {candidate.age} 岁 ·{" "}
+                  {decisionTypeLabel(candidate.decisionType)} · 第{" "}
+                  {candidate.choiceLogLength + 1} 次决定
                 </option>
               ))}
             </select>
@@ -782,7 +809,7 @@ function BranchCreator({
             />
           </label>
           <p className="mt-4 text-xs leading-relaxed text-enhanced-supporting">
-            原决定：{originalChoice.optionId}
+            原决定：{originalOptionLabel}
           </p>
         </div>
         <div>
@@ -791,6 +818,7 @@ function BranchCreator({
             {alternatives.map((option) => (
               <button
                 aria-pressed={selectedOptionId === option.id}
+                data-enhanced-branch-option=""
                 className={
                   selectedOptionId === option.id
                     ? "min-h-12 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 px-4 text-left text-sm font-bold text-enhanced-pitch"
@@ -800,7 +828,8 @@ function BranchCreator({
                 onClick={() => setSelectedOptionId(option.id)}
                 type="button"
               >
-                改选 {option.label}
+                改选{" "}
+                {optionLabelById.get(option.id) ?? "另一条路线"}
               </button>
             ))}
           </div>
@@ -809,17 +838,17 @@ function BranchCreator({
               {error}
             </p>
           ) : null}
-          <button
-            className="mt-5 min-h-12 w-full rounded-[10px] bg-enhanced-pitch px-5 text-sm font-bold text-enhanced-pitch-ink disabled:opacity-40"
+          <EnhancedAction
+            className="mt-5 min-h-12 w-full"
             disabled={
               selectedOptionId === null ||
               displayName.trim().length === 0
             }
             onClick={createBranch}
-            type="button"
+            tone="primary"
           >
             保存平行人生
-          </button>
+          </EnhancedAction>
         </div>
       </div>
     </SubPage>
@@ -875,7 +904,9 @@ function BranchComparison({
         <p className="text-sm text-enhanced-alert">
           这两个生涯不能比较：
           {comparison.reasons
-            .map((reason) => reason.code)
+            .map((reason) =>
+              incompatibilityLabel(reason.code),
+            )
             .join("、")}
         </p>
       </SubPage>
@@ -888,7 +919,7 @@ function BranchComparison({
       onBack={onBack}
       title="平行人生对比"
     >
-      <div className="mb-5 grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 border-y border-enhanced-line">
         <BranchName
           label="人生 A"
           name={comparison.branches.left.displayName}
@@ -898,20 +929,36 @@ function BranchComparison({
           name={comparison.branches.right.displayName}
         />
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <CurveCard
-          points={comparison.abilityCurve}
-          title="能力曲线"
-        />
-        <CurveCard
-          marketValue
-          points={comparison.valueCurve}
-          title="身价曲线"
-        />
-        <MetricCard
-          metrics={comparison.totals}
-          title="生涯总计"
-        />
+      <div className="grid gap-x-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+        <div className="min-w-0">
+          <CurveCard
+            points={comparison.abilityCurve}
+            title="能力曲线"
+          />
+          <CurveCard
+            marketValue
+            points={comparison.valueCurve}
+            title="身价曲线"
+          />
+        </div>
+        <div className="min-w-0">
+          <MetricCard
+            metrics={comparison.totals}
+            title="生涯总计"
+          />
+          <section
+            className="border-b border-enhanced-line py-5"
+            data-enhanced-comparison-record="ending"
+          >
+            <h2 className="text-lg font-bold">生涯结局</h2>
+            <div className="mt-3 grid grid-cols-2 gap-4 text-sm">
+              <p>{endingLabel(comparison.ending.left)}</p>
+              <p>{endingLabel(comparison.ending.right)}</p>
+            </div>
+          </section>
+        </div>
+      </div>
+      <div className="grid border-y border-enhanced-line md:grid-cols-3 md:divide-x md:divide-enhanced-line">
         <CategoryCard
           rows={comparison.trophies.rows}
           title="奖杯"
@@ -924,15 +971,8 @@ function BranchComparison({
           rows={comparison.nationalTeam.results.rows}
           title="国家队结果"
         />
-        <ClubCard comparison={comparison} />
-        <section className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4">
-          <h2 className="text-sm font-extrabold">生涯结局</h2>
-          <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-            <p>{comparison.ending.left ?? "进行中"}</p>
-            <p>{comparison.ending.right ?? "进行中"}</p>
-          </div>
-        </section>
       </div>
+      <ClubCard comparison={comparison} />
     </SubPage>
   );
 }
@@ -951,30 +991,33 @@ function SubPage({
   return (
     <main
       className="min-h-dvh bg-enhanced-canvas text-enhanced-strong"
+      data-enhanced-archive-subpage=""
+      data-hallmark-macrostructure="Index-First"
       id="main-content"
       tabIndex={-1}
     >
-      <header className="border-b border-enhanced-line px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))] sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-6xl items-end justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
-              {eyebrow}
-            </p>
-            <h1 className="mt-1 text-2xl font-extrabold">
-              {title}
-            </h1>
-          </div>
-          <button
-            className="min-h-11 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-4 text-sm font-bold"
-            onClick={onBack}
-            type="button"
-          >
+      {/* Hallmark · genre: playful · macrostructure: Index-First · theme: custom (tuned) · design-system: design.md · designed-as-app */}
+      <EnhancedAppBar
+        actions={
+          <EnhancedAction onClick={onBack}>
             返回档案
-          </button>
-        </div>
-      </header>
-      <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 lg:px-8">
+          </EnhancedAction>
+        }
+        context={eyebrow}
+        currentLabel={title}
+      />
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <header className="border-b-2 border-enhanced-line pb-6">
+          <p className="font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-pitch">
+            {eyebrow}
+          </p>
+          <h1 className="mt-2 font-enhanced-display text-4xl font-bold">
+            {title}
+          </h1>
+        </header>
+        <div className="pt-6">
         {children}
+        </div>
       </div>
     </main>
   );
@@ -988,11 +1031,11 @@ function BranchName({
   readonly name: string;
 }) {
   return (
-    <div className="rounded-[12px] border border-enhanced-line bg-enhanced-surface p-3">
-      <p className="text-[10px] font-bold text-enhanced-supporting">
+    <div className="border-r border-enhanced-line px-4 py-4 last:border-r-0">
+      <p className="font-enhanced-mono text-xs text-enhanced-supporting">
         {label}
       </p>
-      <p className="mt-1 truncate text-sm font-extrabold">
+      <p className="mt-1 truncate text-base font-bold">
         {name}
       </p>
     </div>
@@ -1009,8 +1052,11 @@ function CurveCard({
   readonly title: string;
 }) {
   return (
-    <section className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4">
-      <h2 className="text-sm font-extrabold">{title}</h2>
+    <section
+      className="border-b border-enhanced-line py-5"
+      data-enhanced-comparison-record="curve"
+    >
+      <h2 className="text-lg font-bold">{title}</h2>
       {points.length === 0 ? (
         <p className="mt-4 text-xs text-enhanced-supporting">
           暂无赛季数据
@@ -1060,13 +1106,16 @@ function MetricCard({
   readonly title: string;
 }) {
   return (
-    <section className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4">
-      <h2 className="text-sm font-extrabold">{title}</h2>
+    <section
+      className="border-b border-enhanced-line py-5"
+      data-enhanced-comparison-record="totals"
+    >
+      <h2 className="text-lg font-bold">{title}</h2>
       <div className="mt-3 space-y-2">
         {Object.entries(metrics).map(([key, metric]) => (
           <ComparisonRow
             key={key}
-            label={key}
+            label={metricLabel(key)}
             left={metric.left}
             right={metric.right}
           />
@@ -1092,8 +1141,11 @@ function CategoryCard({
   );
 
   return (
-    <section className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4">
-      <h2 className="text-sm font-extrabold">{title}</h2>
+    <section
+      className="px-4 py-5"
+      data-enhanced-comparison-record="category"
+    >
+      <h2 className="text-lg font-bold">{title}</h2>
       {visibleRows.length === 0 ? (
         <p className="mt-3 text-xs text-enhanced-supporting">
           两边都暂无记录
@@ -1103,7 +1155,7 @@ function CategoryCard({
           {visibleRows.map((row) => (
             <ComparisonRow
               key={row.category}
-              label={row.category}
+              label={categoryLabel(row.category)}
               left={row.left}
               right={row.right}
             />
@@ -1120,9 +1172,12 @@ function ClubCard({
   readonly comparison: ReadyBranchComparison;
 }) {
   return (
-    <section className="rounded-[14px] border border-enhanced-line bg-enhanced-surface p-4">
-      <h2 className="text-sm font-extrabold">效力俱乐部</h2>
-      <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+    <section
+      className="border-b border-enhanced-line py-5"
+      data-enhanced-comparison-record="clubs"
+    >
+      <h2 className="text-lg font-bold">效力俱乐部</h2>
+      <div className="mt-3 grid grid-cols-2 gap-6 text-sm">
         {[comparison.clubs.left, comparison.clubs.right].map(
           (clubs, index) => (
             <ul className="space-y-1" key={index}>
@@ -1133,7 +1188,8 @@ function ClubCard({
               ) : (
                 clubs.map((club) => (
                   <li key={club.teamId}>
-                    {club.teamId} · {club.seasonCount} 季
+                    {clubLabel(club.teamId)} ·{" "}
+                    {club.seasonCount} 季
                   </li>
                 ))
               )}
@@ -1155,7 +1211,7 @@ function ComparisonRow({
   readonly right: number;
 }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_48px_48px] gap-2 text-xs">
+    <div className="grid grid-cols-[minmax(0,1fr)_48px_48px] gap-2 text-sm">
       <span className="truncate text-enhanced-supporting">
         {label}
       </span>
@@ -1189,19 +1245,21 @@ function LedgerView({
           <p className="text-sm text-enhanced-supporting">
             {loaded.entry.displayName} · {loaded.ledger.length} 条记录
           </p>
-          <ol className="mt-4 grid gap-2 lg:grid-cols-2">
+          <ol className="mt-4 divide-y divide-enhanced-line border-y border-enhanced-line">
             {[...loaded.ledger]
               .reverse()
               .map((entry) => (
                 <li
-                  className="rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-xs"
+                  className="grid gap-1 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                  data-enhanced-archive-record="ledger"
                   key={entry.id}
                 >
                   <p className="font-bold">
                     {ledgerTitle(entry)}
                   </p>
                   <p className="mt-1 text-enhanced-supporting">
-                    {entry.age} 岁 · {entry.decisionId}
+                    {entry.age} 岁 · 第{" "}
+                    {entry.choiceLogIndex + 1} 次选择
                   </p>
                 </li>
               ))}
@@ -1215,7 +1273,7 @@ function LedgerView({
 function ledgerTitle(entry: CareerLedgerEntry): string {
   switch (entry.type) {
     case "award":
-      return `获得奖项：${entry.award}`;
+      return `获得奖项：${categoryLabel(entry.award)}`;
     case "event":
       return `生涯事件：${entry.eventKey}`;
     case "growth":
@@ -1227,7 +1285,7 @@ function ledgerTitle(entry: CareerLedgerEntry): string {
     case "suspension":
       return "停赛赛季";
     case "trophy":
-      return `获得奖杯：${entry.trophy}`;
+      return `获得奖杯：${categoryLabel(entry.trophy)}`;
     case "value":
       return `身价变化：${signed(entry.marketValueDelta)}`;
   }
@@ -1287,4 +1345,103 @@ function formatCurveValue(
 
 function signed(value: number): string {
   return value > 0 ? `+${value}` : String(value);
+}
+
+const DECISION_TYPE_LABELS: Readonly<
+  Record<ClassicDecisionType, string>
+> = {
+  academy_offer: "青训报价",
+  career_event: "生涯事件",
+  contract_nonrenewal: "合同未续",
+  loan_offer: "外租报价",
+  no_offers_retirement: "无人报价",
+  post_loan_not_retained: "租借归来未留队",
+  post_loan_retained: "租借归来留队",
+  transfer: "转会选择",
+};
+
+const METRIC_LABELS: Readonly<Record<string, string>> = {
+  appearances: "出场",
+  assists: "助攻",
+  awards: "个人奖项",
+  cleanSheets: "零封",
+  goals: "进球",
+  goalsConceded: "失球",
+  trophies: "奖杯",
+};
+
+const CATEGORY_LABELS: Readonly<Record<string, string>> = {
+  ballon_dor: "金球奖",
+  champion: "冠军",
+  club_world_cup: "世俱杯",
+  continental_primary: "洲际顶级冠军",
+  continental_secondary: "洲际次级冠军",
+  cup: "国内杯赛",
+  final: "亚军",
+  golden_boot: "金靴奖",
+  golden_glove: "金手套奖",
+  group: "小组赛",
+  league: "联赛冠军",
+  national_continental: "国家队洲际冠军",
+  not_qualified: "未晋级",
+  not_selected: "未入选",
+  qf: "八强",
+  r16: "十六强",
+  sf: "四强",
+  world_cup: "世界杯",
+};
+
+function decisionTypeLabel(
+  decisionType: ClassicDecisionType,
+): string {
+  return DECISION_TYPE_LABELS[decisionType];
+}
+
+function metricLabel(metric: string): string {
+  return METRIC_LABELS[metric] ?? "其他数据";
+}
+
+function categoryLabel(category: string): string {
+  return CATEGORY_LABELS[category] ?? "其他记录";
+}
+
+function clubLabel(teamId: string): string {
+  return (
+    CLASSIC_CATALOG.clubById.get(teamId)?.shortNameZh ??
+    "未知俱乐部"
+  );
+}
+
+function endingLabel(
+  ending: ClassicCareerState["retirementReason"],
+): string {
+  switch (ending) {
+    case null:
+      return "进行中";
+    case "no_offers":
+      return "无人报价后退役";
+    case "retirement_age":
+      return "达到退役年龄";
+    case "voluntary":
+      return "主动退役";
+  }
+}
+
+function incompatibilityLabel(
+  reason:
+    | "content_version"
+    | "identity"
+    | "mode"
+    | "seed",
+): string {
+  switch (reason) {
+    case "content_version":
+      return "内容版本不同";
+    case "identity":
+      return "球员身份不同";
+    case "mode":
+      return "游戏模式不同";
+    case "seed":
+      return "生涯编号不同";
+  }
 }

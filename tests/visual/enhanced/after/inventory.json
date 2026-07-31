@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-31T03:19:23Z",
-  "baselineCommit": "808f463fc1c5cdabcc72c1f5a1521a33b45e30e8",
+  "generatedAt": "2026-07-31T03:57:23Z",
+  "baselineCommit": "7cbba0d0ca8aa244168686c8f433932852669926",
   "runner": "ego-browser",
   "taskSpaceId": 24,
-  "slice": 3,
+  "slice": 4,
   "status": "candidate",
   "viewportWidths": [
     320,
@@ -128,6 +128,93 @@
       ],
       "evidence": [
         "tests/visual/enhanced/after/install-390x844.png"
+      ]
+    },
+    {
+      "id": "career-workbench",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
+        "src/ui/enhanced/components/EnhancedAppBar.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/career-320x844.png",
+        "tests/visual/enhanced/after/career-375x812.png",
+        "tests/visual/enhanced/after/career-414x896.png",
+        "tests/visual/enhanced/after/career-768x1024.png",
+        "tests/visual/enhanced/after/career-1280x830.png",
+        "tests/visual/enhanced/after/career-1440x900.png"
+      ]
+    },
+    {
+      "id": "summary",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/app/App.tsx",
+        "src/ui/enhanced/summary/EnhancedSummaryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/summary-390x844.png",
+        "tests/visual/enhanced/after/summary-1440x900.png"
+      ]
+    },
+    {
+      "id": "share",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/features/share-card/ShareCardOverlay.tsx",
+        "src/ui/shared/Dialog.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/share-390x844.png"
+      ]
+    },
+    {
+      "id": "archive",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/features/archive/EnhancedArchiveScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/archive-empty-390x844.png",
+        "tests/visual/enhanced/after/archive-populated-390x844.png",
+        "tests/visual/enhanced/after/archive-populated-1440x900.png"
+      ]
+    },
+    {
+      "id": "branching",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/features/archive/EnhancedArchiveScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/branch-create-390x844.png",
+        "tests/visual/enhanced/after/branch-compare-390x844.png",
+        "tests/visual/enhanced/after/branch-compare-1440x900.png"
+      ]
+    },
+    {
+      "id": "challenge",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/features/challenges/ChallengeProgressPanel.tsx",
+        "src/ui/enhanced/summary/EnhancedSummaryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/challenge-390x844.png",
+        "tests/visual/enhanced/after/challenge-summary-390x844.png"
+      ]
+    },
+    {
+      "id": "replay",
+      "status": "candidate",
+      "sourceFiles": [
+        "src/features/replay/ReplayRouteScreen.tsx",
+        "src/ui/enhanced/summary/EnhancedSummaryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/replay-ready-390x844.png",
+        "tests/visual/enhanced/after/replay-error-390x844.png"
       ]
     }
   ]

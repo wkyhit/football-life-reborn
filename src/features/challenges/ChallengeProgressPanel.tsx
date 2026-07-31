@@ -27,16 +27,17 @@ export function ChallengeProgressPanel({
   return (
     <section
       aria-label={`${progress.title}挑战进度`}
-      className="rounded-[12px] border border-enhanced-pitch/20 bg-enhanced-pitch/[0.055] p-3 text-enhanced-strong"
+      className="border-y border-enhanced-pitch/30 bg-enhanced-pitch/[0.055] px-1 py-4 text-enhanced-strong"
       data-challenge-family={daily.family}
       data-challenge-status={progress.status}
+      data-enhanced-record="challenge"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[9px] font-bold tracking-[0.12em] text-enhanced-pitch">
+          <p className="font-enhanced-mono text-xs font-bold uppercase tracking-[0.08em] text-enhanced-pitch">
             DAILY · {daily.calendarDate}
           </p>
-          <h2 className="mt-0.5 truncate text-[15px] font-extrabold">
+          <h2 className="mt-1 truncate text-base font-bold">
             {progress.title}
           </h2>
         </div>
@@ -58,19 +59,19 @@ export function ChallengeProgressPanel({
           >
             <span
               aria-hidden="true"
-              className={`mt-0.5 text-xs ${ruleStateClass(rule.state)}`}
+              className={`mt-0.5 font-enhanced-mono text-sm ${ruleStateClass(rule.state)}`}
             >
               {ruleStateMark(rule.state)}
             </span>
             <span className="min-w-0">
-              <span className="block text-[11px] font-bold">
+              <span className="block text-sm font-bold">
                 {rule.label}
               </span>
-              <span className="mt-0.5 block text-[10px] leading-[1.45] text-enhanced-supporting">
+              <span className="mt-0.5 block text-xs leading-relaxed text-enhanced-supporting">
                 {rule.detail}
               </span>
             </span>
-            <span className="pt-0.5 text-[10px] font-bold tabular-nums text-enhanced-ink-2">
+            <span className="pt-0.5 font-enhanced-mono text-xs font-bold tabular-nums text-enhanced-ink-2">
               {rule.current} / {rule.target}
             </span>
           </li>
@@ -84,15 +85,15 @@ function statusClass(
   status: ChallengeProgressStatus,
 ): string {
   const base =
-    "shrink-0 rounded-full border px-2 py-1 text-[9px] font-extrabold";
+    "shrink-0 border-l-2 px-2 py-1 text-xs font-bold";
 
   switch (status) {
     case "active":
-      return `${base} border-enhanced-line bg-enhanced-raised text-enhanced-ink-2`;
+      return `${base} border-enhanced-focus text-enhanced-ink-2`;
     case "completed":
-      return `${base} border-enhanced-pitch/30 bg-enhanced-pitch/10 text-enhanced-pitch`;
+      return `${base} border-enhanced-pitch text-enhanced-pitch`;
     case "failed":
-      return `${base} border-enhanced-alert/30 bg-enhanced-alert/10 text-enhanced-alert`;
+      return `${base} border-enhanced-alert text-enhanced-alert`;
   }
 }
 

@@ -14,6 +14,7 @@ import {
   CareerSeasonNarrative,
 } from "../../shared/CareerMilestoneNarrative";
 import { ClubIdentity } from "../../classic/components/ClubIdentity";
+import { EnhancedAppBar } from "../components/EnhancedAppBar";
 
 type EnhancedCareerScreenProps = {
   readonly challenge?: ChallengeSurface;
@@ -37,9 +38,11 @@ export function EnhancedCareerScreen({
     <main
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
       data-enhanced-career-shell=""
+      data-hallmark-macrostructure="Workbench"
       id="main-content"
       tabIndex={-1}
     >
+      {/* Hallmark · genre: playful · macrostructure: Workbench · theme: custom (tuned) · design-system: design.md · designed-as-app */}
       {statusMessage ? (
         <p
           aria-atomic="true"
@@ -50,12 +53,23 @@ export function EnhancedCareerScreen({
           {statusMessage}
         </p>
       ) : null}
-      <CareerHeader
-        view={view}
-        {...(onOpenArchive === undefined
-          ? {}
-          : { onOpenArchive })}
+      <EnhancedAppBar
+        actions={
+          onOpenArchive ? (
+            <button
+              aria-label="生涯档案"
+              className="min-h-11 min-w-11 px-2 font-bold"
+              onClick={onOpenArchive}
+              type="button"
+            >
+              档案
+            </button>
+          ) : null
+        }
+        context={`${view.header.age} 岁 · ${view.header.club?.shortName ?? "自由身"} · OVR ${view.header.overall}`}
+        currentLabel="生涯工作台"
       />
+      <CareerHeader view={view} />
       <div
         className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,7fr)_380px] lg:grid-rows-1 lg:gap-6 lg:p-6"
         data-enhanced-career-layout=""
@@ -72,10 +86,8 @@ export function EnhancedCareerScreen({
 }
 
 function CareerHeader({
-  onOpenArchive,
   view,
 }: {
-  readonly onOpenArchive?: () => void;
   readonly view: CareerPresentation;
 }) {
   const { header, totals } = view;
@@ -83,9 +95,8 @@ function CareerHeader({
   return (
     <header
       className="shrink-0 border-b border-enhanced-line bg-enhanced-canvas px-4 pb-3 pt-[max(12px,env(safe-area-inset-top))] sm:px-6 lg:px-8 lg:py-4"
-      data-enhanced-career-header=""
     >
-      <div className="mx-auto flex w-full max-w-[1440px] items-center gap-3 lg:gap-5">
+      <div className="mx-auto grid w-full max-w-[1440px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(20rem,auto)] lg:gap-5">
         <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-[10px] border border-enhanced-trophy/40 bg-enhanced-trophy/50 text-enhanced-trophy">
           <span className="text-[9px] font-bold leading-none text-enhanced-trophy">
             能力
@@ -114,16 +125,6 @@ function CareerHeader({
           </div>
         </div>
 
-        {onOpenArchive ? (
-          <button
-            className="min-h-10 shrink-0 rounded-[9px] border border-enhanced-line bg-enhanced-surface px-3 text-xs font-bold text-enhanced-ink-2"
-            onClick={onOpenArchive}
-            type="button"
-          >
-            生涯档案
-          </button>
-        ) : null}
-
         <div className="shrink-0 border-l border-enhanced-line pl-3 text-right lg:pl-5">
           <div className="text-[10px] font-bold text-enhanced-supporting">
             年龄
@@ -136,7 +137,7 @@ function CareerHeader({
           </div>
         </div>
 
-        <dl className="hidden shrink-0 grid-cols-4 divide-x divide-enhanced-line lg:grid">
+        <dl className="col-span-3 mt-3 grid grid-cols-4 divide-x divide-enhanced-line lg:col-span-1 lg:mt-0">
           {(
             [
               ["出场", totals.appearances],
@@ -145,37 +146,17 @@ function CareerHeader({
               ["奖杯", totals.trophies],
             ] as const
           ).map(([label, value]) => (
-            <div className="min-w-20 px-4 text-center" key={label}>
-              <dt className="text-[10px] font-bold text-enhanced-supporting">
+            <div className="px-2 text-center lg:min-w-20 lg:px-4" key={label}>
+              <dt className="text-[9px] font-bold text-enhanced-supporting lg:text-[10px]">
                 {label}
               </dt>
-              <dd className="mt-0.5 text-lg font-extrabold tabular-nums">
+              <dd className="mt-0.5 text-base font-extrabold tabular-nums lg:text-lg">
                 {value}
               </dd>
             </div>
           ))}
         </dl>
       </div>
-
-      <dl className="mt-3 grid grid-cols-4 divide-x divide-enhanced-line lg:hidden">
-        {(
-          [
-            ["出场", totals.appearances],
-            ["进球", totals.goals],
-            ["助攻", totals.assists],
-            ["奖杯", totals.trophies],
-          ] as const
-        ).map(([label, value]) => (
-          <div className="text-center" key={label}>
-            <dt className="text-[9px] font-bold text-enhanced-supporting">
-              {label}
-            </dt>
-            <dd className="mt-0.5 text-base font-extrabold tabular-nums">
-              {value}
-            </dd>
-          </div>
-        ))}
-      </dl>
     </header>
   );
 }
@@ -375,19 +356,33 @@ function DecisionRail({
   const { panel } = view;
   const railClass =
     "min-h-0 max-h-[48dvh] overflow-y-auto overscroll-contain border-t border-enhanced-line bg-enhanced-surface px-4 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:px-6 lg:h-full lg:max-h-none lg:w-[380px] lg:rounded-[16px] lg:border lg:p-5";
+  const simulating = panel.kind === "simulating";
+  const labelledBy =
+    panel.kind === "event_result"
+      ? "enhanced-event-result-heading"
+      : panel.kind === "milestone"
+        ? "enhanced-milestone-heading"
+        : panel.kind === "decision"
+          ? "enhanced-decision-heading"
+          : undefined;
 
-  if (panel.kind === "simulating") {
-    return (
-      <aside
-        aria-label="赛季状态"
-        className={`${railClass} flex items-center justify-center`}
-        data-enhanced-decision-rail=""
-      >
-        {challenge ? (
-          <div className="mb-4 w-full">
-            <ChallengeProgressPanel {...challenge} />
-          </div>
-        ) : null}
+  return (
+    <aside
+      aria-label={simulating ? "赛季状态" : undefined}
+      aria-labelledby={labelledBy}
+      className={`${railClass}${
+        simulating
+          ? " flex flex-col items-center justify-center"
+          : ""
+      }`}
+      data-enhanced-decision-rail=""
+    >
+      {challenge ? (
+        <div className={simulating ? "mb-4 w-full" : "mb-4"}>
+          <ChallengeProgressPanel {...challenge} />
+        </div>
+      ) : null}
+      {panel.kind === "simulating" ? (
         <p
           aria-atomic="true"
           aria-live="polite"
@@ -400,48 +395,15 @@ function DecisionRail({
           />
           赛季进行中
         </p>
-      </aside>
-    );
-  }
-
-  if (panel.kind === "event_result") {
-    return (
-      <aside
-        aria-labelledby="enhanced-event-result-heading"
-        className={railClass}
-        data-enhanced-decision-rail=""
-      >
-        {challenge ? (
-          <div className="mb-4">
-            <ChallengeProgressPanel {...challenge} />
-          </div>
-        ) : null}
-        <div
-          className="enhanced-reveal-enter"
-          data-enhanced-event-result-reveal=""
-        >
+      ) : panel.kind === "event_result" ? (
+        <div className="enhanced-reveal-enter">
           <CareerEventResultNarrative
             headingId="enhanced-event-result-heading"
             panel={panel}
             variant="enhanced"
           />
         </div>
-      </aside>
-    );
-  }
-
-  if (panel.kind === "milestone") {
-    return (
-      <aside
-        aria-labelledby="enhanced-milestone-heading"
-        className={railClass}
-        data-enhanced-decision-rail=""
-      >
-        {challenge ? (
-          <div className="mb-4">
-            <ChallengeProgressPanel {...challenge} />
-          </div>
-        ) : null}
+      ) : panel.kind === "milestone" ? (
         <div
           className="enhanced-reveal-enter"
           data-enhanced-milestone-reveal=""
@@ -463,50 +425,39 @@ function DecisionRail({
             variant="enhanced"
           />
         </div>
-      </aside>
-    );
-  }
-
-  return (
-    <aside
-      aria-labelledby="enhanced-decision-heading"
-      className={railClass}
-      data-enhanced-decision-rail=""
-    >
-      {challenge ? (
-        <div className="mb-4">
-          <ChallengeProgressPanel {...challenge} />
-        </div>
-      ) : null}
-      {view.recentEventResult ? (
-        <CareerRecentEventResult
-          result={view.recentEventResult}
-          variant="enhanced"
-        />
-      ) : null}
-      <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
-        DECISION RAIL · {panel.age} 岁
-      </p>
-      <h2
-        className="mt-1.5 text-[22px] font-extrabold leading-tight"
-        id="enhanced-decision-heading"
-      >
-        {panel.title}
-      </h2>
-      <p className="mt-2 text-[13px] leading-[1.7] text-enhanced-supporting">
-        {panel.description}
-      </p>
-      <div className="mt-4 space-y-2.5">
-        {panel.options.map((option) => (
-          <DecisionOption
-            key={option.id}
-            onChoose={() =>
-              onChoose(panel.decisionId, option.id)
-            }
-            option={option}
-          />
-        ))}
-      </div>
+      ) : (
+        <>
+          {view.recentEventResult ? (
+            <CareerRecentEventResult
+              result={view.recentEventResult}
+              variant="enhanced"
+            />
+          ) : null}
+          <p className="text-[10px] font-bold tracking-[0.12em] text-enhanced-pitch">
+            DECISION RAIL · {panel.age} 岁
+          </p>
+          <h2
+            className="mt-1.5 text-[22px] font-extrabold leading-tight"
+            id="enhanced-decision-heading"
+          >
+            {panel.title}
+          </h2>
+          <p className="mt-2 text-[13px] leading-[1.7] text-enhanced-supporting">
+            {panel.description}
+          </p>
+          <div className="mt-4 space-y-2.5">
+            {panel.options.map((option) => (
+              <DecisionOption
+                key={option.id}
+                onChoose={() =>
+                  onChoose(panel.decisionId, option.id)
+                }
+                option={option}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </aside>
   );
 }
@@ -520,7 +471,7 @@ function DecisionOption({
 }) {
   return (
     <button
-      className="block min-h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left outline-none transition-colors hover:border-enhanced-pitch/40 hover:bg-enhanced-pitch/[0.06] focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:scale-[0.97] motion-reduce:transform-none motion-reduce:transition-none"
+      className="block min-h-12 w-full rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left outline-none transition-[transform,background-color,border-color] hover:border-enhanced-pitch/40 hover:bg-enhanced-pitch/[0.06] focus-visible:ring-2 focus-visible:ring-enhanced-focus focus-visible:ring-offset-2 focus-visible:ring-offset-enhanced-surface active:translate-y-px motion-reduce:transform-none motion-reduce:transition-none"
       onClick={onChoose}
       type="button"
     >
