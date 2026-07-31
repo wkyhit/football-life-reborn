@@ -548,7 +548,7 @@ describe("complete career narrative rendering", () => {
     ).toHaveAttribute("data-semantic-tone", "negative");
   });
 
-  it("renders the same milestone hold with mode-specific motion", () => {
+  it("renders the same milestone hold with mode-specific motion", async () => {
     const view = completeNarrativeView({
       dwellMs: 1_700,
       kind: "milestone",
@@ -559,7 +559,7 @@ describe("complete career narrative rendering", () => {
     );
 
     expect(
-      screen.getByRole("heading", {
+      await screen.findByRole("heading", {
         name: "赛季里程碑",
       }),
     ).toBeVisible();
@@ -578,7 +578,7 @@ describe("complete career narrative rendering", () => {
     );
 
     expect(
-      screen.getByRole("heading", {
+      await screen.findByRole("heading", {
         name: "16 岁赛季里程碑",
       }),
     ).toBeVisible();

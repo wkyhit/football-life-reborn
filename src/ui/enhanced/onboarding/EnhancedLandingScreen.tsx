@@ -38,12 +38,6 @@ export function EnhancedLandingScreen({
   const [challenges] = useState(
     () => dailyChallenges ?? getDailyChallenges(),
   );
-  const [describedFamily, setDescribedFamily] = useState(
-    () => challenges[0]!.family,
-  );
-  const describedDefinition =
-    challengeDefinition(describedFamily);
-
   return (
     <main
       className="flex min-h-dvh flex-col bg-enhanced-canvas text-enhanced-strong lg:h-dvh lg:overflow-hidden"
@@ -84,8 +78,7 @@ export function EnhancedLandingScreen({
               从这里继续你的足球人生
             </h1>
             <p className="mt-5 max-w-lg text-base leading-[1.7] text-enhanced-supporting">
-              从 16 岁的第一份报价开始，把每个赛季写进同一本档案。
-              相同 seed 和选择会重放出完全相同的职业生涯。
+              从 16 岁起，把每个赛季写进同一本档案。
             </p>
           </div>
 
@@ -236,55 +229,46 @@ export function EnhancedLandingScreen({
                 >
                   今日挑战
                 </h2>
-              <div className="mt-2 grid gap-2">
-                {challenges.map((challenge) => {
-                  const definition = challengeDefinition(
-                    challenge.family,
-                  );
+                <div className="mt-2 grid gap-2">
+                  {challenges.map((challenge) => {
+                    const definition = challengeDefinition(
+                      challenge.family,
+                    );
 
-                  const descriptionId = `daily-challenge-${challenge.id}-description`;
-
-                  return (
-                    <article
-                      className="rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/[0.05]"
-                      data-daily-challenge-record=""
-                      key={challenge.id}
-                    >
-                      <button
-                        aria-describedby={descriptionId}
-                        aria-label={`开始${definition.title}挑战`}
-                        className="flex min-h-11 w-full items-center justify-between gap-3 px-3 text-left"
-                        onClick={() =>
-                          onBeginChallenge(challenge, mode)
-                        }
-                        onFocus={() =>
-                          setDescribedFamily(challenge.family)
-                        }
-                        type="button"
+                    return (
+                      <article
+                        className="rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/[0.05]"
+                        data-daily-challenge-record=""
+                        key={challenge.id}
                       >
-                        <span className="min-w-0 truncate text-[13px] font-extrabold text-enhanced-strong">
-                          {definition.title}
-                        </span>
-                        <span
-                          aria-hidden="true"
-                          className="shrink-0 text-enhanced-pitch"
+                        <button
+                          aria-label={`开始${definition.title}挑战`}
+                          className="flex min-h-11 w-full items-center justify-between gap-3 px-3 text-left"
+                          onClick={() =>
+                            onBeginChallenge(challenge, mode)
+                          }
+                          type="button"
                         >
-                          ›
-                        </span>
-                      </button>
-                      <span className="sr-only" id={descriptionId}>
-                        {definition.description}
-                      </span>
-                    </article>
-                  );
-                })}
-              </div>
-              <p
-                className="mt-2 min-h-4 line-clamp-1 text-xs leading-4 text-enhanced-supporting"
-                data-daily-challenge-description=""
-              >
-                {describedDefinition.description}
-              </p>
+                          <span className="min-w-0 truncate text-[13px] font-extrabold text-enhanced-strong">
+                            {definition.title}
+                          </span>
+                          <span
+                            aria-hidden="true"
+                            className="shrink-0 text-enhanced-pitch"
+                          >
+                            ›
+                          </span>
+                        </button>
+                        <p
+                          className="px-3 pb-3 text-xs leading-relaxed text-enhanced-supporting"
+                          data-daily-challenge-description=""
+                        >
+                          {definition.description}
+                        </p>
+                      </article>
+                    );
+                  })}
+                </div>
               </section>
             </details>
           ) : null}
@@ -294,7 +278,7 @@ export function EnhancedLandingScreen({
           </div>
 
           <p className="mt-4 text-center text-xs leading-relaxed text-enhanced-supporting">
-            数据只保存在本机。随机球员同样由当前 seed 确定。
+            数据仅存本机；随机球员由当前 seed 确定。
           </p>
         </div>
       </section>

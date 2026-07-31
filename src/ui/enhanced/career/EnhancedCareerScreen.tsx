@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
   useRef,
   useState,
@@ -28,8 +30,12 @@ import { useDecisionFocusRestore } from "../../shared/useDecisionFocusRestore";
 import { useReducedMotion } from "../../shared/useReducedMotion";
 import { ClubIdentity } from "../../classic/components/ClubIdentity";
 import { EnhancedAppBar } from "../components/EnhancedAppBar";
-import { CareerKeyEventDialog } from "./CareerKeyEventDialog";
 import { useTimelineFollow } from "./useTimelineFollow";
+
+const CareerKeyEventDialog = lazy(async () => {
+  const module = await import("./CareerKeyEventDialog");
+  return { default: module.CareerKeyEventDialog };
+});
 
 type EnhancedCareerScreenProps = {
   readonly challenge?: ChallengeSurface;
@@ -170,10 +176,16 @@ export function EnhancedCareerScreen({
         />
       </div>
       {view.panel.kind === "milestone" ? (
-        <CareerKeyEventDialog
-          onContinue={onContinueReveal ?? (() => undefined)}
-          panel={view.panel}
-        />
+        <Suspense
+          fallback={
+            <DeferredSurfaceStatus label="关键事件" />
+          }
+        >
+          <CareerKeyEventDialog
+            onContinue={onContinueReveal ?? (() => undefined)}
+            panel={view.panel}
+          />
+        </Suspense>
       ) : null}
     </main>
   );
@@ -753,6 +765,22 @@ function DecisionRail({
         </>
       )}
     </aside>
+  );
+}
+
+function DeferredSurfaceStatus({
+  label,
+}: {
+  readonly label: string;
+}) {
+  return (
+    <p
+      aria-live="polite"
+      className="text-xs text-enhanced-supporting"
+      role="status"
+    >
+      正在加载{label}
+    </p>
   );
 }
 
