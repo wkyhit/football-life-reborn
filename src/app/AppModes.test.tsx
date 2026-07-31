@@ -5,9 +5,19 @@ import {
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
-import { startClassicCareer } from "../domain/classicEngine";
+import {
+  playClassicCareer,
+  startClassicCareer,
+} from "../domain/classicEngine";
 import {
   careerReducer,
   createInitialCareerState,
@@ -25,9 +35,11 @@ import {
 import {
   ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
   LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+  createClassicSessionRepository,
 } from "../storage/classicSessionRepository";
 import { createRandomPlayerSetup } from "../ui/enhanced/randomPlayer";
 import { App } from "./App";
+import { createNewCareerSeed } from "./seed";
 
 describe("UI mode shells", () => {
   beforeEach(() => {
@@ -36,6 +48,7 @@ describe("UI mode shells", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     cleanup();
     window.history.replaceState({}, "", "/");
   });
@@ -217,6 +230,133 @@ describe("UI mode shells", () => {
     expect(
       screen.getByRole("textbox", { name: "姓名" }),
     ).toHaveValue("李");
+  });
+
+  it("does not silently resume an unrelated saved Seed and persists an explicit resume", async () => {
+    const career = completedCareer("issue-23:saved-resume");
+    expect(
+      createClassicSessionRepository(localStorage).save(career),
+    ).toEqual({ ok: true });
+    window.history.replaceState(
+      {},
+      "",
+      "/?ui=enhanced&seed=issue-23%3Aurl-life",
+    );
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "从这里继续你的足球人生",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Seed测试",
+      }),
+    ).not.toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(
+      screen.getByRole("button", {
+        name: "继续上次生涯",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Seed测试",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      new URLSearchParams(window.location.search).get("seed"),
+    ).toBe("issue-23:saved-resume");
+    expect(localStorage.getItem(ARCHIVE_INDEX_STORAGE_KEY)).toContain(
+      "issue-23:saved-resume",
+    );
+  });
+
+  it("restarts a completed career with the same Seed without deleting its archive", async () => {
+    const career = completedCareer("issue-23:same-seed");
+    expect(
+      createClassicSessionRepository(localStorage).save(career),
+    ).toEqual({ ok: true });
+    window.history.replaceState({}, "", "/?ui=enhanced");
+    render(<App />);
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "继续上次生涯",
+      }),
+    );
+    const archiveBefore = localStorage.getItem(
+      ARCHIVE_INDEX_STORAGE_KEY,
+    );
+    await user.click(
+      await screen.findByRole("button", {
+        name: "同 Seed 重开",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "选择国籍",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      new URLSearchParams(window.location.search).get("seed"),
+    ).toBe(career.seed);
+    expect(localStorage.getItem(ARCHIVE_INDEX_STORAGE_KEY)).toBe(
+      archiveBefore,
+    );
+    expect(
+      localStorage.getItem(ACTIVE_CLASSIC_SESSION_STORAGE_KEY),
+    ).toBeNull();
+  });
+
+  it("starts a distinct new-Seed life without deleting the completed archive", async () => {
+    const career = completedCareer("issue-23:old-life");
+    expect(
+      createClassicSessionRepository(localStorage).save(career),
+    ).toEqual({ ok: true });
+    const randomId =
+      "00000000-0000-4000-8000-000000000023";
+    vi.spyOn(globalThis.crypto, "randomUUID").mockReturnValue(
+      randomId,
+    );
+    window.history.replaceState(
+      {},
+      "",
+      `/?ui=enhanced&seed=${encodeURIComponent(career.seed)}`,
+    );
+    render(<App />);
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "继续上次生涯",
+      }),
+    );
+    await user.click(
+      await screen.findByRole("button", {
+        name: "新 Seed 新人生",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "选择国籍",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      new URLSearchParams(window.location.search).get("seed"),
+    ).toBe(createNewCareerSeed(career.seed, () => randomId));
+    expect(localStorage.getItem(ARCHIVE_INDEX_STORAGE_KEY)).toContain(
+      career.seed,
+    );
+    expect(
+      localStorage.getItem(ACTIVE_CLASSIC_SESSION_STORAGE_KEY),
+    ).toBeNull();
   });
 
   it("does not resurrect a retained v1 session after the player explicitly starts a new career", async () => {
@@ -416,3 +556,16 @@ describe("UI mode shells", () => {
     ).toBeInTheDocument();
   });
 });
+
+function completedCareer(seed: string) {
+  return playClassicCareer({
+    identity: {
+      lastName: "Seed测试",
+      nationalityFifaCode: "CHN",
+      position: "ST",
+      preferredNumber: 9,
+    },
+    mode: "express",
+    seed,
+  });
+}

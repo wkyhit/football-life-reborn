@@ -11,11 +11,13 @@ describe("EnhancedSummaryScreen", () => {
 
   it("keeps the final club, honor, and Seed record reachable above fixed actions", async () => {
     const onRestart = vi.fn();
+    const onStartNewCareer = vi.fn();
     const onShare = vi.fn();
     const { container } = render(
       <EnhancedSummaryScreen
         onRestart={onRestart}
         onShare={onShare}
+        onStartNewCareer={onStartNewCareer}
         view={summaryView()}
       />,
     );
@@ -56,12 +58,16 @@ describe("EnhancedSummaryScreen", () => {
 
     const user = userEvent.setup();
     await user.click(
-      screen.getByRole("button", { name: "再来一局" }),
+      screen.getByRole("button", { name: "同 Seed 重开" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "新 Seed 新人生" }),
     );
     await user.click(
       screen.getByRole("button", { name: "保存战绩卡" }),
     );
     expect(onRestart).toHaveBeenCalledOnce();
+    expect(onStartNewCareer).toHaveBeenCalledOnce();
     expect(onShare).toHaveBeenCalledOnce();
   });
 });

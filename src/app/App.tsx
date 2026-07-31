@@ -75,7 +75,12 @@ import {
   type UiMode,
 } from "../ui/mode";
 import { useReducedMotion } from "../ui/shared/useReducedMotion";
-import { seedFromSearch } from "./seed";
+import {
+  createNewCareerSeed,
+  resolveSeedIntent,
+  seedFromSearch,
+  urlWithSeed,
+} from "./seed";
 
 const EnhancedCareerScreen = lazy(async () => {
   const module = await import(
@@ -323,6 +328,10 @@ function CareerController({
       classicRepository,
       seedFromSearch(window.location.search),
     );
+    const seedIntent = resolveSeedIntent(
+      window.location.search,
+      resumableSeed(loaded),
+    );
     let activeArchiveId =
       uiMode === "enhanced"
         ? readActiveArchiveId(window.localStorage)
@@ -353,6 +362,7 @@ function CareerController({
       activeArchiveId,
       migrationWarning:
         economyMigrationWarning(economyMigration),
+      seedIntent,
     };
   });
   const [enhancedEntryPending, setEnhancedEntryPending] =
@@ -371,6 +381,9 @@ function CareerController({
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiveRevision, setArchiveRevision] = useState(0);
   const [mode, setMode] = useState<PacingMode>("normal");
+  const [newCareerSeed, setNewCareerSeed] = useState(
+    initial.seedIntent.newCareerSeed,
+  );
   const [recovery, setRecovery] = useState(initial.recovery);
   const [saveError, setSaveError] =
     useState<string | null>(null);
@@ -388,6 +401,14 @@ function CareerController({
   );
   const onArchiveChanged = useCallback(() => {
     setArchiveRevision((revision) => revision + 1);
+  }, []);
+  const selectCareerSeed = useCallback((seed: string) => {
+    setNewCareerSeed(seed);
+    window.history.replaceState(
+      window.history.state,
+      "",
+      urlWithSeed(window.location.href, seed),
+    );
   }, []);
   const archiveCount = useMemo(() => {
     const listed = archiveRepository.list();
@@ -473,6 +494,7 @@ function CareerController({
           onBack={() => setArchiveOpen(false)}
           onChanged={onArchiveChanged}
           onContinue={(career, archiveId) => {
+            selectCareerSeed(career.seed);
             setClassicCareer(career);
             setActiveArchiveId(archiveId);
             setResumeAvailable(false);
@@ -525,24 +547,24 @@ function CareerController({
             dispatch={dispatch}
             hasResume={resumeAvailable}
             isEntryPrompt={enhancedEntryPending}
-            newCareerSeed={seedFromSearch(
-              window.location.search,
-            )}
+            newCareerSeed={newCareerSeed}
             onBegin={(selectedMode) => {
               setMode(selectedMode);
+              selectCareerSeed(newCareerSeed);
               discardClassicSession();
               setActiveArchiveId(null);
               setClassicCareer(null);
               setResumeAvailable(false);
               setEnhancedEntryPending(false);
               dispatch({
-                seed: seedFromSearch(window.location.search),
+                seed: newCareerSeed,
                 type: "reset_career",
               });
               dispatch({ type: "begin_setup" });
             }}
             onBeginChallenge={(challenge, selectedMode) => {
               setMode(selectedMode);
+              selectCareerSeed(challenge.seed);
               discardClassicSession();
               setActiveArchiveId(null);
               setClassicCareer(null);
@@ -556,13 +578,14 @@ function CareerController({
             }}
             onRandom={(selectedMode, player) => {
               setMode(selectedMode);
+              selectCareerSeed(newCareerSeed);
               discardClassicSession();
               setActiveArchiveId(null);
               setClassicCareer(null);
               setResumeAvailable(false);
               setEnhancedEntryPending(false);
               dispatch({
-                seed: seedFromSearch(window.location.search),
+                seed: newCareerSeed,
                 type: "reset_career",
               });
               dispatch({ type: "begin_setup" });
@@ -584,6 +607,15 @@ function CareerController({
               });
             }}
             onResume={() => {
+              const seed =
+                classicCareer?.seed ??
+                (setupState.phase === "landing"
+                  ? initial.seedIntent.resumableSeed
+                  : setupState.seed);
+
+              if (seed !== null) {
+                selectCareerSeed(seed);
+              }
               setResumeAvailable(false);
               setEnhancedEntryPending(false);
             }}
@@ -619,14 +651,19 @@ function CareerController({
             setArchiveOpen(true);
           }}
           onSaveError={setSaveError}
-          onRestart={() => {
+          onRestart={({ mode: nextMode, seed }) => {
+            selectCareerSeed(seed);
+            setMode(nextMode);
             discardClassicSession();
             setActiveArchiveId(null);
             setClassicCareer(null);
+            setResumeAvailable(false);
+            setEnhancedEntryPending(false);
             dispatch({
-              seed: seedFromSearch(window.location.search),
+              seed,
               type: "reset_career",
             });
+            dispatch({ type: "begin_setup" });
           }}
           repository={classicRepository}
           uiMode={uiMode}
@@ -661,7 +698,10 @@ type CareerExperienceProps = {
     career: ClassicCareerState,
   ) => void;
   readonly onSaveError: (reason: string | null) => void;
-  readonly onRestart: () => void;
+  readonly onRestart: (request: {
+    readonly mode: PacingMode;
+    readonly seed: string;
+  }) => void;
   readonly repository: ClassicSessionRepository;
   readonly uiMode: UiMode;
 };
@@ -862,7 +902,10 @@ function CareerExperience({
           }),
       onRestart: () => {
         setShareOpen(false);
-        onRestart();
+        onRestart({
+          mode: reveal.committedCareer.mode,
+          seed: reveal.committedCareer.seed,
+        });
       },
       onShare: () => setShareOpen(true),
       view,
@@ -878,6 +921,15 @@ function CareerExperience({
           >
             <EnhancedSummaryScreen
               {...summaryProps}
+              onStartNewCareer={() => {
+                setShareOpen(false);
+                onRestart({
+                  mode: reveal.committedCareer.mode,
+                  seed: createNewCareerSeed(
+                    reveal.committedCareer.seed,
+                  ),
+                });
+              }}
               onOpenArchive={() =>
                 onOpenArchive(reveal.committedCareer)
               }
@@ -1026,6 +1078,16 @@ function hasResumableState(initial: LoadedAppState): boolean {
     initial.classicCareer !== null ||
     initial.setupState.phase !== "landing"
   );
+}
+
+function resumableSeed(initial: LoadedAppState): string | null {
+  if (initial.classicCareer !== null) {
+    return initial.classicCareer.seed;
+  }
+
+  return initial.setupState.phase === "landing"
+    ? null
+    : initial.setupState.seed;
 }
 
 function loadInitialState(

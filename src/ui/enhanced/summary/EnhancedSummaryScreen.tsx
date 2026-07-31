@@ -25,6 +25,7 @@ type EnhancedSummaryScreenProps = {
   readonly onOpenArchive?: () => void;
   readonly onRestart: () => void;
   readonly onShare: () => void;
+  readonly onStartNewCareer?: () => void;
   readonly replayCopyMessage?: string | null;
   readonly view: SummaryPresentation;
 };
@@ -37,6 +38,7 @@ export function EnhancedSummaryScreen({
   onOpenArchive,
   onRestart,
   onShare,
+  onStartNewCareer,
   replayCopyMessage,
   view,
 }: EnhancedSummaryScreenProps) {
@@ -276,15 +278,29 @@ export function EnhancedSummaryScreen({
         className="shrink-0 border-t border-enhanced-line bg-enhanced-canvas px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:px-6 lg:px-8"
         data-enhanced-summary-footer=""
       >
-        <div className="mx-auto grid w-full max-w-[var(--shell-max)] grid-cols-2 gap-3">
+        <div
+          className={`mx-auto grid w-full max-w-[var(--shell-max)] grid-cols-2 gap-3 ${
+            onStartNewCareer ? "sm:grid-cols-3" : ""
+          }`}
+        >
           <EnhancedAction
             className="min-h-12 w-full"
             onClick={onRestart}
           >
-            再来一局
+            {onStartNewCareer ? "同 Seed 重开" : "再来一局"}
           </EnhancedAction>
+          {onStartNewCareer ? (
+            <EnhancedAction
+              className="min-h-12 w-full"
+              onClick={onStartNewCareer}
+            >
+              新 Seed 新人生
+            </EnhancedAction>
+          ) : null}
           <EnhancedAction
-            className="min-h-12 w-full"
+            className={`min-h-12 w-full ${
+              onStartNewCareer ? "col-span-2 sm:col-span-1" : ""
+            }`}
             onClick={onShare}
             tone="primary"
           >
