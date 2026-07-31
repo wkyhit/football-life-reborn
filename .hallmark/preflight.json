@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-31T02:31:58Z",
+  "baselineCommit": "67c33f9e4a31ad128cfd51fc4157270e95b45847",
+  "framework": "React 19 + Vite 8 + Tailwind CSS 4",
+  "motion": "motion-cut",
+  "designSystem": {
+    "lockedRootDesign": null,
+    "existingEnhancedGuide": "src/ui/enhanced/DESIGN.md",
+    "hallmarkLog": null
+  },
+  "fontStack": "-apple-system, SF Pro Text, PingFang SC, Noto Sans SC, system-ui, sans-serif",
+  "typographySources": [
+    "src/ui/enhanced/DESIGN.md",
+    "src/ui/classic/tokens.css",
+    "src/styles.css"
+  ],
+  "paletteSources": [
+    "src/styles.css",
+    "src/ui/classic/tokens.css",
+    "src/ui/enhanced/DESIGN.md"
+  ],
+  "spacingSources": [
+    "src/ui/enhanced/DESIGN.md",
+    "Tailwind CSS default utilities"
+  ],
+  "inputDigests": {
+    "package.json": "eb7adfdc41c1869dab0ddd8db54fbe032aee0cba4724438d7a7461f13264eef0",
+    "src/styles.css": "ba3c1107c0dee116849ceb532332c658cacf6fbca693750b02c2865c4760170c",
+    "src/ui/enhanced/DESIGN.md": "25e6d6352d2fc3714a30e1412de193904a6de27946a2b69348746e4b05e3f36f",
+    "vite.config.ts": "d0797ddcfe94ac9d5a037d7186f4d583b58dfd0440b5d617da0a3f7e4fa7c857"
+  },
+  "sourceFiles": [
+    "src/app/App.tsx",
+    "src/features/archive/EnhancedArchiveScreen.tsx",
+    "src/features/challenges/ChallengeProgressPanel.tsx",
+    "src/features/replay/ReplayRouteScreen.tsx",
+    "src/features/share-card/ShareCardOverlay.tsx",
+    "src/ui/classic/SummaryScreen.tsx",
+    "src/ui/enhanced/EnhancedOnboarding.tsx",
+    "src/ui/enhanced/EnhancedShell.tsx",
+    "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
+    "src/ui/enhanced/onboarding/EnhancedLandingScreen.tsx",
+    "src/ui/enhanced/onboarding/EnhancedNationalityScreen.tsx",
+    "src/ui/shared/Dialog.tsx"
+  ],
+  "preserve": [
+    "Classic token and screenshot baselines",
+    "deterministic engine and controller behavior",
+    "storage and replay formats",
+    "static, analytics-free runtime",
+    "existing route and component ownership"
+  ],
+  "introduce": [
+    "one root Hallmark design.md",
+    "portable named tokens and exports",
+    "multi-page macrostructure discipline",
+    "complete interaction state contracts",
+    "responsive and reduced-motion release gates"
+  ]
+}

@@ -1,0 +1,213 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-31T02:37:16Z",
+  "baselineCommit": "67c33f9e4a31ad128cfd51fc4157270e95b45847",
+  "runner": "ego-browser",
+  "viewportWidths": [
+    320,
+    375,
+    414,
+    768,
+    1280,
+    1440
+  ],
+  "entries": [
+    {
+      "id": "landing",
+      "status": "captured",
+      "sourceFiles": [
+        "src/ui/enhanced/onboarding/EnhancedLandingScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/landing-320x844.png",
+        "tests/visual/enhanced/before/landing-375x812.png",
+        "tests/visual/enhanced/before/landing-414x896.png",
+        "tests/visual/enhanced/before/landing-768x1024.png",
+        "tests/visual/enhanced/before/landing-1280x830.png",
+        "tests/visual/enhanced/before/landing-1440x900.png"
+      ]
+    },
+    {
+      "id": "setup-nationality",
+      "status": "captured",
+      "sourceFiles": [
+        "src/ui/enhanced/onboarding/EnhancedNationalityScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/setup-nationality-390x844.png"
+      ]
+    },
+    {
+      "id": "setup-identity",
+      "status": "captured",
+      "sourceFiles": [
+        "src/ui/enhanced/EnhancedOnboarding.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/setup-identity-390x844.png"
+      ]
+    },
+    {
+      "id": "setup-position",
+      "status": "captured",
+      "sourceFiles": [
+        "src/ui/enhanced/EnhancedOnboarding.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/setup-position-390x844.png"
+      ]
+    },
+    {
+      "id": "career",
+      "status": "captured",
+      "sourceFiles": [
+        "src/ui/enhanced/career/EnhancedCareerScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/career-320x844.png",
+        "tests/visual/enhanced/before/career-375x812.png",
+        "tests/visual/enhanced/before/career-414x896.png",
+        "tests/visual/enhanced/before/career-768x1024.png",
+        "tests/visual/enhanced/before/career-1280x830.png",
+        "tests/visual/enhanced/before/career-1440x900.png"
+      ]
+    },
+    {
+      "id": "career-challenge",
+      "status": "captured",
+      "sourceFiles": [
+        "src/features/challenges/ChallengeProgressPanel.tsx",
+        "src/ui/enhanced/career/EnhancedCareerScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/career-challenge-390x844.png"
+      ]
+    },
+    {
+      "id": "summary",
+      "status": "captured",
+      "sourceFiles": [
+        "src/app/App.tsx",
+        "src/ui/classic/SummaryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/summary-390x844.png"
+      ]
+    },
+    {
+      "id": "share",
+      "status": "captured",
+      "sourceFiles": [
+        "src/features/share-card/ShareCardOverlay.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/share-390x844.png"
+      ]
+    },
+    {
+      "id": "archive-empty",
+      "status": "captured",
+      "sourceFiles": [
+        "src/features/archive/EnhancedArchiveScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/archive-empty-1280x830.png"
+      ]
+    },
+    {
+      "id": "archive-populated",
+      "status": "captured",
+      "sourceFiles": [
+        "src/features/archive/EnhancedArchiveScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/archive-populated-1280x830.png"
+      ]
+    },
+    {
+      "id": "branch-create",
+      "status": "captured",
+      "sourceFiles": [
+        "src/features/archive/EnhancedArchiveScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/branch-create-1280x830.png"
+      ]
+    },
+    {
+      "id": "branch-compare",
+      "status": "captured",
+      "sourceFiles": [
+        "src/features/archive/EnhancedArchiveScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/branch-compare-1280x830.png"
+      ]
+    },
+    {
+      "id": "replay-ready",
+      "status": "captured",
+      "sourceFiles": [
+        "src/features/replay/ReplayRouteScreen.tsx",
+        "src/ui/classic/SummaryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/replay-ready-390x844.png"
+      ]
+    },
+    {
+      "id": "replay-error",
+      "status": "captured",
+      "sourceFiles": [
+        "src/features/replay/ReplayRouteScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/replay-error-390x844.png"
+      ]
+    },
+    {
+      "id": "recovery",
+      "status": "captured",
+      "sourceFiles": [
+        "src/app/App.tsx",
+        "src/ui/classic/RecoveryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/recovery-390x844.png"
+      ]
+    },
+    {
+      "id": "save-error",
+      "status": "captured",
+      "sourceFiles": [
+        "src/app/App.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/before/save-error-390x844.png"
+      ]
+    },
+    {
+      "id": "loading",
+      "status": "documented-missing",
+      "sourceFiles": [
+        "src/app/App.tsx",
+        "src/features/replay/ReplayRouteScreen.tsx"
+      ],
+      "evidence": [
+        "docs/design/hallmark-audit.md"
+      ]
+    },
+    {
+      "id": "install",
+      "status": "documented-missing",
+      "sourceFiles": [
+        "index.html",
+        "public/manifest.webmanifest"
+      ],
+      "evidence": [
+        "public/manifest.webmanifest",
+        "docs/design/hallmark-audit.md"
+      ]
+    }
+  ]
+}
