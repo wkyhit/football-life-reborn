@@ -1,11 +1,13 @@
 import type { PersonalAward } from "./awards";
 import {
-  applyClassicChoice,
+  applyClassicChoiceWithResult,
   startClassicCareer,
   type ClassicCareerState,
+  type ClassicDecisionEffectFacts,
 } from "./classicEngine";
 import type {
   CareerEventKey,
+  CareerEventOutcomeKind,
   CareerTrophy,
   ForcedCareerEventOutcome,
   InjuryType,
@@ -34,10 +36,12 @@ export type AwardLedgerEntry = SeasonLedgerBase & {
 };
 
 export type EventLedgerEntry = LedgerBase & {
+  readonly effects: ClassicDecisionEffectFacts;
   readonly eventKey: CareerEventKey;
   readonly forcedOutcome: ForcedCareerEventOutcome | null;
   readonly immediateOverallDelta: number;
   readonly optionId: string;
+  readonly outcomeKind: CareerEventOutcomeKind | null;
   readonly type: "event";
 };
 
@@ -150,7 +154,11 @@ export function createCareerLedger(
     const selectedOption = decision.options.find(
       (option) => option.id === choice.optionId,
     );
-    replayed = applyClassicChoice(before, choice);
+    const transition = applyClassicChoiceWithResult(
+      before,
+      choice,
+    );
+    replayed = transition.career;
     const newSeasons = replayed.seasons.slice(
       before.seasons.length,
     );
@@ -164,15 +172,25 @@ export function createCareerLedger(
       newSeasons[0]?.overall ?? before.overall;
 
     if (appliedEvent !== null) {
+      const effects = transition.result.effects;
+
+      if (effects === null) {
+        throw new RangeError(
+          `Career event ${decision.id} is missing transition effects`,
+        );
+      }
+
       add({
         age: before.playerAge,
         choiceLogIndex,
         decisionId: decision.id,
+        effects,
         eventKey: appliedEvent.eventKey,
         forcedOutcome: choice.forcedOutcome ?? null,
         immediateOverallDelta:
           firstOverall - before.overall,
         optionId: choice.optionId,
+        outcomeKind: transition.result.outcomeKind,
         type: "event",
       });
     }
