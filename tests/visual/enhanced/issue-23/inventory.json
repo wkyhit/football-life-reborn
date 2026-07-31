@@ -8,7 +8,7 @@
   },
   "source": {
     "branch": "issue-23-career-ux",
-    "commit": "8579aae8cb5ba3317cbf8296d81a2fee6365612a",
+    "commit": "6a70db69101e2d433358cb59002354f4e29e25e1",
     "url": "http://127.0.0.1:4173/"
   },
   "viewportMatrix": [
@@ -52,6 +52,32 @@
       "visualViewportScale": 2,
       "horizontalOverflowPx": 0,
       "minimumInteractiveHeightPx": 44
+    }
+  },
+  "deliveryOptimization": {
+    "mobileLanding": {
+      "width": 320,
+      "height": 568,
+      "ordinaryCtaTopPx": 319,
+      "ordinaryCtaBottomPx": 367,
+      "challengeInitiallyCollapsed": true,
+      "expandedChallengeCount": 3,
+      "expandedChallengeTargetHeightPx": 44,
+      "descriptionsVisible": true,
+      "horizontalOverflowPx": 0
+    },
+    "keyEventChunk": {
+      "loadedOnDemand": true,
+      "focusedControl": "继续",
+      "horizontalOverflowPx": 0
+    },
+    "gzipBytes": {
+      "enhancedShell": 183,
+      "enhancedOnboarding": 6223,
+      "enhancedCareer": 5397,
+      "keyEventDialog": 1033,
+      "defaultRoute": 11803,
+      "completeRoute": 12836
     }
   },
   "compatibility": {
