@@ -5,19 +5,20 @@ type MarketValuePoint = readonly [
   value: number,
 ];
 
-const MARKET_VALUE_CURVE: readonly MarketValuePoint[] = [
-  [50, 100_000],
-  [55, 250_000],
-  [60, 500_000],
-  [65, 1_200_000],
-  [70, 3_000_000],
-  [75, 5_000_000],
-  [80, 15_000_000],
-  [85, 50_000_000],
-  [90, 100_000_000],
-  [95, 150_000_000],
-  [99, 250_000_000],
-] as const;
+export const MARKET_VALUE_CURVE: readonly MarketValuePoint[] =
+  Object.freeze([
+    [50, 100_000],
+    [55, 250_000],
+    [60, 500_000],
+    [65, 1_200_000],
+    [70, 3_000_000],
+    [75, 5_000_000],
+    [80, 15_000_000],
+    [85, 50_000_000],
+    [90, 100_000_000],
+    [95, 150_000_000],
+    [99, 250_000_000],
+  ] as const);
 
 export function simulateMarketValue(input: {
   readonly age: number;

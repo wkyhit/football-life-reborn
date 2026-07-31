@@ -7,6 +7,8 @@ import {
 } from "../domain/classicEngine";
 import { createDecisionCheckpoints } from "../domain/checkpoint";
 import { deterministicHash } from "../domain/deterministicHash";
+import { createCareerEconomyProjection } from "../domain/economy/careerEconomyProjection";
+import { ECONOMY_POLICY_VERSION } from "../domain/economy/economyPolicy";
 import { createCareerLedger } from "../domain/ledger";
 import {
   ARCHIVE_INDEX_STORAGE_KEY,
@@ -55,12 +57,17 @@ describe("career transfer", () => {
         checkpoints: createDecisionCheckpoints(
           source.career,
         ),
+        economy: createCareerEconomyProjection(
+          source.career,
+        ),
+        economyPolicyVersion: ECONOMY_POLICY_VERSION,
         ledger: createCareerLedger(source.career),
       },
       checksum: expect.stringMatching(/^fnv1a64:[0-9a-f]{16}$/),
       format: CAREER_TRANSFER_FORMAT,
       formatVersion: CAREER_TRANSFER_VERSION,
     });
+    expect(CAREER_TRANSFER_VERSION).toBe(2);
 
     const parsed = parseCareerTransfer(raw);
     expect(parsed.status).toBe("ready");
@@ -84,6 +91,12 @@ describe("career transfer", () => {
     expect(parsed.archive.ledger).toEqual(
       createCareerLedger(source.career),
     );
+    expect(parsed.archive.economy).toEqual(
+      createCareerEconomyProjection(source.career),
+    );
+    expect(parsed).toMatchObject({
+      sourceFormatVersion: 2,
+    });
 
     const targetStorage = new MemoryStorage();
     const targetRepository = createArchiveRepository(
@@ -125,6 +138,40 @@ describe("career transfer", () => {
     expect(loaded.ledger).toEqual(
       createCareerLedger(source.career),
     );
+  });
+
+  it("backfills a checksummed v1 transfer with economy-v1 during parsing", () => {
+    const source = createArchivedCareer();
+    const unsigned = {
+      archive: {
+        career: source.career,
+        checkpoints: createDecisionCheckpoints(
+          source.career,
+        ),
+        createdAt: source.entry.createdAt,
+        displayName: source.entry.displayName,
+        id: source.entry.id,
+        ledger: createCareerLedger(source.career),
+        updatedAt: source.entry.updatedAt,
+      },
+      format: CAREER_TRANSFER_FORMAT,
+      formatVersion: 1,
+    };
+    const raw = JSON.stringify({
+      ...unsigned,
+      checksum: deterministicHash(unsigned),
+    });
+
+    expect(parseCareerTransfer(raw)).toMatchObject({
+      archive: {
+        economy: createCareerEconomyProjection(
+          source.career,
+        ),
+        economyPolicyVersion: ECONOMY_POLICY_VERSION,
+      },
+      sourceFormatVersion: 1,
+      status: "ready",
+    });
   });
 
   it("rejects a checksum mismatch and preserves the exact raw input in quarantine", () => {
@@ -259,6 +306,48 @@ describe("career transfer", () => {
         key.startsWith(CAREER_TRANSFER_QUARANTINE_PREFIX),
       ),
     ).toHaveLength(1);
+  });
+
+  it("classifies a checksummed future economy policy as unsupported", () => {
+    const source = createArchivedCareer();
+    const document = JSON.parse(
+      serializeCareerTransfer({
+        career: source.career,
+        entry: source.entry,
+      }),
+    );
+    document.archive.economyPolicyVersion =
+      "future-economy-policy";
+    document.checksum = deterministicHash({
+      archive: document.archive,
+      format: document.format,
+      formatVersion: document.formatVersion,
+    });
+    const raw = JSON.stringify(document);
+
+    expect(parseCareerTransfer(raw)).toEqual({
+      economyPolicyVersion: "future-economy-policy",
+      reason: "economy_policy",
+      status: "unsupported",
+    });
+
+    const storage = new MemoryStorage();
+    const imported = importCareerTransfer(
+      raw,
+      createArchiveRepository(storage),
+      storage,
+    );
+    expect(imported).toMatchObject({
+      economyPolicyVersion: "future-economy-policy",
+      reason: "economy_policy",
+      status: "unsupported",
+    });
+    if (imported.status !== "unsupported") {
+      throw new Error("Expected unsupported economy policy");
+    }
+    expect(storage.getItem(imported.quarantineKey!)).toBe(
+      raw,
+    );
   });
 
   it("rejects a duplicate archive ID without replacing the existing payload", () => {

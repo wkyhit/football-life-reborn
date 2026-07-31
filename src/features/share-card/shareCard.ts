@@ -4,6 +4,7 @@ import type { BadgeTier } from "../../domain/summary";
 import type { SummaryPresentation } from "../../ui/classic/summaryPresentation";
 import { classicCrestUrl } from "../../ui/classic/components/classicCrests";
 import {
+  createShareCardStoryLines,
   shareCardFilename,
   type ShareCardInput,
 } from "./shareCardContract";
@@ -63,14 +64,6 @@ export type ShareCardCanvas = {
 
 const FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif';
-const BADGE_LABEL: Readonly<Record<BadgeTier, string>> = {
-  bronze: "无名之辈",
-  cyan: "顶级球星",
-  elite: "时代巨星",
-  gold: "一方名将",
-  silver: "站稳脚跟",
-  special: "足球之神",
-};
 const BADGE_COLOR: Readonly<Record<BadgeTier, string>> = {
   bronze: "#b45309",
   cyan: "#06b6d4",
@@ -351,28 +344,25 @@ function drawAchievement(
   context: ShareCardContext,
   view: SummaryPresentation,
 ): void {
-  const title = view.titles[0];
-  const label = title?.label ?? BADGE_LABEL[view.badge];
-  const description =
-    title?.description ?? "一步一步走完属于自己的职业生涯";
+  const story = createShareCardStoryLines(view);
   const accent = BADGE_COLOR[view.badge];
 
-  fillRoundedRect(context, 88, 850, 904, 258, 28, "#211b08");
+  fillRoundedRect(context, 88, 850, 904, 270, 28, "#211b08");
   strokeRoundedRect(
     context,
     88,
     850,
     904,
-    258,
+    270,
     28,
     "#7c5f12",
     2,
   );
   drawText(
     context,
-    title === undefined ? "生涯结局" : "特殊称号",
+    "生涯结局",
     SHARE_CARD_WIDTH / 2,
-    910,
+    892,
     {
       align: "center",
       color: "#facc15",
@@ -380,48 +370,47 @@ function drawAchievement(
       weight: 800,
     },
   );
-  drawText(context, label, SHARE_CARD_WIDTH / 2, 982, {
-    align: "center",
-    color: "#facc15",
-    maxWidth: 700,
-    size: 52,
-    weight: 900,
-  });
   drawText(
     context,
-    description,
+    story.ending,
     SHARE_CARD_WIDTH / 2,
-    1034,
+    948,
+    {
+      align: "center",
+      color: "#facc15",
+      maxWidth: 700,
+      size: 42,
+      weight: 900,
+    },
+  );
+  drawText(
+    context,
+    `${story.percentile} · ${story.income}`,
+    SHARE_CARD_WIDTH / 2,
+    990,
     {
       align: "center",
       color: accent,
-      maxWidth: 760,
-      size: 23,
+      maxWidth: 790,
+      size: 21,
       weight: 800,
     },
   );
-
-  const honors = view.honors
-    .slice(0, 4)
-    .map((honor) =>
-      honor.count > 1
-        ? `${honor.label} ×${honor.count}`
-        : honor.label,
-    )
-    .join(" · ");
-  drawText(
-    context,
-    honors || "这段生涯没有奖杯，但每一步都算数",
-    SHARE_CARD_WIDTH / 2,
-    1080,
-    {
-      align: "center",
-      color: "#fde68a",
-      maxWidth: 790,
-      size: 20,
-      weight: 700,
-    },
-  );
+  story.narrative.forEach((line, index) => {
+    drawText(
+      context,
+      line,
+      SHARE_CARD_WIDTH / 2,
+      1020 + index * 21,
+      {
+        align: "center",
+        color: "#fde68a",
+        maxWidth: 790,
+        size: 17,
+        weight: 700,
+      },
+    );
+  });
 }
 
 function drawFooter(

@@ -9,10 +9,21 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  applyClassicChoice,
+  startClassicCareer,
+} from "../domain/classicEngine";
+import {
   ACTIVE_CAREER_STORAGE_KEY,
   CAREER_QUARANTINE_PREFIX,
 } from "../storage/careerRepository";
-import { ACTIVE_CLASSIC_SESSION_STORAGE_KEY } from "../storage/classicSessionRepository";
+import {
+  ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+  LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+} from "../storage/classicSessionRepository";
+import {
+  ECONOMY_MIGRATION_BACKUP_KEY,
+  ECONOMY_MIGRATION_RECEIPT_KEY,
+} from "../storage/migrations/migrations";
 import { App } from "./App";
 import { seedFromSearch } from "./seed";
 
@@ -155,6 +166,65 @@ describe("Classic navigation", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  it("migrates a valid v1 Classic session before resuming it and retains the rollback source", () => {
+    const initial = startClassicCareer({
+      identity: {
+        lastName: "旧档",
+        nationalityFifaCode: "CHN",
+        position: "ST",
+        preferredNumber: 9,
+      },
+      mode: "normal",
+      seed: "economy-migration:app",
+    });
+    const decision = initial.currentDecision!;
+    const career = applyClassicChoice(initial, {
+      decisionId: decision.id,
+      decisionType: decision.type,
+      optionId: decision.options[0]!.id,
+    });
+    const legacyRaw = JSON.stringify({
+      choiceLog: career.choiceLog,
+      contentVersion: career.contentVersion,
+      identity: career.identity,
+      mode: career.mode,
+      schemaVersion: 1,
+      seed: career.seed,
+    });
+    localStorage.setItem(
+      LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+      legacyRaw,
+    );
+
+    render(<App />);
+
+    expect(
+      screen.getByText("#9 中锋"),
+    ).toBeInTheDocument();
+    expect(
+      JSON.parse(
+        localStorage.getItem(
+          ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+        )!,
+      ),
+    ).toMatchObject({
+      economyPolicyVersion:
+        "2026-07-31-economy-v1",
+      schemaVersion: 2,
+    });
+    expect(
+      localStorage.getItem(
+        LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+      ),
+    ).toBe(legacyRaw);
+    expect(
+      localStorage.getItem(ECONOMY_MIGRATION_BACKUP_KEY),
+    ).toContain(JSON.stringify(legacyRaw));
+    expect(
+      localStorage.getItem(ECONOMY_MIGRATION_RECEIPT_KEY),
+    ).not.toBeNull();
   });
 
   it("keeps corrupt data quarantined while offering a new career", async () => {

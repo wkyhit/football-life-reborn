@@ -13,6 +13,7 @@ import type {
 } from "../../src/ui/classic/careerPresentation";
 import type { SummaryPresentation } from "../../src/ui/classic/summaryPresentation";
 import { EnhancedCareerScreen } from "../../src/ui/enhanced/career/EnhancedCareerScreen";
+import { EnhancedSummaryScreen } from "../../src/ui/enhanced/summary/EnhancedSummaryScreen";
 
 const TONGLIANG: CareerClubPresentation = {
   abbreviation: "CQT",
@@ -125,6 +126,13 @@ createRoot(root).render(
         onChoose={() => undefined}
         view={fixture.view}
       />
+    ) : fixture.kind === "summary" &&
+      uiMode === "enhanced" ? (
+      <EnhancedSummaryScreen
+        onRestart={() => undefined}
+        onShare={() => undefined}
+        view={fixture.view}
+      />
     ) : fixture.kind === "summary" ? (
       <SummaryScreen
         onRestart={() => undefined}
@@ -217,6 +225,82 @@ function createFixture(name: string | null): VisualFixture {
           ],
         }),
       };
+    case "career-event-result": {
+      const view = presentation({
+        age: 24,
+        club: YATAI,
+        marketValue: 12_000_000,
+        options: [],
+        overall: 80,
+        panel: "simulating",
+        seasons: [
+          season(22, 76, 31, 14, 7),
+          season(23, 78, 34, 18, 9),
+        ],
+      });
+
+      return {
+        kind: "career",
+        view: {
+          ...view,
+          panel: {
+            age: 24,
+            choiceLabel: "接受豪门邀约",
+            contractResult: null,
+            contractSummary:
+              "实际合同：新合同生效 · 年薪 ¥1,200,000",
+            kind: "event_result",
+            summary: "转会成功；能力 +2",
+            title: "豪门邀约结果",
+            tone: "positive",
+          },
+        },
+      };
+    }
+    case "career-milestone": {
+      const view = presentation({
+        age: 24,
+        club: YATAI,
+        marketValue: 12_000_000,
+        options: [],
+        overall: 80,
+        panel: "simulating",
+        seasons: [
+          season(22, 76, 31, 14, 7),
+          season(23, 78, 34, 18, 9),
+          season(24, 80, 36, 21, 11),
+        ],
+      });
+
+      return {
+        kind: "career",
+        view: {
+          ...view,
+          panel: {
+            age: 24,
+            club: YATAI,
+            honors: [
+              {
+                kind: "trophy",
+                label: "联赛冠军",
+                scope: "club",
+                trophy: "league",
+              },
+              {
+                award: "golden_boot",
+                kind: "award",
+                label: "金靴奖",
+              },
+            ],
+            kind: "milestone",
+            nationalTournaments: [],
+            statuses: [],
+            tierChange: null,
+            title: "赛季里程碑",
+          },
+        },
+      };
+    }
     case "summary-attacker":
     case "summary-national-team":
       return { kind: "summary", view: attackerSummary() };
@@ -279,6 +363,13 @@ function presentation(input: {
   });
 
   return {
+    economy: {
+      annualSalary: input.club === null ? null : 20_000,
+      totalIncome:
+        input.seasons.filter(
+          (row) => row.kind === "season",
+        ).length * 20_000,
+    },
     header: {
       age: input.age,
       club: input.club,
@@ -328,8 +419,13 @@ function season(
     age,
     club: TONGLIANG,
     competitionTier: 1,
+    economy: {
+      annualSalary: 20_000,
+      income: 20_000,
+    },
     honors: [],
     kind: "season",
+    marketValue: overall * 10_000,
     nationalTournaments: [],
     overall,
     stats: { appearances, assists, goals },
@@ -348,6 +444,9 @@ function clubOption(
 ): CareerDecisionOptionPresentation {
   return {
     club,
+    consequences: [],
+    contract: null,
+    honorOpportunities: [],
     id,
     outcomePreviews: [],
     role,
@@ -409,6 +508,7 @@ function attackerSummary(): SummaryPresentation {
     },
     seasonCount: 22,
     seed: "ms74jclp-1yj5if",
+    story: fixtureStory(86, 12_800_000, "中甲冠军"),
     titles: [],
   };
 }
@@ -452,6 +552,7 @@ function goalkeeperSummary(): SummaryPresentation {
     },
     seasonCount: 24,
     seed: "ms74faaw-18h9kt",
+    story: fixtureStory(82, 8_600_000, "中甲冠军"),
     titles: [
       {
         description: "整个生涯只效力过一家俱乐部",
@@ -511,6 +612,44 @@ function noTitleSummary(): SummaryPresentation {
     },
     seasonCount: 22,
     seed: "ms74ggo4-radcb7",
+    story: fixtureStory(
+      75,
+      3_200_000,
+      "中国足协杯冠军",
+    ),
     titles: [],
+  };
+}
+
+function fixtureStory(
+  maxOverall: number,
+  totalIncome: number,
+  highestHonor: string,
+): SummaryPresentation["story"] {
+  const income = `¥${totalIncome.toLocaleString("en-US")}`;
+  const chapters = [
+    "俱乐部轨迹已经写入记录",
+    `巅峰能力 ${maxOverall}，模拟生涯分位 P50`,
+    `最高荣誉 ${highestHonor}`,
+    "连续没有收到职业合同后结束生涯",
+    `合同生涯总收入 ${income}`,
+  ];
+
+  return {
+    chapters,
+    ending: {
+      description: "连续没有收到职业合同后结束生涯",
+      label: "合同落幕",
+      reason: "no_offers",
+    },
+    highestHonor,
+    narrative: `${chapters.join("。")}。`,
+    simulatedPercentile: {
+      label: "模拟生涯分位",
+      maxOverall,
+      sampleCount: 10_000,
+      value: 50,
+    },
+    totalIncome,
   };
 }

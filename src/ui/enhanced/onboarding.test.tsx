@@ -12,7 +12,9 @@ import {
   createInitialCareerState,
 } from "../../domain/careerReducer";
 import { CLASSIC_CATALOG } from "../../domain/catalog/classicCatalog";
+import { nationalCallUpThreshold } from "../../domain/nationalTeam";
 import { POSITION_ROLE_GROUPS } from "../../domain/role";
+import { CAREER_POSITION_PRESENTATIONS } from "../shared/positionPresentation";
 import { EnhancedOnboarding } from "./EnhancedOnboarding";
 import { createRandomPlayerSetup } from "./randomPlayer";
 
@@ -136,6 +138,105 @@ describe("Enhanced onboarding", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows each national-team call-up threshold from the shared domain rule", () => {
+    const state = careerReducer(
+      createInitialCareerState("issue-18:national-threshold"),
+      { type: "begin_setup" },
+    );
+    const china =
+      CLASSIC_CATALOG.countryByFifaCode.get("CHN")!;
+    const brazil =
+      CLASSIC_CATALOG.countryByFifaCode.get("BRA")!;
+
+    render(
+      <EnhancedOnboarding
+        dispatch={vi.fn()}
+        hasResume={false}
+        isEntryPrompt={false}
+        newCareerSeed="issue-18:national-threshold"
+        onBegin={() => undefined}
+        onRandom={() => undefined}
+        onResume={() => undefined}
+        onStart={() => undefined}
+        state={state}
+      />,
+    );
+
+    for (const country of [china, brazil]) {
+      const threshold = nationalCallUpThreshold(
+        country.internationalReputation,
+      );
+      const button = screen.getByRole("button", {
+        name: country.nameZh,
+      });
+      expect(button).toHaveAccessibleDescription(
+        `国家队征召：OVR ≥ ${threshold}`,
+      );
+
+      expect(
+        within(button).getByText(
+          `国家队征召：OVR ≥ ${threshold}`,
+        ),
+      ).toBeVisible();
+    }
+  });
+
+  it("places all shared positions on a keyboard-selectable football pitch", async () => {
+    const dispatch = vi.fn();
+    const state = positionSetupState();
+
+    render(
+      <EnhancedOnboarding
+        dispatch={dispatch}
+        hasResume={false}
+        isEntryPrompt={false}
+        newCareerSeed="issue-18:position-pitch"
+        onBegin={() => undefined}
+        onRandom={() => undefined}
+        onResume={() => undefined}
+        onStart={() => undefined}
+        state={state}
+      />,
+    );
+
+    const pitch = screen.getByRole("group", {
+      name: "足球场位置",
+    });
+    const positionButtons = within(pitch).getAllByRole(
+      "button",
+    );
+
+    expect(
+      positionButtons.map(
+        (button) => button.dataset.enhancedPosition,
+      ),
+    ).toEqual(
+      CAREER_POSITION_PRESENTATIONS.map(
+        ({ code }) => code,
+      ),
+    );
+
+    for (const [index, presentation] of
+      CAREER_POSITION_PRESENTATIONS.entries()) {
+      expect(positionButtons[index]).toHaveClass("size-14");
+      expect(positionButtons[index]).toHaveStyle({
+        left: presentation.x,
+        top: presentation.y,
+      });
+    }
+
+    const goalkeeper = within(pitch).getByRole("button", {
+      name: /门将.*GK/,
+    });
+    goalkeeper.focus();
+    expect(goalkeeper).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    expect(dispatch).toHaveBeenCalledWith({
+      position: "GK",
+      type: "select_position",
+    });
+  });
+
   it("offers explicit resume, new, and seeded random entry paths with one pace", async () => {
     const onBegin = vi.fn();
     const onRandom = vi.fn();
@@ -189,3 +290,24 @@ describe("Enhanced onboarding", () => {
     expect(onBegin).toHaveBeenCalledWith("express");
   });
 });
+
+function positionSetupState() {
+  let state = createInitialCareerState(
+    "issue-18:position-pitch",
+  );
+  state = careerReducer(state, { type: "begin_setup" });
+  state = careerReducer(state, {
+    nationality: "CHN",
+    type: "select_nationality",
+  });
+  state = careerReducer(state, { type: "continue_setup" });
+  state = careerReducer(state, {
+    name: "门将",
+    number: "1",
+    type: "update_identity",
+  });
+
+  return careerReducer(state, {
+    type: "continue_setup",
+  });
+}

@@ -1,4 +1,5 @@
 import {
+  useId,
   useMemo,
   useState,
   type Dispatch,
@@ -12,6 +13,7 @@ import type {
   CareerAction,
   CareerState,
 } from "../../../domain/model";
+import { nationalCallUpThreshold } from "../../../domain/nationalTeam";
 import {
   COUNTRY_FILTERS,
   discoverCountries,
@@ -218,14 +220,20 @@ function CountryButton({
   readonly onSelect: (country: Country) => void;
   readonly selected: boolean;
 }) {
+  const callUpDescriptionId = useId();
+  const callUpThreshold = nationalCallUpThreshold(
+    country.internationalReputation,
+  );
+
   return (
     <button
+      aria-describedby={callUpDescriptionId}
       aria-label={country.nameZh}
       aria-pressed={selected}
       className={
         selected
-          ? "flex min-h-14 items-center gap-2 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 p-3 text-left"
-          : "flex min-h-14 items-center gap-2 rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left"
+          ? "flex min-h-20 items-center gap-2 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 p-3 text-left"
+          : "flex min-h-20 items-center gap-2 rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left"
       }
       data-country-confederation={country.confederation}
       data-enhanced-country={country.fifaCode}
@@ -242,6 +250,12 @@ function CountryButton({
         <span className="block text-xs text-enhanced-supporting">
           {country.fifaCode}
         </span>
+        <small
+          className="mt-1 block text-enhanced-pitch"
+          id={callUpDescriptionId}
+        >
+          国家队征召：OVR ≥ {callUpThreshold}
+        </small>
       </span>
       {selected ? (
         <span

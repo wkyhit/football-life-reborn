@@ -16,6 +16,11 @@ import {
   createCareerLedger,
   type CareerLedgerEntry,
 } from "../domain/ledger";
+import {
+  createCareerEconomyProjection,
+  type CareerEconomyProjection,
+} from "../domain/economy/careerEconomyProjection";
+import { ECONOMY_POLICY_VERSION } from "../domain/economy/economyPolicy";
 import type {
   ArchiveRepository,
   ArchiveStorageLike,
@@ -24,7 +29,7 @@ import type {
 
 export const CAREER_TRANSFER_FORMAT =
   "football-life-reborn/career-archive" as const;
-export const CAREER_TRANSFER_VERSION = 1 as const;
+export const CAREER_TRANSFER_VERSION = 2 as const;
 export const CAREER_TRANSFER_QUARANTINE_PREFIX =
   "football-life-reborn:career-transfer:quarantine:" as const;
 
@@ -33,25 +38,41 @@ export type CareerTransferArchive = {
   readonly checkpoints: readonly DecisionCheckpoint[];
   readonly createdAt: string;
   readonly displayName: string;
+  readonly economy: CareerEconomyProjection;
+  readonly economyPolicyVersion:
+    typeof ECONOMY_POLICY_VERSION;
   readonly id: string;
   readonly ledger: readonly CareerLedgerEntry[];
   readonly updatedAt: string;
 };
 
-type CareerTransferUnsignedV1 = {
+type CareerTransferArchiveV1 = Omit<
+  CareerTransferArchive,
+  "economy" | "economyPolicyVersion"
+>;
+
+type CareerTransferArchiveV2Encoded = Omit<
+  CareerTransferArchive,
+  "economyPolicyVersion"
+> & {
+  readonly economyPolicyVersion: string;
+};
+
+type CareerTransferUnsignedV2 = {
   readonly archive: CareerTransferArchive;
   readonly format: typeof CAREER_TRANSFER_FORMAT;
   readonly formatVersion: typeof CAREER_TRANSFER_VERSION;
 };
 
-type CareerTransferDocumentV1 =
-  CareerTransferUnsignedV1 & {
+type CareerTransferDocumentV2 =
+  CareerTransferUnsignedV2 & {
     readonly checksum: string;
   };
 
 export type CareerTransferParseResult =
   | {
       readonly archive: CareerTransferArchive;
+      readonly sourceFormatVersion: 1 | 2;
       readonly status: "ready";
     }
   | {
@@ -71,6 +92,11 @@ export type CareerTransferParseResult =
   | {
       readonly contentVersion: unknown;
       readonly reason: "content_version";
+      readonly status: "unsupported";
+    }
+  | {
+      readonly economyPolicyVersion: unknown;
+      readonly reason: "economy_policy";
       readonly status: "unsupported";
     };
 
@@ -92,10 +118,12 @@ export type CareerTransferImportResult =
     }
   | {
       readonly contentVersion?: unknown;
+      readonly economyPolicyVersion?: unknown;
       readonly formatVersion?: unknown;
       readonly quarantineKey: string | null;
       readonly reason:
         | "content_version"
+        | "economy_policy"
         | "format_version";
       readonly status: "unsupported";
     }
@@ -119,12 +147,14 @@ export function serializeCareerTransfer(input: {
   readonly career: ClassicCareerState;
   readonly entry: CareerArchiveEntry;
 }): string {
-  const unsigned: CareerTransferUnsignedV1 = {
+  const unsigned: CareerTransferUnsignedV2 = {
     archive: {
       career: input.career,
       checkpoints: deriveTransferCheckpoints(input.career),
       createdAt: input.entry.createdAt,
       displayName: input.entry.displayName,
+      economy: deriveTransferEconomy(input.career),
+      economyPolicyVersion: ECONOMY_POLICY_VERSION,
       id: input.entry.id,
       ledger: deriveTransferLedger(input.career),
       updatedAt: input.entry.updatedAt,
@@ -132,7 +162,7 @@ export function serializeCareerTransfer(input: {
     format: CAREER_TRANSFER_FORMAT,
     formatVersion: CAREER_TRANSFER_VERSION,
   };
-  const document: CareerTransferDocumentV1 = {
+  const document: CareerTransferDocumentV2 = {
     ...unsigned,
     checksum: checksum(unsigned),
   };
@@ -159,7 +189,10 @@ export function parseCareerTransfer(
     return { reason: "format_marker", status: "invalid" };
   }
 
-  if (parsed.formatVersion !== CAREER_TRANSFER_VERSION) {
+  if (
+    parsed.formatVersion !== 1 &&
+    parsed.formatVersion !== CAREER_TRANSFER_VERSION
+  ) {
     return {
       formatVersion: parsed.formatVersion,
       reason: "format_version",
@@ -174,16 +207,31 @@ export function parseCareerTransfer(
       "format",
       "formatVersion",
     ]) ||
-    typeof parsed.checksum !== "string" ||
-    !isTransferArchive(parsed.archive)
+    typeof parsed.checksum !== "string"
   ) {
     return { reason: "invalid_schema", status: "invalid" };
   }
 
-  const unsigned: CareerTransferUnsignedV1 = {
-    archive: parsed.archive,
+  let archive:
+    | CareerTransferArchiveV2Encoded
+    | CareerTransferArchiveV1;
+
+  if (parsed.formatVersion === 1) {
+    if (!isTransferArchiveV1(parsed.archive)) {
+      return { reason: "invalid_schema", status: "invalid" };
+    }
+    archive = parsed.archive;
+  } else {
+    if (!isTransferArchiveV2(parsed.archive)) {
+      return { reason: "invalid_schema", status: "invalid" };
+    }
+    archive = parsed.archive;
+  }
+
+  const unsigned = {
+    archive,
     format: CAREER_TRANSFER_FORMAT,
-    formatVersion: CAREER_TRANSFER_VERSION,
+    formatVersion: parsed.formatVersion,
   };
 
   if (parsed.checksum !== checksum(unsigned)) {
@@ -194,12 +242,24 @@ export function parseCareerTransfer(
   }
 
   if (
-    parsed.archive.career.contentVersion !==
+    "economyPolicyVersion" in archive &&
+    archive.economyPolicyVersion !== ECONOMY_POLICY_VERSION
+  ) {
+    return {
+      economyPolicyVersion:
+        archive.economyPolicyVersion,
+      reason: "economy_policy",
+      status: "unsupported",
+    };
+  }
+
+  if (
+    archive.career.contentVersion !==
     CLASSIC_CONTENT_VERSION
   ) {
     return {
       contentVersion:
-        parsed.archive.career.contentVersion,
+        archive.career.contentVersion,
       reason: "content_version",
       status: "unsupported",
     };
@@ -209,12 +269,12 @@ export function parseCareerTransfer(
 
   try {
     replayed = replayClassicCareer({
-      choices: parsed.archive.career.choiceLog,
+      choices: archive.career.choiceLog,
       contentVersion:
-        parsed.archive.career.contentVersion,
-      identity: parsed.archive.career.identity,
-      mode: parsed.archive.career.mode,
-      seed: parsed.archive.career.seed,
+        archive.career.contentVersion,
+      identity: archive.career.identity,
+      mode: archive.career.mode,
+      seed: archive.career.seed,
     });
   } catch {
     return { reason: "replay_mismatch", status: "invalid" };
@@ -222,7 +282,7 @@ export function parseCareerTransfer(
 
   if (
     stableStringify(replayed) !==
-    stableStringify(parsed.archive.career)
+    stableStringify(archive.career)
   ) {
     return { reason: "replay_mismatch", status: "invalid" };
   }
@@ -237,7 +297,7 @@ export function parseCareerTransfer(
 
   if (
     stableStringify(checkpoints) !==
-    stableStringify(parsed.archive.checkpoints)
+    stableStringify(archive.checkpoints)
   ) {
     return { reason: "replay_mismatch", status: "invalid" };
   }
@@ -252,17 +312,36 @@ export function parseCareerTransfer(
 
   if (
     stableStringify(ledger) !==
-    stableStringify(parsed.archive.ledger)
+    stableStringify(archive.ledger)
+  ) {
+    return { reason: "replay_mismatch", status: "invalid" };
+  }
+
+  let economy: CareerEconomyProjection;
+
+  try {
+    economy = createCareerEconomyProjection(replayed);
+  } catch {
+    return { reason: "replay_mismatch", status: "invalid" };
+  }
+
+  if (
+    parsed.formatVersion === 2 &&
+    stableStringify(economy) !==
+    stableStringify((archive as CareerTransferArchive).economy)
   ) {
     return { reason: "replay_mismatch", status: "invalid" };
   }
 
   return {
     archive: {
-      ...parsed.archive,
+      ...archive,
       checkpoints,
+      economy,
+      economyPolicyVersion: ECONOMY_POLICY_VERSION,
       ledger,
     },
+    sourceFormatVersion: parsed.formatVersion,
     status: "ready",
   };
 }
@@ -285,19 +364,30 @@ export function importCareerTransfer(
   if (parsed.status === "unsupported") {
     const quarantineKey = quarantine(storage, raw);
 
-    return parsed.reason === "format_version"
-      ? {
+    switch (parsed.reason) {
+      case "format_version":
+        return {
           formatVersion: parsed.formatVersion,
           quarantineKey,
           reason: parsed.reason,
           status: "unsupported",
-        }
-      : {
+        };
+      case "content_version":
+        return {
           contentVersion: parsed.contentVersion,
           quarantineKey,
           reason: parsed.reason,
           status: "unsupported",
         };
+      case "economy_policy":
+        return {
+          economyPolicyVersion:
+            parsed.economyPolicyVersion,
+          quarantineKey,
+          reason: parsed.reason,
+          status: "unsupported",
+        };
+    }
   }
 
   const { archive } = parsed;
@@ -347,9 +437,58 @@ export function importCareerTransfer(
   };
 }
 
-function isTransferArchive(
+function isTransferArchiveV2(
   value: unknown,
-): value is CareerTransferArchive {
+): value is CareerTransferArchiveV2Encoded {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "career",
+      "checkpoints",
+      "createdAt",
+      "displayName",
+      "economy",
+      "economyPolicyVersion",
+      "id",
+      "ledger",
+      "updatedAt",
+    ]) ||
+    !isRecord(value.career) ||
+    !Array.isArray(value.checkpoints) ||
+    typeof value.createdAt !== "string" ||
+    typeof value.displayName !== "string" ||
+    !isRecord(value.economy) ||
+    typeof value.economyPolicyVersion !== "string" ||
+    value.economyPolicyVersion.length < 1 ||
+    value.economyPolicyVersion.length > 120 ||
+    typeof value.id !== "string" ||
+    !Array.isArray(value.ledger) ||
+    typeof value.updatedAt !== "string" ||
+    !isIsoTimestamp(value.createdAt) ||
+    !isIsoTimestamp(value.updatedAt) ||
+    value.createdAt > value.updatedAt ||
+    value.displayName.trim() !== value.displayName ||
+    value.displayName.length < 1 ||
+    value.displayName.length > 80 ||
+    !isArchiveId(value.id)
+  ) {
+    return false;
+  }
+
+  const career = value.career;
+
+  return (
+    typeof career.contentVersion === "string" &&
+    Array.isArray(career.choiceLog) &&
+    isRecord(career.identity) &&
+    typeof career.mode === "string" &&
+    typeof career.seed === "string"
+  );
+}
+
+function isTransferArchiveV1(
+  value: unknown,
+): value is CareerTransferArchiveV1 {
   if (
     !isRecord(value) ||
     !hasExactKeys(value, [
@@ -426,6 +565,35 @@ function deriveTransferLedger(
     return createCareerLedger(career);
   } catch {
     return [];
+  }
+}
+
+function deriveTransferEconomy(
+  career: ClassicCareerState,
+): CareerEconomyProjection {
+  try {
+    return createCareerEconomyProjection(career);
+  } catch {
+    try {
+      const replayed = replayClassicCareer({
+        choices: career.choiceLog,
+        contentVersion: CLASSIC_CONTENT_VERSION,
+        identity: career.identity,
+        mode: career.mode,
+        seed: career.seed,
+      });
+
+      return createCareerEconomyProjection(replayed);
+    } catch {
+      return Object.freeze({
+        currentContract: null,
+        economyPolicyVersion: ECONOMY_POLICY_VERSION,
+        ledger: Object.freeze([]),
+        optionQuotes: Object.freeze([]),
+        seasonSalaries: Object.freeze([]),
+        totalIncome: 0,
+      });
+    }
   }
 }
 

@@ -8,6 +8,8 @@ import {
   deterministicHash,
   stableStringify,
 } from "../../domain/deterministicHash";
+import { createCareerEconomyProjection } from "../../domain/economy/careerEconomyProjection";
+import { ECONOMY_POLICY_VERSION } from "../../domain/economy/economyPolicy";
 import { CLASSIC_GOLDEN_FIXTURES } from "../../../tests/golden/fixtures";
 import {
   REPLAY_MAX_URL_LENGTH,
@@ -61,6 +63,12 @@ describe("challenge replay", () => {
       );
       expect(replayed.stateHash).toBe(
         deterministicHash(original),
+      );
+      expect(replayed.economy).toEqual(
+        createCareerEconomyProjection(original),
+      );
+      expect(replayed.economyPolicyVersion).toBe(
+        ECONOMY_POLICY_VERSION,
       );
       expect("career" in payload).toBe(false);
       expect("state" in payload).toBe(false);
@@ -158,6 +166,30 @@ describe("challenge replay", () => {
       }),
     ).toMatchObject({
       reason: "invalid_setup",
+      status: "invalid",
+    });
+  });
+
+  it("rejects an incompatible economy policy before replaying the football path", () => {
+    const original = replayFixture(GOLDEN_FIXTURES[0]);
+    const payload = createReplayPayload({
+      career: original,
+      challengeId:
+        "daily-v1-2026-07-30-one_club",
+    });
+
+    expect(
+      replayChallengePayload({
+        ...payload,
+        economyPolicyVersion:
+          "future-economy-policy",
+      } as unknown as ReplayPayload),
+    ).toEqual({
+      actualEconomyPolicyVersion:
+        "future-economy-policy",
+      expectedEconomyPolicyVersion:
+        ECONOMY_POLICY_VERSION,
+      reason: "economy_policy",
       status: "invalid",
     });
   });

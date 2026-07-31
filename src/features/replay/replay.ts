@@ -5,6 +5,11 @@ import {
   type ClassicChoiceLogEntry,
 } from "../../domain/classicEngine";
 import { deterministicHash } from "../../domain/deterministicHash";
+import {
+  createCareerEconomyProjection,
+  type CareerEconomyProjection,
+} from "../../domain/economy/careerEconomyProjection";
+import { ECONOMY_POLICY_VERSION } from "../../domain/economy/economyPolicy";
 import type {
   ReplayChoice,
   ReplayPayload,
@@ -13,8 +18,18 @@ import type {
 export type ChallengeReplayResult =
   | {
       readonly career: ClassicCareerState;
+      readonly economy: CareerEconomyProjection;
+      readonly economyPolicyVersion:
+        typeof ECONOMY_POLICY_VERSION;
       readonly stateHash: string;
       readonly status: "ready";
+    }
+  | {
+      readonly actualEconomyPolicyVersion: unknown;
+      readonly expectedEconomyPolicyVersion:
+        typeof ECONOMY_POLICY_VERSION;
+      readonly reason: "economy_policy";
+      readonly status: "invalid";
     }
   | {
       readonly detail: string;
@@ -71,6 +86,7 @@ export function createReplayPayload(input: {
     challengeId: input.challengeId,
     choiceLog,
     contentVersion: input.career.contentVersion,
+    economyPolicyVersion: ECONOMY_POLICY_VERSION,
     identity,
     mode: input.career.mode,
     seed: input.career.seed,
@@ -81,6 +97,19 @@ export function createReplayPayload(input: {
 export function replayChallengePayload(
   payload: ReplayPayload,
 ): ChallengeReplayResult {
+  if (
+    payload.economyPolicyVersion !== ECONOMY_POLICY_VERSION
+  ) {
+    return Object.freeze({
+      actualEconomyPolicyVersion:
+        payload.economyPolicyVersion,
+      expectedEconomyPolicyVersion:
+        ECONOMY_POLICY_VERSION,
+      reason: "economy_policy",
+      status: "invalid",
+    });
+  }
+
   let career: ClassicCareerState;
 
   try {
@@ -166,6 +195,8 @@ export function replayChallengePayload(
 
   return Object.freeze({
     career,
+    economy: createCareerEconomyProjection(career),
+    economyPolicyVersion: ECONOMY_POLICY_VERSION,
     stateHash,
     status: "ready",
   });

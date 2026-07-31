@@ -1,4 +1,9 @@
-import type { CareerPresentation } from "../classic/careerPresentation";
+import {
+  formatMarketValue,
+  type CareerDecisionOptionPresentation,
+  type CareerPresentation,
+} from "../classic/careerPresentation";
+import { formatYuan } from "../../domain/economy/economyPolicy";
 import {
   HonorIdentity,
   type HonorIdentityKey,
@@ -19,6 +24,238 @@ type SeasonRow = Extract<
   CareerPresentation["timeline"][number],
   { readonly kind: "season" }
 >;
+
+export function CareerEconomySummary({
+  economy,
+  marketValue,
+  variant,
+}: {
+  readonly economy: CareerPresentation["economy"];
+  readonly marketValue: number;
+  readonly variant: "classic" | "enhanced";
+}) {
+  const enhanced = variant === "enhanced";
+
+  return (
+    <dl
+      className={
+        enhanced
+          ? "mt-3 grid grid-cols-3 divide-x divide-enhanced-line rounded-[8px] border border-enhanced-line bg-enhanced-surface"
+          : "mt-2 grid grid-cols-3 divide-x divide-zinc-800 rounded-lg border border-zinc-800 bg-zinc-900/50"
+      }
+      data-career-economy-summary=""
+    >
+      <EconomyMetric
+        label="身价"
+        value={formatMarketValue(marketValue)}
+        variant={variant}
+      />
+      <EconomyMetric
+        label="年薪"
+        value={
+          economy === null
+            ? "—"
+            : economy.annualSalary === null
+              ? "暂无合同"
+              : formatYuan(economy.annualSalary)
+        }
+        variant={variant}
+      />
+      <EconomyMetric
+        label="总收入"
+        value={
+          economy === null
+            ? "—"
+            : formatYuan(economy.totalIncome)
+        }
+        variant={variant}
+      />
+    </dl>
+  );
+}
+
+export function CareerSeasonEconomy({
+  row,
+  variant,
+}: {
+  readonly row: SeasonRow;
+  readonly variant: "classic" | "enhanced";
+}) {
+  const enhanced = variant === "enhanced";
+
+  return (
+    <dl
+      className={
+        enhanced
+          ? "col-start-2 col-end-7 mt-1 grid min-w-0 grid-cols-3 gap-x-2 rounded-[6px] bg-enhanced-surface px-2 py-1"
+          : "col-start-2 col-end-7 mt-1 grid min-w-0 grid-cols-3 gap-x-2 rounded-md bg-zinc-950/45 px-2 py-1"
+      }
+      data-career-season-economy=""
+    >
+      <EconomyMetric
+        compact
+        label="身价"
+        value={formatMarketValue(row.marketValue)}
+        variant={variant}
+      />
+      <EconomyMetric
+        compact
+        label="年薪"
+        value={
+          row.economy === null
+            ? "—"
+            : formatYuan(row.economy.annualSalary)
+        }
+        variant={variant}
+      />
+      <EconomyMetric
+        compact
+        label="收入"
+        value={
+          row.economy === null
+            ? "—"
+            : formatYuan(row.economy.income)
+        }
+        variant={variant}
+      />
+    </dl>
+  );
+}
+
+function EconomyMetric({
+  compact = false,
+  label,
+  value,
+  variant,
+}: {
+  readonly compact?: boolean;
+  readonly label: string;
+  readonly value: string;
+  readonly variant: "classic" | "enhanced";
+}) {
+  const enhanced = variant === "enhanced";
+
+  return (
+    <div
+      className={
+        compact
+          ? "min-w-0"
+          : enhanced
+            ? "min-w-0 px-2 py-2 text-center"
+            : "min-w-0 px-2 py-1.5 text-center"
+      }
+    >
+      <dt
+        className={
+          compact
+            ? enhanced
+              ? "text-[9px] font-bold text-enhanced-supporting"
+              : "text-[9px] font-medium text-zinc-500"
+            : enhanced
+              ? "text-xs font-bold text-enhanced-supporting"
+              : "text-[10px] font-medium text-zinc-500"
+        }
+      >
+        {label}
+      </dt>
+      <dd
+        className={`min-w-0 whitespace-nowrap font-bold tabular-nums ${
+          compact
+            ? enhanced
+              ? "text-[9px] text-enhanced-ink-2"
+              : "text-[9px] text-zinc-300"
+            : enhanced
+              ? "mt-0.5 text-xs text-enhanced-strong"
+              : "mt-0.5 text-[11px] text-zinc-200"
+        }`}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+export function CareerDecisionEconomyDetails({
+  option,
+  variant,
+}: {
+  readonly option: CareerDecisionOptionPresentation;
+  readonly variant: "classic" | "enhanced";
+}) {
+  const enhanced = variant === "enhanced";
+
+  return (
+    <>
+      {option.consequences.length > 0 ? (
+        <span
+          className={
+            enhanced
+              ? "mt-3 block space-y-2 border-t border-enhanced-line pt-3"
+              : "mt-2 block space-y-1 border-t border-zinc-700/70 pt-2"
+          }
+          data-career-decision-consequences=""
+          role="list"
+        >
+          <span className="sr-only">可能后果：</span>
+          {option.consequences.map((consequence) => (
+            <span
+              className={
+                enhanced
+                  ? "flex items-start gap-2 text-xs leading-4"
+                  : "flex items-start gap-2 text-[11px] leading-4"
+              }
+              key={`${consequence.semanticLabel}:${consequence.text}`}
+              role="listitem"
+            >
+              <span
+                className={`shrink-0 font-bold ${consequenceToneClass(consequence.tone, variant)}`}
+              >
+                {consequence.semanticLabel}
+                {consequence.probabilityLabel === null
+                  ? ""
+                  : ` · ${consequence.probabilityLabel}`}
+              </span>
+              <span
+                className={
+                  enhanced
+                    ? "text-enhanced-strong"
+                    : "text-zinc-300"
+                }
+              >
+                {consequence.text}
+              </span>
+            </span>
+          ))}
+        </span>
+      ) : null}
+      {option.contract ? (
+        <span
+          className={
+            enhanced
+              ? "mt-3 block text-xs font-bold text-enhanced-success"
+              : "mt-2 block text-[11px] font-bold text-emerald-300"
+          }
+          data-career-decision-contract=""
+        >
+          {option.contract.label}
+        </span>
+      ) : null}
+      {option.honorOpportunities.length > 0 ? (
+        <span
+          className={
+            enhanced
+              ? "mt-1 block text-xs leading-4 text-enhanced-trophy"
+              : "mt-1 block text-[10px] leading-4 text-amber-300"
+          }
+          data-career-decision-honors=""
+        >
+          荣誉机会：
+          {option.honorOpportunities.join(" · ")}
+        </span>
+      ) : null}
+    </>
+  );
+}
 
 type CareerMilestoneNarrativeProps = Pick<
   MilestonePanel,
@@ -243,6 +480,18 @@ export function CareerEventResultNarrative({
       >
         {panel.summary}
       </p>
+      {panel.contractSummary ? (
+        <p
+          className={
+            enhanced
+              ? "mt-3 text-xs font-bold text-enhanced-success"
+              : "mt-2 text-xs font-bold text-emerald-300"
+          }
+          data-career-event-contract-result=""
+        >
+          {panel.contractSummary}
+        </p>
+      ) : null}
     </>
   );
 }
@@ -270,8 +519,45 @@ export function CareerRecentEventResult({
       <span className={`${enhanced ? "mt-1" : "mt-0.5"} block`}>
         {result.summary}
       </span>
+      {result.contractSummary ? (
+        <span
+          className={`${enhanced ? "mt-2" : "mt-1"} block font-bold`}
+          data-career-event-contract-result=""
+        >
+          {result.contractSummary}
+        </span>
+      ) : null}
     </div>
   );
+}
+
+function consequenceToneClass(
+  tone: CareerDecisionOptionPresentation["consequences"][number]["tone"],
+  variant: "classic" | "enhanced",
+): string {
+  if (variant === "enhanced") {
+    switch (tone) {
+      case "positive":
+        return "text-enhanced-success";
+      case "neutral":
+        return "text-enhanced-supporting";
+      case "warning":
+        return "text-enhanced-trophy";
+      case "negative":
+        return "text-enhanced-alert";
+    }
+  }
+
+  switch (tone) {
+    case "positive":
+      return "text-lime-400";
+    case "neutral":
+      return "text-zinc-400";
+    case "warning":
+      return "text-yellow-400";
+    case "negative":
+      return "text-red-400";
+  }
 }
 
 function resultToneClass(

@@ -10,6 +10,11 @@ import type {
   ClassicChoiceTransition,
   ClassicDecisionResult,
 } from "../../domain/classicEngine";
+import {
+  createCareerEconomyChoiceResult,
+  type CareerEconomyChoiceResult,
+} from "../../domain/economy/careerEconomyProjection";
+import { formatYuan } from "../../domain/economy/economyPolicy";
 
 type RevealOptions = {
   readonly eventResultMs?: number;
@@ -25,6 +30,7 @@ export type SeasonRevealQueueItem =
       readonly seasonIndex: number;
     }
   | {
+      readonly contractResult: CareerEconomyChoiceResult;
       readonly dwellMs: number;
       readonly kind: "event_result";
       readonly result: ClassicDecisionResult;
@@ -41,6 +47,8 @@ export type SeasonRevealQueueItem =
 
 export type ClassicEventResultReveal = {
   readonly choiceLabel: string;
+  readonly contractResult: CareerEconomyChoiceResult | null;
+  readonly contractSummary: string | null;
   readonly summary: string;
   readonly title: string;
   readonly tone: CareerEventPreviewTone;
@@ -50,7 +58,9 @@ type SeasonRevealState = {
   readonly announcement: string;
   readonly committedCareer: ClassicCareerState;
   readonly isRevealing: boolean;
+  readonly latestContractResult: CareerEconomyChoiceResult | null;
   readonly latestResult: ClassicDecisionResult | null;
+  readonly recentEventContractResult: CareerEconomyChoiceResult | null;
   readonly recentEventResult: ClassicDecisionResult | null;
   readonly revealQueue: readonly SeasonRevealQueueItem[];
   readonly visibleSeasonCount: number;
@@ -82,7 +92,9 @@ export function useSeasonReveal(
     announcement: "",
     committedCareer: initialCareer,
     isRevealing: false,
+    latestContractResult: null,
     latestResult: null,
+    recentEventContractResult: null,
     recentEventResult: null,
     revealQueue: [],
     visibleSeasonCount: initialCareer.seasons.length,
@@ -93,7 +105,19 @@ export function useSeasonReveal(
       setState((current) => {
         const previouslyCommittedCount =
           current.committedCareer.seasons.length;
+        const repeatedTransition =
+          current.committedCareer === transition.career &&
+          current.latestResult === transition.result;
+        const contractResult =
+          repeatedTransition &&
+          current.latestContractResult !== null
+            ? current.latestContractResult
+            : createCareerEconomyChoiceResult(
+                current.committedCareer,
+                transition,
+              );
         const queue = createRevealQueue({
+          contractResult,
           eventResultMs,
           milestoneMs,
           previousSeasonCount: previouslyCommittedCount,
@@ -105,14 +129,22 @@ export function useSeasonReveal(
 
         return {
           announcement: immediate
-            ? completionAnnouncement(transition)
+            ? completionAnnouncement({
+                ...transition,
+                contractResult,
+              })
             : announcementForItem(
                 queue[0] ?? null,
                 transition.career,
               ),
           committedCareer: transition.career,
           isRevealing: !immediate,
+          latestContractResult: contractResult,
           latestResult: transition.result,
+          recentEventContractResult:
+            transition.result.eventKey === null
+              ? null
+              : contractResult,
           recentEventResult:
             transition.result.eventKey === null
               ? null
@@ -146,6 +178,7 @@ export function useSeasonReveal(
         ...current,
         announcement: completionAnnouncement({
           career: current.committedCareer,
+          contractResult: current.latestContractResult,
           result: current.latestResult,
         }),
         isRevealing: false,
@@ -189,6 +222,7 @@ export function useSeasonReveal(
 
 export function createEventResultReveal(
   result: ClassicDecisionResult,
+  contractResult: CareerEconomyChoiceResult | null = null,
 ): ClassicEventResultReveal | null {
   const event = result.decision.event;
 
@@ -223,6 +257,11 @@ export function createEventResultReveal(
   return {
     choiceLabel:
       narrative.option?.label ?? result.option.label,
+    contractResult,
+    contractSummary:
+      contractResult === null
+        ? null
+        : contractResultSummary(contractResult),
     summary:
       previews.map(({ text }) => text).join("；") ||
       "选择已生效",
@@ -235,6 +274,7 @@ export function createEventResultReveal(
 }
 
 function createRevealQueue(input: {
+  readonly contractResult: CareerEconomyChoiceResult;
   readonly eventResultMs: number;
   readonly milestoneMs: number;
   readonly previousSeasonCount: number;
@@ -253,19 +293,20 @@ function createRevealQueue(input: {
     (_, offset) => input.previousSeasonCount + offset,
   );
 
+  if (input.transition.result.eventKey !== null) {
+    queue.push({
+      contractResult: input.contractResult,
+      dwellMs: input.eventResultMs,
+      kind: "event_result",
+      result: input.transition.result,
+    });
+  }
+
   for (const seasonIndex of newSeasonIndexes) {
     queue.push({
       dwellMs: input.seasonMs,
       kind: "season",
       seasonIndex,
-    });
-  }
-
-  if (input.transition.result.eventKey !== null) {
-    queue.push({
-      dwellMs: input.eventResultMs,
-      kind: "event_result",
-      result: input.transition.result,
     });
   }
 
@@ -324,6 +365,7 @@ function advanceRevealQueue(
         )
       : completionAnnouncement({
           career: current.committedCareer,
+          contractResult: current.latestContractResult,
           result: current.latestResult,
         }),
     isRevealing,
@@ -371,10 +413,13 @@ function announcementForItem(
     case "season":
       return `${career.seasons[item.seasonIndex]?.age ?? ""} 岁赛季正在揭示`;
     case "event_result": {
-      const reveal = createEventResultReveal(item.result);
+      const reveal = createEventResultReveal(
+        item.result,
+        item.contractResult,
+      );
       return reveal === null
         ? "事件结果正在揭示"
-        : `${reveal.title}：${reveal.summary}`;
+        : `${reveal.title}：${reveal.summary}${reveal.contractSummary === null ? "" : `；${reveal.contractSummary}`}`;
     }
     case "milestone":
       return `${career.seasons[item.seasonIndex]?.age ?? ""} 岁赛季里程碑`;
@@ -388,13 +433,17 @@ function announcementForItem(
 function completionAnnouncement(
   transition: {
     readonly career: ClassicCareerState;
+    readonly contractResult: CareerEconomyChoiceResult | null;
     readonly result: ClassicDecisionResult | null;
   },
 ): string {
   const result =
     transition.result === null
       ? null
-      : createEventResultReveal(transition.result);
+      : createEventResultReveal(
+          transition.result,
+          transition.contractResult,
+        );
   const ready =
     transition.career.phase === "summary"
       ? "生涯总结已就绪"
@@ -402,5 +451,25 @@ function completionAnnouncement(
 
   return result === null
     ? ready
-    : `${result.title}：${result.summary}。${ready}`;
+    : `${result.title}：${result.summary}${result.contractSummary === null ? "" : `；${result.contractSummary}`}。${ready}`;
+}
+
+function contractResultSummary(
+  result: CareerEconomyChoiceResult,
+): string {
+  if (result.kind === "new_contract") {
+    return `实际合同：新合同生效 · 年薪 ${formatYuan(result.contract.annualSalary)}`;
+  }
+
+  if (result.kind === "contract_unchanged") {
+    return `实际合同：${
+      result.reason === "loan"
+        ? "母队合同不变"
+        : "合同不变"
+    } · 年薪 ${formatYuan(result.contract.annualSalary)}`;
+  }
+
+  return result.reason === "retire"
+    ? "实际合同：退役后停止收入"
+    : "实际合同：本次选择后无在效合同";
 }

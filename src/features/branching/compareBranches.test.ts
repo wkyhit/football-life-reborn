@@ -10,6 +10,7 @@ import {
   compareBranches,
   type ComparableBranch,
 } from "./compareBranches";
+import { createCareerEconomyProjection } from "../../domain/economy/careerEconomyProjection";
 
 const IDENTITY = {
   lastName: "林一鸣",
@@ -101,6 +102,13 @@ describe("parallel-life branch comparison", () => {
     expect(comparison.ending).toEqual({
       left: left.retirementReason,
       right: right.retirementReason,
+    });
+    expect(comparison.economy.totalIncome).toEqual({
+      delta:
+        createCareerEconomyProjection(left).totalIncome -
+        createCareerEconomyProjection(right).totalIncome,
+      left: createCareerEconomyProjection(left).totalIncome,
+      right: createCareerEconomyProjection(right).totalIncome,
     });
     expect(Object.isFrozen(comparison)).toBe(true);
     expect(compareBranches(

@@ -4,11 +4,15 @@ import type {
   CareerTimelineRowPresentation,
 } from "./careerPresentation";
 import {
+  CareerDecisionEconomyDetails,
+  CareerEconomySummary,
   CareerEventResultNarrative,
   CareerMilestoneNarrative,
   CareerRecentEventResult,
+  CareerSeasonEconomy,
   CareerSeasonNarrative,
 } from "../shared/CareerMilestoneNarrative";
+import { useDecisionFocusRestore } from "../shared/useDecisionFocusRestore";
 import { ClubIdentity } from "./components/ClubIdentity";
 
 type CareerScreenProps = {
@@ -85,14 +89,14 @@ function CareerHeader({ view }: { readonly view: CareerPresentation }) {
           <div className="text-xl font-black tabular-nums text-zinc-100">
             {header.age}
           </div>
-          <div className="text-[11px] font-bold text-emerald-400">
-            <span className="mr-0.5 font-normal text-zinc-500">
-              身价
-            </span>
-            {formatMarketValue(header.marketValue)}
-          </div>
         </div>
       </div>
+
+      <CareerEconomySummary
+        economy={view.economy}
+        marketValue={header.marketValue}
+        variant="classic"
+      />
 
       <div className="-mx-1 mt-1">
         <dl className="grid grid-flow-col auto-cols-fr divide-x divide-zinc-800">
@@ -178,7 +182,10 @@ function TimelineRow({
 
   if (row.kind === "current") {
     return (
-      <div className={`${gridClass} bg-emerald-500/5`}>
+      <div
+        className={`${gridClass} bg-emerald-500/5`}
+        data-career-season-row={row.age}
+      >
         <span className="text-[12px] font-black tabular-nums text-emerald-400">
           {row.age}
         </span>
@@ -196,7 +203,10 @@ function TimelineRow({
 
   if (row.kind === "empty") {
     return (
-      <div className={gridClass}>
+      <div
+        className={gridClass}
+        data-career-season-row={row.age}
+      >
         <span className="text-[12px] font-black tabular-nums text-zinc-700">
           {row.age}
         </span>
@@ -210,7 +220,10 @@ function TimelineRow({
   }
 
   return (
-    <div className={`${gridClass} animate-rise`}>
+    <div
+      className={`${gridClass} animate-rise`}
+      data-career-season-row={row.age}
+    >
       <span className="text-[12px] font-black tabular-nums text-zinc-400">
         {row.age}
       </span>
@@ -233,6 +246,7 @@ function TimelineRow({
       <SeasonNumber>{row.stats.appearances}</SeasonNumber>
       <SeasonNumber>{row.stats.goals}</SeasonNumber>
       <SeasonNumber>{row.stats.assists}</SeasonNumber>
+      <CareerSeasonEconomy row={row} variant="classic" />
       <CareerSeasonNarrative row={row} variant="classic" />
     </div>
   );
@@ -262,6 +276,12 @@ function CareerPanel({
   readonly view: CareerPresentation;
 }) {
   const { panel } = view;
+  const decisionFocusRef =
+    useDecisionFocusRestore<HTMLElement>(
+      panel.kind === "decision"
+        ? panel.decisionId
+        : null,
+    );
 
   if (panel.kind === "simulating") {
     return (
@@ -326,6 +346,7 @@ function CareerPanel({
     <aside
       className="shrink-0 border-t border-zinc-800 bg-zinc-950"
       data-classic-career-panel=""
+      ref={decisionFocusRef}
     >
       <div className="max-h-[46dvh] overflow-y-auto px-4 pb-5 pt-3">
         <div className="animate-rise">
@@ -371,6 +392,7 @@ function DecisionOption({
   return (
     <button
       className="block w-full rounded-xl border border-zinc-700 bg-zinc-800/50 p-3 text-left transition-colors active:bg-zinc-700"
+      data-career-decision-option=""
       onClick={onChoose}
       type="button"
     >
@@ -403,6 +425,10 @@ function DecisionOption({
           </span>
         ) : null}
       </span>
+      <CareerDecisionEconomyDetails
+        option={option}
+        variant="classic"
+      />
     </button>
   );
 }
@@ -420,16 +446,4 @@ function roleToneClass(
     case "danger":
       return "text-red-400";
   }
-}
-
-function formatMarketValue(valueEuro: number): string {
-  if (valueEuro >= 100_000_000) {
-    return `€${trimDecimal(valueEuro / 100_000_000)}亿`;
-  }
-
-  return `€${trimDecimal(valueEuro / 10_000)}万`;
-}
-
-function trimDecimal(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }

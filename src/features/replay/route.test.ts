@@ -15,6 +15,7 @@ import {
   type DailyChallengeFamily,
 } from "../challenges/daily";
 import {
+  REPLAY_CODEC_VERSION,
   encodeReplayHash,
   type ReplayPayload,
 } from "./codec";
@@ -135,13 +136,24 @@ describe("replay hash route", () => {
       decodeBase64Url(hash.slice("#r=".length)),
     ) as Record<string, unknown>;
     const codecHash = `#r=${encodeBase64Url(
-      JSON.stringify({ ...document, v: 2 }),
+      JSON.stringify({
+        ...document,
+        v: REPLAY_CODEC_VERSION + 1,
+      }),
     )}`;
     const contentHash = `#r=${encodeBase64Url(
       JSON.stringify(
         withChecksum({
           ...document,
           c: "future-classic-content",
+        }),
+      ),
+    )}`;
+    const economyHash = `#r=${encodeBase64Url(
+      JSON.stringify(
+        withChecksum({
+          ...document,
+          e: "future-economy-policy",
         }),
       ),
     )}`;
@@ -155,6 +167,11 @@ describe("replay hash route", () => {
       kind: "unsupported",
       status: "error",
       title: "内容版本不兼容",
+    });
+    expect(resolveReplayRoute(economyHash)).toMatchObject({
+      kind: "unsupported",
+      status: "error",
+      title: "经济规则版本不兼容",
     });
   });
 });

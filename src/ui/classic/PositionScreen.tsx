@@ -1,6 +1,7 @@
 import type { PositionCode } from "../../domain/model";
 import { SetupFooter } from "./SetupFooter";
 import { SetupShell } from "./SetupShell";
+import { CAREER_POSITION_PRESENTATIONS } from "../shared/positionPresentation";
 
 type PositionScreenProps = {
   position: PositionCode | null;
@@ -9,33 +10,14 @@ type PositionScreenProps = {
   onStart: () => void;
 };
 
-const POSITIONS = [
-  { code: "LW", label: "左边", left: "18%", top: "18%" },
-  { code: "ST", label: "中锋", left: "50%", top: "10%" },
-  { code: "RW", label: "右边", left: "82%", top: "18%" },
-  { code: "LM", label: "左前", left: "15%", top: "42%" },
-  { code: "CAM", label: "前腰", left: "50%", top: "32%" },
-  { code: "RM", label: "右前", left: "85%", top: "42%" },
-  { code: "LB", label: "左卫", left: "14%", top: "72%" },
-  { code: "CM", label: "中前", left: "50%", top: "52%" },
-  { code: "RB", label: "右卫", left: "86%", top: "72%" },
-  { code: "CDM", label: "后腰", left: "50%", top: "66%" },
-  { code: "CB", label: "中卫", left: "50%", top: "82%" },
-  { code: "GK", label: "门将", left: "50%", top: "94%" },
-] as const satisfies readonly {
-  code: PositionCode;
-  label: string;
-  left: string;
-  top: string;
-}[];
-
 export function PositionScreen({
   position,
   onBack,
   onSelect,
   onStart,
 }: PositionScreenProps) {
-  const selectedPosition = POSITIONS.find(
+  const selectedPosition =
+    CAREER_POSITION_PRESENTATIONS.find(
     (candidate) => candidate.code === position,
   );
 
@@ -58,7 +40,7 @@ export function PositionScreen({
             aria-hidden="true"
             className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-emerald-800/50"
           />
-          {POSITIONS.map((candidate) => {
+          {CAREER_POSITION_PRESENTATIONS.map((candidate) => {
             const selected = position === candidate.code;
 
             return (
@@ -73,19 +55,19 @@ export function PositionScreen({
                 key={candidate.code}
                 onClick={() => onSelect(candidate.code)}
                 style={{
-                  left: candidate.left,
-                  top: candidate.top,
+                  left: candidate.x,
+                  top: candidate.y,
                 }}
                 type="button"
               >
-                {candidate.label}
+                {candidate.shortLabel}
               </button>
             );
           })}
         </div>
 
         <div className="mb-3 h-5 shrink-0 text-center text-sm font-bold text-accent-bright">
-          {selectedPosition?.label ?? ""}
+          {selectedPosition?.shortLabel ?? ""}
         </div>
         <SetupFooter
           nextDisabled={position === null}

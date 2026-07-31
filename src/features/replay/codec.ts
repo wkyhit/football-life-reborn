@@ -6,10 +6,11 @@ import {
   stableStringify,
 } from "../../domain/deterministicHash";
 import { CLASSIC_CONTENT_VERSION } from "../../domain/catalog/classicCatalog";
+import { ECONOMY_POLICY_VERSION } from "../../domain/economy/economyPolicy";
 import type { PacingMode } from "../../domain/pacing";
 import type { ClassicPosition } from "../../domain/role";
 
-export const REPLAY_CODEC_VERSION = 1 as const;
+export const REPLAY_CODEC_VERSION = 2 as const;
 export const REPLAY_HASH_PREFIX = "#r=" as const;
 export const REPLAY_MAX_URL_LENGTH = 1_800 as const;
 
@@ -48,6 +49,8 @@ export type ReplayPayload = {
   readonly challengeId: string;
   readonly choiceLog: readonly ReplayChoice[];
   readonly contentVersion: string;
+  readonly economyPolicyVersion:
+    typeof ECONOMY_POLICY_VERSION;
   readonly identity: ClassicIdentity;
   readonly mode: PacingMode;
   readonly seed: string;
@@ -57,6 +60,9 @@ export type ReplayPayload = {
 export type ReplayDecodeResult =
   | {
       readonly payload: ReplayPayload;
+      readonly sourceCodecVersion:
+        | 1
+        | typeof REPLAY_CODEC_VERSION;
       readonly status: "ready";
     }
   | {
@@ -82,11 +88,17 @@ export type ReplayDecodeResult =
       readonly contentVersion: unknown;
       readonly reason: "content_version";
       readonly status: "unsupported";
+    }
+  | {
+      readonly economyPolicyVersion: unknown;
+      readonly reason: "economy_policy";
+      readonly status: "unsupported";
     };
 
-type ReplayWireUnsignedV1 = {
+type ReplayWireUnsignedV2 = {
   readonly c: string;
   readonly d: string;
+  readonly e: typeof ECONOMY_POLICY_VERSION;
   readonly h: string;
   readonly i: readonly [
     lastName: string,
@@ -101,15 +113,42 @@ type ReplayWireUnsignedV1 = {
   readonly v: typeof REPLAY_CODEC_VERSION;
 };
 
+type ReplayWireDocumentV2 = ReplayWireUnsignedV2 & {
+  readonly x: string;
+};
+
+type ReplayWireUnsignedV2Encoded = Omit<
+  ReplayWireUnsignedV2,
+  "e"
+> & {
+  readonly e: string;
+};
+
+type ReplayWireDocumentV2Encoded =
+  ReplayWireUnsignedV2Encoded & {
+    readonly x: string;
+  };
+
+type ReplayWireUnsignedV1 = Omit<
+  ReplayWireUnsignedV2,
+  "e" | "v"
+> & {
+  readonly v: 1;
+};
+
 type ReplayWireDocumentV1 = ReplayWireUnsignedV1 & {
   readonly x: string;
 };
+
+type ReplayWireUnsigned =
+  | ReplayWireUnsignedV1
+  | ReplayWireUnsignedV2Encoded;
 
 export function encodeReplayHash(
   payload: ReplayPayload,
 ): string {
   const unsigned = toWire(payload);
-  const document: ReplayWireDocumentV1 = {
+  const document: ReplayWireDocumentV2 = {
     ...unsigned,
     x: checksum(unsigned),
   };
@@ -203,24 +242,14 @@ export function decodeReplayHash(
     return { reason: "invalid_json", status: "invalid" };
   }
 
-  if (
-    !isRecord(parsed) ||
-    !hasExactKeys(parsed, [
-      "c",
-      "d",
-      "h",
-      "i",
-      "l",
-      "m",
-      "s",
-      "v",
-      "x",
-    ])
-  ) {
+  if (!isRecord(parsed)) {
     return { reason: "schema", status: "invalid" };
   }
 
-  if (parsed.v !== REPLAY_CODEC_VERSION) {
+  if (
+    parsed.v !== 1 &&
+    parsed.v !== REPLAY_CODEC_VERSION
+  ) {
     return {
       codecVersion: parsed.v,
       reason: "codec_version",
@@ -228,20 +257,80 @@ export function decodeReplayHash(
     };
   }
 
-  if (!isWireDocument(parsed)) {
-    return { reason: "schema", status: "invalid" };
-  }
+  const sourceCodecVersion = parsed.v;
+  let unsigned: ReplayWireUnsigned;
+  let normalized: ReplayWireUnsignedV2;
+  let encodedEconomyPolicyVersion: string | null = null;
 
-  const unsigned: ReplayWireUnsignedV1 = {
-    c: parsed.c,
-    d: parsed.d,
-    h: parsed.h,
-    i: parsed.i,
-    l: parsed.l,
-    m: parsed.m,
-    s: parsed.s,
-    v: REPLAY_CODEC_VERSION,
-  };
+  if (sourceCodecVersion === 1) {
+    if (
+      !hasExactKeys(parsed, [
+        "c",
+        "d",
+        "h",
+        "i",
+        "l",
+        "m",
+        "s",
+        "v",
+        "x",
+      ]) ||
+      !isWireDocumentV1(parsed)
+    ) {
+      return { reason: "schema", status: "invalid" };
+    }
+
+    unsigned = {
+      c: parsed.c,
+      d: parsed.d,
+      h: parsed.h,
+      i: parsed.i,
+      l: parsed.l,
+      m: parsed.m,
+      s: parsed.s,
+      v: 1,
+    };
+    normalized = {
+      ...unsigned,
+      e: ECONOMY_POLICY_VERSION,
+      v: REPLAY_CODEC_VERSION,
+    };
+  } else {
+    if (
+      !hasExactKeys(parsed, [
+        "c",
+        "d",
+        "e",
+        "h",
+        "i",
+        "l",
+        "m",
+        "s",
+        "v",
+        "x",
+      ]) ||
+      !isWireDocumentV2(parsed)
+    ) {
+      return { reason: "schema", status: "invalid" };
+    }
+
+    unsigned = {
+      c: parsed.c,
+      d: parsed.d,
+      e: parsed.e,
+      h: parsed.h,
+      i: parsed.i,
+      l: parsed.l,
+      m: parsed.m,
+      s: parsed.s,
+      v: REPLAY_CODEC_VERSION,
+    };
+    encodedEconomyPolicyVersion = parsed.e;
+    normalized = {
+      ...unsigned,
+      e: ECONOMY_POLICY_VERSION,
+    };
+  }
 
   if (parsed.x !== checksum(unsigned)) {
     return { reason: "checksum", status: "invalid" };
@@ -255,16 +344,32 @@ export function decodeReplayHash(
     };
   }
 
-  const payload = fromWire(unsigned);
+  if (
+    encodedEconomyPolicyVersion !== null &&
+    encodedEconomyPolicyVersion !== ECONOMY_POLICY_VERSION
+  ) {
+    return {
+      economyPolicyVersion:
+        encodedEconomyPolicyVersion,
+      reason: "economy_policy",
+      status: "unsupported",
+    };
+  }
+
+  const payload = fromWire(normalized);
 
   return payload === null
     ? { reason: "schema", status: "invalid" }
-    : { payload, status: "ready" };
+    : {
+        payload,
+        sourceCodecVersion,
+        status: "ready",
+      };
 }
 
 function toWire(
   payload: ReplayPayload,
-): ReplayWireUnsignedV1 {
+): ReplayWireUnsignedV2 {
   assertPayload(payload);
   const firstName = payload.identity.firstName;
   const identity =
@@ -290,6 +395,7 @@ function toWire(
   return {
     c: payload.contentVersion,
     d: payload.challengeId,
+    e: payload.economyPolicyVersion,
     h: payload.stateHash.slice("fnv1a64:".length),
     i: identity,
     l: payload.choiceLog.map(encodeChoice),
@@ -300,7 +406,7 @@ function toWire(
 }
 
 function fromWire(
-  wire: ReplayWireUnsignedV1,
+  wire: ReplayWireUnsignedV2,
 ): ReplayPayload | null {
   const position = REPLAY_POSITIONS[wire.i[2]];
   const mode = CODE_TO_MODE[wire.m];
@@ -334,6 +440,7 @@ function fromWire(
     challengeId: wire.d,
     choiceLog: Object.freeze(choices),
     contentVersion: wire.c,
+    economyPolicyVersion: wire.e,
     identity,
     mode,
     seed: wire.s,
@@ -443,6 +550,13 @@ function assertPayload(payload: ReplayPayload): void {
       `Unsupported replay content version: ${payload.contentVersion}`,
     );
   }
+  if (
+    payload.economyPolicyVersion !== ECONOMY_POLICY_VERSION
+  ) {
+    throw new RangeError(
+      `Unsupported replay economy policy version: ${String(payload.economyPolicyVersion)}`,
+    );
+  }
   if (!isBoundedString(payload.seed, 1, 200)) {
     throw new RangeError("Replay seed is invalid");
   }
@@ -464,11 +578,28 @@ function assertPayload(payload: ReplayPayload): void {
   }
 }
 
-function isWireDocument(
+function isWireDocumentV2(
   value: Record<string, unknown>,
-): value is ReplayWireDocumentV1 {
+): value is ReplayWireDocumentV2Encoded {
   return (
     value.v === REPLAY_CODEC_VERSION &&
+    typeof value.e === "string" &&
+    value.e.length >= 1 &&
+    value.e.length <= 120 &&
+    hasValidWireFields(value)
+  );
+}
+
+function isWireDocumentV1(
+  value: Record<string, unknown>,
+): value is ReplayWireDocumentV1 {
+  return value.v === 1 && hasValidWireFields(value);
+}
+
+function hasValidWireFields(
+  value: Record<string, unknown>,
+): boolean {
+  return (
     typeof value.c === "string" &&
     isBoundedString(value.d, 1, 120) &&
     /^[A-Za-z0-9:_-]+$/.test(value.d) &&
@@ -547,7 +678,7 @@ function isBoundedString(
   );
 }
 
-function checksum(value: ReplayWireUnsignedV1): string {
+function checksum(value: ReplayWireUnsigned): string {
   return fnv1a64(stableStringify(value));
 }
 

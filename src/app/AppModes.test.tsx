@@ -7,6 +7,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { startClassicCareer } from "../domain/classicEngine";
 import {
   careerReducer,
   createInitialCareerState,
@@ -21,7 +22,10 @@ import {
 import {
   ARCHIVE_INDEX_STORAGE_KEY,
 } from "../storage/archiveRepository";
-import { ACTIVE_CLASSIC_SESSION_STORAGE_KEY } from "../storage/classicSessionRepository";
+import {
+  ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+  LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+} from "../storage/classicSessionRepository";
 import { createRandomPlayerSetup } from "../ui/enhanced/randomPlayer";
 import { App } from "./App";
 
@@ -213,6 +217,55 @@ describe("UI mode shells", () => {
     expect(
       screen.getByRole("textbox", { name: "姓名" }),
     ).toHaveValue("李");
+  });
+
+  it("does not resurrect a retained v1 session after the player explicitly starts a new career", async () => {
+    const career = startClassicCareer({
+      identity: {
+        lastName: "旧档",
+        nationalityFifaCode: "CHN",
+        position: "ST",
+        preferredNumber: 9,
+      },
+      mode: "normal",
+      seed: "economy-migration:discard",
+    });
+    const legacyRaw = JSON.stringify({
+      choiceLog: career.choiceLog,
+      contentVersion: career.contentVersion,
+      identity: career.identity,
+      mode: career.mode,
+      schemaVersion: 1,
+      seed: career.seed,
+    });
+    localStorage.setItem(
+      LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+      legacyRaw,
+    );
+    window.history.replaceState(
+      {},
+      "",
+      "/?ui=enhanced",
+    );
+    render(<App />);
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "开始普通生涯",
+      }),
+    );
+
+    expect(
+      localStorage.getItem(
+        LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+      ),
+    ).toBeNull();
+    expect(
+      localStorage.getItem(
+        ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+      ),
+    ).toBeNull();
   });
 
   it("persists and replays a seeded random player after career creation", async () => {

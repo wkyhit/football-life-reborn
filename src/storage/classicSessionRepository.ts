@@ -9,29 +9,43 @@ import {
   CLASSIC_CATALOG,
   CLASSIC_CONTENT_VERSION,
 } from "../domain/catalog/classicCatalog";
+import { ECONOMY_POLICY_VERSION } from "../domain/economy/economyPolicy";
 import { PACING_CONFIGS, type PacingMode } from "../domain/pacing";
 import { POSITION_ROLE_GROUPS } from "../domain/role";
 import type { StorageLike } from "./careerRepository";
 
-export const CLASSIC_SESSION_SCHEMA_VERSION = 1 as const;
+export const CLASSIC_SESSION_SCHEMA_VERSION = 2 as const;
 export const ACTIVE_CLASSIC_SESSION_STORAGE_KEY =
+  "football-life-reborn:classic-session:v2" as const;
+export const LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY =
   "football-life-reborn:classic-session:v1" as const;
 export const CLASSIC_SESSION_QUARANTINE_PREFIX =
   "football-life-reborn:classic-session:quarantine:" as const;
 
-type ClassicSessionEnvelopeV1 = {
+type ClassicSessionEnvelopeV2 = {
   readonly choiceLog: readonly ClassicChoiceLogEntry[];
   readonly contentVersion: typeof CLASSIC_CONTENT_VERSION;
+  readonly economyPolicyVersion: typeof ECONOMY_POLICY_VERSION;
   readonly identity: ClassicIdentity;
   readonly mode: PacingMode;
   readonly schemaVersion: typeof CLASSIC_SESSION_SCHEMA_VERSION;
   readonly seed: string;
 };
 
+type ClassicSessionEnvelopeV1 = Omit<
+  ClassicSessionEnvelopeV2,
+  "economyPolicyVersion" | "schemaVersion"
+> & {
+  readonly schemaVersion: 1;
+};
+
 export type ClassicSessionLoadResult =
   | { readonly status: "empty" }
   | {
       readonly state: ClassicCareerState;
+      readonly economyPolicyVersion:
+        typeof ECONOMY_POLICY_VERSION;
+      readonly sourceSchemaVersion: 1 | 2;
       readonly status: "ready";
     }
   | {
@@ -83,6 +97,12 @@ export function createClassicSessionRepository(
 
       try {
         raw = storage.getItem(ACTIVE_CLASSIC_SESSION_STORAGE_KEY);
+
+        if (raw === null) {
+          raw = storage.getItem(
+            LEGACY_ACTIVE_CLASSIC_SESSION_STORAGE_KEY,
+          );
+        }
       } catch (error) {
         return {
           reason: readableError(error),
@@ -126,6 +146,7 @@ export function createClassicSessionRepository(
       }
 
       if (
+        parsed.schemaVersion !== 1 &&
         parsed.schemaVersion !== CLASSIC_SESSION_SCHEMA_VERSION
       ) {
         return unsupported(
@@ -145,22 +166,52 @@ export function createClassicSessionRepository(
         );
       }
 
-      if (!isClassicSessionEnvelope(parsed)) {
-        return recoverInvalid(
+      if (
+        parsed.schemaVersion === 2 &&
+        parsed.economyPolicyVersion !== ECONOMY_POLICY_VERSION
+      ) {
+        return unsupported(
           storage,
           raw,
-          "Stored Classic session does not match schema version 1",
+          parsed.schemaVersion,
+          `Unsupported economy policy version: ${String(parsed.economyPolicyVersion)}`,
         );
+      }
+
+      let envelope:
+        | ClassicSessionEnvelopeV1
+        | ClassicSessionEnvelopeV2;
+
+      if (parsed.schemaVersion === 1) {
+        if (!isClassicSessionEnvelopeV1(parsed)) {
+          return recoverInvalid(
+            storage,
+            raw,
+            "Stored Classic session does not match schema version 1",
+          );
+        }
+        envelope = parsed;
+      } else {
+        if (!isClassicSessionEnvelopeV2(parsed)) {
+          return recoverInvalid(
+            storage,
+            raw,
+            "Stored Classic session does not match schema version 2",
+          );
+        }
+        envelope = parsed;
       }
 
       try {
         return {
+          economyPolicyVersion: ECONOMY_POLICY_VERSION,
+          sourceSchemaVersion: envelope.schemaVersion,
           state: replayClassicCareer({
-            choices: parsed.choiceLog,
-            contentVersion: parsed.contentVersion,
-            identity: parsed.identity,
-            mode: parsed.mode,
-            seed: parsed.seed,
+            choices: envelope.choiceLog,
+            contentVersion: envelope.contentVersion,
+            identity: envelope.identity,
+            mode: envelope.mode,
+            seed: envelope.seed,
           }),
           status: "ready",
         };
@@ -174,9 +225,10 @@ export function createClassicSessionRepository(
     },
 
     save(state) {
-      const envelope: ClassicSessionEnvelopeV1 = {
+      const envelope: ClassicSessionEnvelopeV2 = {
         choiceLog: state.choiceLog,
         contentVersion: state.contentVersion,
+        economyPolicyVersion: ECONOMY_POLICY_VERSION,
         identity: state.identity,
         mode: state.mode,
         schemaVersion: CLASSIC_SESSION_SCHEMA_VERSION,
@@ -199,11 +251,28 @@ export function createClassicSessionRepository(
   };
 }
 
-function isClassicSessionEnvelope(
+function isClassicSessionEnvelopeV2(
+  value: Record<string, unknown>,
+): value is ClassicSessionEnvelopeV2 {
+  return (
+    value.schemaVersion === CLASSIC_SESSION_SCHEMA_VERSION &&
+    value.contentVersion === CLASSIC_CONTENT_VERSION &&
+    value.economyPolicyVersion === ECONOMY_POLICY_VERSION &&
+    typeof value.seed === "string" &&
+    value.seed.length >= 1 &&
+    value.seed.length <= 128 &&
+    isPacingMode(value.mode) &&
+    isClassicIdentity(value.identity) &&
+    Array.isArray(value.choiceLog) &&
+    value.choiceLog.every(isChoiceLogEntry)
+  );
+}
+
+function isClassicSessionEnvelopeV1(
   value: Record<string, unknown>,
 ): value is ClassicSessionEnvelopeV1 {
   return (
-    value.schemaVersion === CLASSIC_SESSION_SCHEMA_VERSION &&
+    value.schemaVersion === 1 &&
     value.contentVersion === CLASSIC_CONTENT_VERSION &&
     typeof value.seed === "string" &&
     value.seed.length >= 1 &&

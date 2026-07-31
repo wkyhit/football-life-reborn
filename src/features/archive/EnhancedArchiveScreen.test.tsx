@@ -2,6 +2,7 @@ import {
   cleanup,
   render,
   screen,
+  within,
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -16,6 +17,7 @@ import {
   createArchiveRepository,
   type ArchiveStorageLike,
 } from "../../storage/archiveRepository";
+import { createCareerEconomyProjection } from "../../domain/economy/careerEconomyProjection";
 import { serializeCareerTransfer } from "../../storage/careerTransfer";
 import { EnhancedArchiveScreen } from "./EnhancedArchiveScreen";
 
@@ -87,6 +89,20 @@ describe("Enhanced career archive", () => {
       screen.getByRole("heading", { name: "生涯档案" }),
     ).toBeInTheDocument();
     expect(screen.getByText("原始人生")).toBeInTheDocument();
+    const parentRecord = screen
+      .getByText("原始人生")
+      .closest("li");
+
+    if (parentRecord === null) {
+      throw new Error("Expected parent archive record");
+    }
+
+    expect(within(parentRecord).getByText("总收入")).toBeVisible();
+    expect(
+      within(parentRecord).getByText(
+        `¥${createCareerEconomyProjection(parent).totalIncome.toLocaleString("en-US")}`,
+      ),
+    ).toBeVisible();
 
     await user.click(
       screen.getByRole("button", {
@@ -178,6 +194,42 @@ describe("Enhanced career archive", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("能力曲线")).toBeInTheDocument();
     expect(screen.getByText("国家队结果")).toBeInTheDocument();
+    const economyComparison =
+      document.querySelector<HTMLElement>(
+        '[data-enhanced-comparison-record="economy"]',
+      );
+
+    if (economyComparison === null) {
+      throw new Error("Expected branch economy comparison");
+    }
+
+    expect(
+      within(economyComparison).getByText("总收入"),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "返回档案" }),
+    );
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "查看账本 冠军之路",
+      }),
+    );
+    const archiveEconomy =
+      document.querySelector<HTMLElement>(
+        "[data-enhanced-archive-economy]",
+      );
+
+    if (archiveEconomy === null) {
+      throw new Error("Expected archive economy detail");
+    }
+
+    expect(within(archiveEconomy).getByText("总收入")).toBeVisible();
+    expect(
+      within(archiveEconomy).getByText(
+        `¥${createCareerEconomyProjection(parent).totalIncome.toLocaleString("en-US")}`,
+      ),
+    ).toBeVisible();
     await user.click(
       screen.getByRole("button", { name: "返回档案" }),
     );

@@ -8,6 +8,7 @@ import type {
   NationalTrophy,
 } from "../../domain/careerEvents";
 import { stableStringify } from "../../domain/deterministicHash";
+import { createCareerEconomyProjection } from "../../domain/economy/careerEconomyProjection";
 import type { NationalTournamentResult } from "../../domain/nationalTeam";
 import type { ClassicSeasonStats } from "../../domain/role";
 import {
@@ -127,6 +128,9 @@ export type ReadyBranchComparison = {
     readonly left: RetirementReason | null;
     readonly right: RetirementReason | null;
   };
+  readonly economy: {
+    readonly totalIncome: NumericComparison;
+  };
   readonly nationalTeam: {
     readonly results: {
       readonly rows: readonly CategoryComparisonRow<NationalResultCategory>[];
@@ -177,6 +181,12 @@ export function compareBranches(
   );
   const leftNationalStats = nationalStats(left.career);
   const rightNationalStats = nationalStats(right.career);
+  const leftEconomy = createCareerEconomyProjection(
+    left.career,
+  );
+  const rightEconomy = createCareerEconomyProjection(
+    right.career,
+  );
 
   return Object.freeze({
     abilityCurve: createCurve(
@@ -215,6 +225,12 @@ export function compareBranches(
     ending: Object.freeze({
       left: left.career.retirementReason,
       right: right.career.retirementReason,
+    }),
+    economy: Object.freeze({
+      totalIncome: numeric(
+        leftEconomy.totalIncome,
+        rightEconomy.totalIncome,
+      ),
     }),
     nationalTeam: Object.freeze({
       results: Object.freeze({

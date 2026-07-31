@@ -52,19 +52,29 @@ export function resolveReplayRoute(
   }
 
   if (decoded.status === "unsupported") {
-    return decoded.reason === "codec_version"
-      ? routeError(
+    switch (decoded.reason) {
+      case "codec_version":
+        return routeError(
           "unsupported",
           "回放版本暂不支持",
           `当前应用无法读取编码版本 ${String(decoded.codecVersion)}。`,
           "请使用创建该回放时的兼容应用版本，或请分享者生成新链接。",
-        )
-      : routeError(
+        );
+      case "content_version":
+        return routeError(
           "unsupported",
           "内容版本不兼容",
           `当前应用未包含内容版本 ${String(decoded.contentVersion)}。`,
           "请使用创建该回放时的兼容应用版本。系统不会用其他内容近似重放。",
         );
+      case "economy_policy":
+        return routeError(
+          "unsupported",
+          "经济规则版本不兼容",
+          `当前应用未包含经济规则 ${String(decoded.economyPolicyVersion)}。`,
+          "请使用创建该回放时的兼容应用版本。系统不会用其他规则近似计算收入。",
+        );
+    }
   }
 
   const challenge = parseDailyChallengeSeed(
@@ -126,6 +136,8 @@ function replayFailureDetail(
       return `第 ${replayed.choiceIndex + 1} 个选择不属于当时可用选项。`;
     case "choice_rejected":
       return `第 ${replayed.choiceIndex + 1} 个选择被确定性引擎拒绝。`;
+    case "economy_policy":
+      return "回放中的经济规则版本与当前应用不兼容。";
     case "invalid_setup":
       return "回放身份或初始设置无法被当前内容创建。";
     case "state_hash":
