@@ -383,8 +383,11 @@ export function createCareerPresentation({
   const seasonsByAge = new Map(
     visibleSeasons.map((season) => [season.age, season]),
   );
-  const timeline = Array.from({ length: 24 }, (_, index) => {
-    const age = 16 + index;
+  const timelineAges = createTimelineAgeRange({
+    currentDecisionAge,
+    lastRevealedAge: latestVisibleSeason?.age,
+  });
+  const timeline = timelineAges.map((age) => {
     const season = seasonsByAge.get(age);
 
     if (season !== undefined) {
@@ -456,6 +459,22 @@ export function createCareerPresentation({
       ),
     },
   };
+}
+
+function createTimelineAgeRange(input: {
+  readonly currentDecisionAge: number | undefined;
+  readonly lastRevealedAge: number | undefined;
+}): readonly number[] {
+  const endAge = Math.max(
+    39,
+    input.lastRevealedAge ?? 16,
+    input.currentDecisionAge ?? 16,
+  );
+
+  return Array.from(
+    { length: endAge - 16 + 1 },
+    (_, index) => 16 + index,
+  );
 }
 
 function revealPanelPresentation(input: {

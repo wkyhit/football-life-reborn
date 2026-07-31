@@ -15,6 +15,71 @@ import { CLASSIC_GOLDEN_FIXTURES } from "../../../tests/golden/fixtures";
 import { createCareerPresentation } from "./careerPresentation";
 
 describe("Classic career presentation", () => {
+  it("keeps the ordinary timeline fixed at ages 16 through 39", () => {
+    const career = startClassicCareer({
+      identity: {
+        lastName: "基线",
+        nationalityFifaCode: "CHN",
+        position: "ST",
+        preferredNumber: 9,
+      },
+      mode: "normal",
+      seed: "issue-23:ordinary-timeline",
+    });
+
+    const view = createCareerPresentation({
+      career,
+      isRevealing: false,
+      visibleSeasonCount: 0,
+    });
+
+    expect(view.timeline).toHaveLength(24);
+    expect(view.timeline[0]).toEqual({
+      age: 16,
+      kind: "current",
+    });
+    expect(view.timeline.at(-1)).toEqual({
+      age: 39,
+      kind: "empty",
+    });
+  });
+
+  it.each([40, 41, 43] as const)(
+    "extends the timeline through a current decision at age %i",
+    (age) => {
+      const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+        (candidate) =>
+          candidate.expected.finalAge === age &&
+          candidate.choices.at(-1)?.decisionType ===
+            "no_offers_retirement",
+      );
+
+      if (fixture === undefined) {
+        throw new Error(`Missing age-${age} golden fixture`);
+      }
+
+      const career = replayClassicCareer({
+        choices: fixture.choices.slice(0, -1),
+        contentVersion: fixture.contentVersion,
+        identity: fixture.identity,
+        mode: fixture.mode,
+        seed: fixture.seed,
+      });
+      const view = createCareerPresentation({
+        career,
+        isRevealing: false,
+        visibleSeasonCount: career.seasons.length,
+      });
+
+      expect(career.currentDecision?.age).toBe(age);
+      expect(view.timeline).toHaveLength(age - 16 + 1);
+      expect(view.timeline.at(-1)).toEqual({
+        age,
+        kind: "current",
+      });
+    },
+  );
+
   it.each(["ST", "GK"] as const)(
     "exposes reveal-safe contract economy facts for a %s career",
     (position) => {

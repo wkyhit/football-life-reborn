@@ -352,7 +352,12 @@ function presentation(input: {
     { appearances: 0, assists: 0, goals: 0, trophies: 0 },
   );
   const byAge = new Map(input.seasons.map((row) => [row.age, row]));
-  const timeline = Array.from({ length: 24 }, (_, index) => {
+  const endAge = Math.max(
+    39,
+    input.currentAge ?? 16,
+    ...input.seasons.map(({ age }) => age),
+  );
+  const timeline = Array.from({ length: endAge - 16 + 1 }, (_, index) => {
     const age = 16 + index;
     return (
       byAge.get(age) ??

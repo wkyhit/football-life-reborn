@@ -65,8 +65,10 @@ test("keeps the timeline and decision rail stable at every viewport", async ({
     page.getByRole("heading", { name: "外租" }),
   ).toBeVisible();
   await expect(
-    page.locator("[data-enhanced-season-row]"),
-  ).toHaveCount(24);
+    page.locator(
+      "[data-enhanced-season-row='current'][data-career-season-row='18']",
+    ),
+  ).toHaveCount(1);
   await expect(
     rail.getByRole("button", { name: /^租借去/ }),
   ).toHaveCount(3);
