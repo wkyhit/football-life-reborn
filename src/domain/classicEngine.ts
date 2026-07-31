@@ -18,6 +18,7 @@ import {
 import type {
   CareerEventKey,
   CareerEventModifiers,
+  CareerEventOutcomeKind,
   CareerEventPlan,
   CareerEventSelection,
   CareerEventVariant,
@@ -25,6 +26,8 @@ import type {
   ClubTrophy,
   ForcedCareerEventOutcome,
   InjuryType,
+  NationalTrophy,
+  TrophyOverride,
 } from "./careerEvents";
 import {
   CLASSIC_CATALOG,
@@ -150,6 +153,45 @@ export type ClassicChoiceLogEntry = {
   readonly optionId: string;
 };
 
+export type ClassicDecisionEffectFacts = {
+  readonly clubTrophyOverride:
+    | Readonly<TrophyOverride<ClubTrophy>>
+    | null;
+  readonly clubWorldCupTrophyProbabilityMultiplier: number;
+  readonly continentalPrimaryTrophyProbabilityMultiplier: number;
+  readonly continentalSecondaryTrophyProbabilityMultiplier: number;
+  readonly deferredOverallDelta: number;
+  readonly domesticCupTrophyProbabilityMultiplier: number;
+  readonly immediateOverallDelta: number;
+  readonly leagueTrophyProbabilityMultiplier: number;
+  readonly nationalTournament: NationalTrophy | null;
+  readonly nationalTournamentParticipation:
+    | "force"
+    | "skip"
+    | null;
+  readonly nationalTrophyOverride:
+    | Readonly<TrophyOverride<NationalTrophy>>
+    | null;
+  readonly permanentOverallDelta: number;
+  readonly roleOverride: ClassicSquadRole | null;
+  readonly roleShift: number;
+  readonly statsMultiplier: number;
+  readonly suspensionSeasons: number;
+};
+
+export type ClassicDecisionResult = {
+  readonly decision: ClassicDecision;
+  readonly effects: ClassicDecisionEffectFacts | null;
+  readonly eventKey: CareerEventKey | null;
+  readonly option: ClassicDecisionOption;
+  readonly outcomeKind: CareerEventOutcomeKind | null;
+};
+
+export type ClassicChoiceTransition = {
+  readonly career: ClassicCareerState;
+  readonly result: ClassicDecisionResult;
+};
+
 export type ClassicCareerSeason = ClassicSummarySeason & {
   readonly competitionTier: 1 | 2;
   readonly nationalTournamentRecords: readonly NationalTournamentRecord[];
@@ -237,6 +279,7 @@ type ResolvedChoice = {
 };
 
 type PeriodChoiceEffects = {
+  readonly eventOutcomeKind: CareerEventOutcomeKind | null;
   readonly modifiers: CareerEventModifiers;
   readonly nextState: ClassicCareerState;
 };
@@ -336,27 +379,36 @@ export function applyClassicChoice(
   state: ClassicCareerState,
   choice: ClassicChoiceLogEntry,
 ): ClassicCareerState {
+  return applyClassicChoiceWithResult(state, choice).career;
+}
+
+export function applyClassicChoiceWithResult(
+  state: ClassicCareerState,
+  choice: ClassicChoiceLogEntry,
+): ClassicChoiceTransition {
   if (state.phase === "summary" || state.currentDecision === null) {
     throw new RangeError("Cannot choose after the Classic career ended");
   }
-  if (choice.decisionId !== state.currentDecision.id) {
+  const decision = state.currentDecision;
+
+  if (choice.decisionId !== decision.id) {
     throw new RangeError(
-      `Choice expected decision ${state.currentDecision.id}, received ${choice.decisionId}`,
+      `Choice expected decision ${decision.id}, received ${choice.decisionId}`,
     );
   }
-  if (choice.decisionType !== state.currentDecision.type) {
+  if (choice.decisionType !== decision.type) {
     throw new RangeError(
-      `Choice expected type ${state.currentDecision.type}, received ${choice.decisionType}`,
+      `Choice expected type ${decision.type}, received ${choice.decisionType}`,
     );
   }
 
-  const option = state.currentDecision.options.find(
+  const option = decision.options.find(
     (candidate) => candidate.id === choice.optionId,
   );
 
   if (option === undefined) {
     throw new RangeError(
-      `Unknown option ${choice.optionId} for ${state.currentDecision.id}`,
+      `Unknown option ${choice.optionId} for ${decision.id}`,
     );
   }
 
@@ -368,18 +420,40 @@ export function applyClassicChoice(
 
   if (option.kind === "retire") {
     const reason =
-      state.currentDecision.type === "no_offers_retirement"
+      decision.type === "no_offers_retirement"
         ? "no_offers"
         : "voluntary";
-    return finishClassicCareer(loggedState, reason);
+    return createChoiceTransition({
+      career: finishClassicCareer(loggedState, reason),
+      decision,
+      effects: null,
+      option,
+      outcomeKind: null,
+    });
   }
 
   const effects = resolveChoiceEffects(loggedState, {
     forcedOutcome: choice.forcedOutcome,
     option,
   });
+  const career = simulateClassicPeriod(
+    effects.nextState,
+    effects.modifiers,
+  );
 
-  return simulateClassicPeriod(effects.nextState, effects.modifiers);
+  return createChoiceTransition({
+    career,
+    decision,
+    effects:
+      decision.type === "career_event"
+        ? createDecisionEffectFacts(
+            effects.modifiers,
+            state.mode,
+          )
+        : null,
+    option,
+    outcomeKind: effects.eventOutcomeKind,
+  });
 }
 
 export function replayClassicCareer(input: {
@@ -510,6 +584,67 @@ export function projectClassicGoldenState(
   };
 }
 
+function createChoiceTransition(input: {
+  readonly career: ClassicCareerState;
+  readonly decision: ClassicDecision;
+  readonly effects: ClassicDecisionEffectFacts | null;
+  readonly option: ClassicDecisionOption;
+  readonly outcomeKind: CareerEventOutcomeKind | null;
+}): ClassicChoiceTransition {
+  const result: ClassicDecisionResult = Object.freeze({
+    decision: input.decision,
+    effects: input.effects,
+    eventKey: input.decision.event?.eventKey ?? null,
+    option: input.option,
+    outcomeKind: input.outcomeKind,
+  });
+
+  return Object.freeze({
+    career: input.career,
+    result,
+  });
+}
+
+function createDecisionEffectFacts(
+  modifiers: CareerEventModifiers,
+  mode: PacingMode,
+): ClassicDecisionEffectFacts {
+  return Object.freeze({
+    clubTrophyOverride:
+      modifiers.clubTrophyOverride === undefined
+        ? null
+        : Object.freeze({ ...modifiers.clubTrophyOverride }),
+    clubWorldCupTrophyProbabilityMultiplier:
+      modifiers.clubWorldCupTrophyProbabilityMultiplier,
+    continentalPrimaryTrophyProbabilityMultiplier:
+      modifiers.continentalPrimaryTrophyProbabilityMultiplier,
+    continentalSecondaryTrophyProbabilityMultiplier:
+      modifiers.continentalSecondaryTrophyProbabilityMultiplier,
+    deferredOverallDelta: modifiers.deferredOverallDelta,
+    domesticCupTrophyProbabilityMultiplier:
+      modifiers.domesticCupTrophyProbabilityMultiplier,
+    immediateOverallDelta: modifiers.immediateOverallDelta,
+    leagueTrophyProbabilityMultiplier:
+      modifiers.leagueTrophyProbabilityMultiplier,
+    nationalTournament:
+      modifiers.nationalTournament ?? null,
+    nationalTournamentParticipation:
+      modifiers.nationalTournamentParticipation ?? null,
+    nationalTrophyOverride:
+      modifiers.nationalTrophyOverride === undefined
+        ? null
+        : Object.freeze({ ...modifiers.nationalTrophyOverride }),
+    permanentOverallDelta: modifiers.permanentOverallDelta,
+    roleOverride: modifiers.roleOverride ?? null,
+    roleShift: modifiers.roleShift,
+    statsMultiplier: modifiers.statsMultiplier,
+    suspensionSeasons: suspensionSeasonsForEvent(
+      modifiers,
+      mode,
+    ),
+  });
+}
+
 function resolveChoiceEffects(
   state: ClassicCareerState,
   choice: ResolvedChoice,
@@ -528,6 +663,7 @@ function resolveChoiceEffects(
   let modifiers: CareerEventModifiers = {
     ...DEFAULT_CAREER_EVENT_MODIFIERS,
   };
+  let eventOutcomeKind: CareerEventOutcomeKind | null = null;
 
   if (choice.option.clubId !== undefined) {
     const clubId = choice.option.clubId;
@@ -617,6 +753,7 @@ function resolveChoiceEffects(
         variantKey: event.variantKey,
       });
       modifiers = applied.modifiers;
+      eventOutcomeKind = applied.outcomeKind ?? null;
       nextState = {
         ...nextState,
         rngState: applied.rngState,
@@ -645,6 +782,7 @@ function resolveChoiceEffects(
   );
 
   return {
+    eventOutcomeKind,
     modifiers,
     nextState: {
       ...nextState,

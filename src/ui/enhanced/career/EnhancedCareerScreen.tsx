@@ -7,6 +7,12 @@ import {
   ChallengeProgressPanel,
   type ChallengeSurface,
 } from "../../../features/challenges/ChallengeProgressPanel";
+import {
+  CareerEventResultNarrative,
+  CareerMilestoneNarrative,
+  CareerRecentEventResult,
+  CareerSeasonNarrative,
+} from "../../shared/CareerMilestoneNarrative";
 import { ClubIdentity } from "../../classic/components/ClubIdentity";
 
 type EnhancedCareerScreenProps = {
@@ -328,6 +334,7 @@ function TimelineRow({
       <SeasonNumber>{row.stats.appearances}</SeasonNumber>
       <SeasonNumber>{row.stats.goals}</SeasonNumber>
       <SeasonNumber>{row.stats.assists}</SeasonNumber>
+      <CareerSeasonNarrative row={row} variant="enhanced" />
     </div>
   );
 }
@@ -397,6 +404,69 @@ function DecisionRail({
     );
   }
 
+  if (panel.kind === "event_result") {
+    return (
+      <aside
+        aria-labelledby="enhanced-event-result-heading"
+        className={railClass}
+        data-enhanced-decision-rail=""
+      >
+        {challenge ? (
+          <div className="mb-4">
+            <ChallengeProgressPanel {...challenge} />
+          </div>
+        ) : null}
+        <div
+          className="enhanced-reveal-enter"
+          data-enhanced-event-result-reveal=""
+        >
+          <CareerEventResultNarrative
+            headingId="enhanced-event-result-heading"
+            panel={panel}
+            variant="enhanced"
+          />
+        </div>
+      </aside>
+    );
+  }
+
+  if (panel.kind === "milestone") {
+    return (
+      <aside
+        aria-labelledby="enhanced-milestone-heading"
+        className={railClass}
+        data-enhanced-decision-rail=""
+      >
+        {challenge ? (
+          <div className="mb-4">
+            <ChallengeProgressPanel {...challenge} />
+          </div>
+        ) : null}
+        <div
+          className="enhanced-reveal-enter"
+          data-enhanced-milestone-reveal=""
+        >
+          <p className="text-[10px] font-bold tracking-[0.12em] text-amber-300">
+            MILESTONE · {panel.age} 岁 · {panel.club.shortName}
+          </p>
+          <h2
+            className="mt-1.5 text-[22px] font-extrabold leading-tight"
+            id="enhanced-milestone-heading"
+          >
+            {panel.title}
+          </h2>
+          <CareerMilestoneNarrative
+            honors={panel.honors}
+            nationalTournaments={panel.nationalTournaments}
+            statuses={panel.statuses}
+            tierChange={panel.tierChange}
+            variant="enhanced"
+          />
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside
       aria-labelledby="enhanced-decision-heading"
@@ -407,6 +477,12 @@ function DecisionRail({
         <div className="mb-4">
           <ChallengeProgressPanel {...challenge} />
         </div>
+      ) : null}
+      {view.recentEventResult ? (
+        <CareerRecentEventResult
+          result={view.recentEventResult}
+          variant="enhanced"
+        />
       ) : null}
       <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
         DECISION RAIL · {panel.age} 岁
@@ -465,7 +541,11 @@ function DecisionOption({
           <span className="block truncate text-[15px] font-bold">
             {option.title}
           </span>
-          <span className="mt-0.5 block truncate text-[11px] text-enhanced-supporting">
+          <span
+            className={`mt-0.5 block text-[11px] text-enhanced-supporting ${
+              option.club ? "truncate" : "whitespace-normal leading-4"
+            }`}
+          >
             {option.subtitle}
           </span>
         </span>

@@ -3,15 +3,23 @@ import type {
   CareerPresentation,
   CareerTimelineRowPresentation,
 } from "./careerPresentation";
+import {
+  CareerEventResultNarrative,
+  CareerMilestoneNarrative,
+  CareerRecentEventResult,
+  CareerSeasonNarrative,
+} from "../shared/CareerMilestoneNarrative";
 import { ClubIdentity } from "./components/ClubIdentity";
 
 type CareerScreenProps = {
   readonly onChoose: (decisionId: string, optionId: string) => void;
+  readonly statusMessage?: string | null;
   readonly view: CareerPresentation;
 };
 
 export function CareerScreen({
   onChoose,
+  statusMessage,
   view,
 }: CareerScreenProps) {
   return (
@@ -20,6 +28,16 @@ export function CareerScreen({
       data-classic-career-shell=""
       id="main-content"
     >
+      {statusMessage ? (
+        <p
+          aria-atomic="true"
+          aria-live="polite"
+          className="sr-only"
+          role="status"
+        >
+          {statusMessage}
+        </p>
+      ) : null}
       <CareerHeader view={view} />
       <CareerTimeline view={view} />
       <CareerPanel onChoose={onChoose} view={view} />
@@ -215,6 +233,7 @@ function TimelineRow({
       <SeasonNumber>{row.stats.appearances}</SeasonNumber>
       <SeasonNumber>{row.stats.goals}</SeasonNumber>
       <SeasonNumber>{row.stats.assists}</SeasonNumber>
+      <CareerSeasonNarrative row={row} variant="classic" />
     </div>
   );
 }
@@ -258,6 +277,51 @@ function CareerPanel({
     );
   }
 
+  if (panel.kind === "event_result") {
+    return (
+      <aside
+        className="shrink-0 border-t border-zinc-800 bg-zinc-950 px-4 pb-5 pt-4"
+        data-classic-career-panel=""
+        data-classic-event-result-reveal=""
+      >
+        <div className="animate-rise">
+          <CareerEventResultNarrative
+            panel={panel}
+            variant="classic"
+          />
+        </div>
+      </aside>
+    );
+  }
+
+  if (panel.kind === "milestone") {
+    return (
+      <aside
+        className="shrink-0 border-t border-zinc-800 bg-zinc-950 px-4 pb-5 pt-4"
+        data-classic-career-panel=""
+      >
+        <div
+          className="animate-rise"
+          data-classic-milestone-reveal=""
+        >
+          <p className="text-[10px] font-bold tracking-wide text-amber-500">
+            {panel.age} 岁 · {panel.club.shortName}
+          </p>
+          <h2 className="mt-1 text-lg font-black text-zinc-50">
+            {panel.title}
+          </h2>
+          <CareerMilestoneNarrative
+            honors={panel.honors}
+            nationalTournaments={panel.nationalTournaments}
+            statuses={panel.statuses}
+            tierChange={panel.tierChange}
+            variant="classic"
+          />
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside
       className="shrink-0 border-t border-zinc-800 bg-zinc-950"
@@ -265,6 +329,12 @@ function CareerPanel({
     >
       <div className="max-h-[46dvh] overflow-y-auto px-4 pb-5 pt-3">
         <div className="animate-rise">
+          {view.recentEventResult ? (
+            <CareerRecentEventResult
+              result={view.recentEventResult}
+              variant="classic"
+            />
+          ) : null}
           <div className="text-[10px] font-bold tracking-wide text-emerald-500">
             {panel.age} 岁 · 决策
           </div>
@@ -312,7 +382,11 @@ function DecisionOption({
           <span className="block truncate text-[15px] font-bold text-zinc-100">
             {option.title}
           </span>
-          <span className="block truncate text-[11px] text-zinc-500">
+          <span
+            className={`block text-[11px] text-zinc-500 ${
+              option.club ? "truncate" : "whitespace-normal leading-4"
+            }`}
+          >
             {option.subtitle}
           </span>
         </span>

@@ -1,9 +1,12 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { CLASSIC_GOLDEN_FIXTURES } from "../../../tests/golden/fixtures";
 import {
-  applyClassicChoice,
+  applyClassicChoiceWithResult,
+  replayClassicCareer,
   startClassicCareer,
+  type ClassicChoiceTransition,
 } from "../../domain/classicEngine";
 import { useSeasonReveal } from "./seasonReveal";
 
@@ -12,47 +15,44 @@ describe("useSeasonReveal", () => {
     vi.useRealTimers();
   });
 
-  it("commits the complete engine result before revealing seasons", () => {
+  it("commits first, then reveals ordinary seasons before the next decision", () => {
     vi.useFakeTimers();
-    const initial = startClassicCareer({
-      identity: {
-        lastName: "李",
-        nationalityFifaCode: "CHN",
-        position: "ST",
-        preferredNumber: 10,
-      },
-      mode: "normal",
-      seed: "phase-3:season-reveal",
-    });
-    const decision = initial.currentDecision;
-
-    if (decision === null) {
-      throw new Error("Expected the initial academy decision");
-    }
-
-    const committed = applyClassicChoice(initial, {
+    const initial = startCareer("issue-14:ordinary-0");
+    const decision = initial.currentDecision!;
+    const transition = applyClassicChoiceWithResult(initial, {
       decisionId: decision.id,
       decisionType: decision.type,
       optionId: decision.options[0]!.id,
     });
-    const committedSnapshot = JSON.stringify(committed);
+    const committedSnapshot = JSON.stringify(
+      transition.career,
+    );
     const { result } = renderHook(() =>
-      useSeasonReveal(initial, { stepMs: 650 }),
+      useSeasonReveal(initial),
     );
 
     act(() => {
-      result.current.commitCareer(committed);
+      result.current.commitTransition(transition);
     });
 
-    expect(result.current.committedCareer).toBe(committed);
-    expect(result.current.committedCareer.currentDecision).toBe(
-      committed.currentDecision,
+    expect(result.current.committedCareer).toBe(
+      transition.career,
     );
+    expect(result.current.revealQueue.map(({ kind }) => kind)).toEqual([
+      "season",
+      "season",
+      "decision_ready",
+    ]);
+    expect(result.current.activeItem).toMatchObject({
+      dwellMs: 550,
+      kind: "season",
+      seasonIndex: 0,
+    });
     expect(result.current.visibleSeasonCount).toBe(0);
     expect(result.current.isRevealing).toBe(true);
 
     act(() => {
-      vi.advanceTimersByTime(649);
+      vi.advanceTimersByTime(549);
     });
     expect(result.current.visibleSeasonCount).toBe(0);
 
@@ -60,75 +60,200 @@ describe("useSeasonReveal", () => {
       vi.advanceTimersByTime(1);
     });
     expect(result.current.visibleSeasonCount).toBe(1);
-    expect(result.current.committedCareer).toBe(committed);
+    expect(result.current.activeItem).toMatchObject({
+      kind: "season",
+      seasonIndex: 1,
+    });
 
     act(() => {
-      vi.advanceTimersByTime(650);
+      vi.advanceTimersByTime(550);
     });
     expect(result.current.visibleSeasonCount).toBe(2);
+    expect(result.current.activeItem).toBeNull();
     expect(result.current.isRevealing).toBe(false);
     expect(JSON.stringify(result.current.committedCareer)).toBe(
       committedSnapshot,
     );
   });
 
-  it("finishes immediately when reduced motion is enabled or changes", () => {
+  it("orders actual event result and milestone holds after its season", () => {
     vi.useFakeTimers();
-    const initial = startClassicCareer({
-      identity: {
-        lastName: "李",
-        nationalityFifaCode: "CHN",
-        position: "ST",
-        preferredNumber: 10,
-      },
-      mode: "normal",
-      seed: "phase-4:reduced-motion",
-    });
-    const decision = initial.currentDecision;
-
-    if (decision === null) {
-      throw new Error("Expected the initial academy decision");
-    }
-
-    const committed = applyClassicChoice(initial, {
-      decisionId: decision.id,
-      decisionType: decision.type,
-      optionId: decision.options[0]!.id,
-    });
-    const { rerender, result } = renderHook(
-      ({ reducedMotion }) =>
-        useSeasonReveal(initial, {
-          reducedMotion,
-          stepMs: 650,
-        }),
-      {
-        initialProps: { reducedMotion: false },
-      },
+    const { before, transition } = milestoneTransition();
+    const { result } = renderHook(() =>
+      useSeasonReveal(before),
     );
 
     act(() => {
-      result.current.commitCareer(committed);
+      result.current.commitTransition(transition);
     });
-    expect(result.current.isRevealing).toBe(true);
 
-    rerender({ reducedMotion: true });
+    expect(result.current.revealQueue.map(({ kind }) => kind)).toEqual([
+      "season",
+      "event_result",
+      "milestone",
+      "decision_ready",
+    ]);
+
+    act(() => {
+      vi.advanceTimersByTime(550);
+    });
+    expect(result.current.activeItem).toMatchObject({
+      dwellMs: 1_600,
+      kind: "event_result",
+      result: {
+        eventKey: "season_load",
+        outcomeKind: "positive",
+      },
+    });
     expect(result.current.visibleSeasonCount).toBe(
-      committed.seasons.length,
+      before.seasons.length + 1,
     );
-    expect(result.current.isRevealing).toBe(false);
 
-    const immediate = renderHook(() =>
-      useSeasonReveal(initial, {
-        reducedMotion: true,
-        stepMs: 650,
-      }),
-    );
     act(() => {
-      immediate.result.current.commitCareer(committed);
+      vi.advanceTimersByTime(1_599);
+    });
+    expect(result.current.activeItem?.kind).toBe("event_result");
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(result.current.activeItem).toMatchObject({
+      dwellMs: 1_700,
+      kind: "milestone",
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(1_700);
+    });
+    expect(result.current.activeItem).toBeNull();
+    expect(result.current.isRevealing).toBe(false);
+    expect(result.current.recentEventResult).toBe(
+      transition.result,
+    );
+    expect(result.current.announcement).toContain(
+      "双倍训练结果",
+    );
+  });
+
+  it("finishes immediately for reduced motion and cancels its timer on unmount", () => {
+    vi.useFakeTimers();
+    const { before, transition } = milestoneTransition();
+    const immediate = renderHook(() =>
+      useSeasonReveal(before, { reducedMotion: true }),
+    );
+
+    act(() => {
+      immediate.result.current.commitTransition(transition);
     });
     expect(immediate.result.current.visibleSeasonCount).toBe(
-      committed.seasons.length,
+      transition.career.seasons.length,
     );
     expect(immediate.result.current.isRevealing).toBe(false);
+    expect(immediate.result.current.activeItem).toBeNull();
+    expect(immediate.result.current.recentEventResult).toBe(
+      transition.result,
+    );
+    expect(immediate.result.current.announcement).toContain(
+      "成为绝对主力",
+    );
+    immediate.unmount();
+
+    const timed = renderHook(() => useSeasonReveal(before));
+    act(() => {
+      timed.result.current.commitTransition(transition);
+    });
+    expect(vi.getTimerCount()).toBe(1);
+
+    act(() => {
+      timed.result.current.commitTransition(transition);
+    });
+    expect(
+      timed.result.current.revealQueue.map(({ kind }) => kind),
+    ).toEqual([
+      "event_result",
+      "decision_ready",
+    ]);
+    expect(vi.getTimerCount()).toBe(1);
+
+    act(() => {
+      vi.advanceTimersByTime(550);
+    });
+    expect(timed.result.current.activeItem?.kind).toBe(
+      "event_result",
+    );
+
+    timed.unmount();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
+
+function startCareer(seed: string) {
+  return startClassicCareer({
+    identity: {
+      lastName: "李",
+      nationalityFifaCode: "CHN",
+      position: "ST",
+      preferredNumber: 10,
+    },
+    mode: "normal",
+    seed,
+  });
+}
+
+function milestoneTransition(): {
+  before: ReturnType<typeof replayClassicCareer>;
+  transition: ClassicChoiceTransition;
+} {
+  const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+    ({ id }) => id === "matrix-long-support-high",
+  );
+
+  if (fixture === undefined) {
+    throw new Error("Missing season-load golden fixture");
+  }
+
+  const choiceIndex = fixture.choices.findIndex(
+    ({ optionId }) =>
+      optionId === "event:season_load:accept",
+  );
+  const before = replayClassicCareer({
+    choices: fixture.choices.slice(0, choiceIndex),
+    contentVersion: fixture.contentVersion,
+    identity: fixture.identity,
+    mode: fixture.mode,
+    seed: fixture.seed,
+  });
+  const choice = fixture.choices[choiceIndex];
+
+  if (choice === undefined) {
+    throw new Error("Missing season-load choice");
+  }
+
+  const resolved = applyClassicChoiceWithResult(before, {
+    ...choice,
+    forcedOutcome: "positive",
+  });
+  const firstNewSeasonIndex = before.seasons.length;
+  const career = {
+    ...resolved.career,
+    seasons: resolved.career.seasons.map((season, index) =>
+      index === firstNewSeasonIndex
+        ? {
+            ...season,
+            trophies: [
+              ...season.trophies,
+              "league" as const,
+            ],
+          }
+        : season,
+    ),
+  };
+
+  return {
+    before,
+    transition: {
+      career,
+      result: resolved.result,
+    },
+  };
+}

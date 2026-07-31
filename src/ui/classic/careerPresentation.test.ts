@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyClassicChoice,
+  applyClassicChoiceWithResult,
+  replayClassicCareer,
   startClassicCareer,
 } from "../../domain/classicEngine";
+import { CLASSIC_CATALOG } from "../../domain/catalog/classicCatalog";
+import { CLASSIC_GOLDEN_FIXTURES } from "../../../tests/golden/fixtures";
 import { createCareerPresentation } from "./careerPresentation";
 
 describe("Classic career presentation", () => {
@@ -83,4 +87,418 @@ describe("Classic career presentation", () => {
       { age: committed.currentDecision?.age, kind: "current" },
     ]);
   });
+
+  it("presents a career event with specific labels and exact consequences", () => {
+    const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+      ({ id }) => id === "matrix-long-support-high",
+    );
+
+    if (fixture === undefined) {
+      throw new Error("Missing season-load golden fixture");
+    }
+
+    const eventChoiceIndex = fixture.choices.findIndex(
+      ({ optionId }) =>
+        optionId === "event:season_load:accept",
+    );
+    const career = replayClassicCareer({
+      choices: fixture.choices.slice(0, eventChoiceIndex),
+      contentVersion: fixture.contentVersion,
+      identity: fixture.identity,
+      mode: fixture.mode,
+      seed: fixture.seed,
+    });
+    const presentation = createCareerPresentation({
+      career,
+      isRevealing: false,
+      visibleSeasonCount: career.seasons.length,
+    });
+
+    if (
+      presentation.panel.kind !== "decision" ||
+      career.currentDecision?.event?.eventKey !== "season_load"
+    ) {
+      throw new Error("Expected a season-load decision");
+    }
+
+    const accept = presentation.panel.options.find(
+      ({ id }) => id === "event:season_load:accept",
+    );
+    const expected =
+      career.currentDecision.event.variantKey === "double_session"
+        ? {
+            label: "接受双倍训练",
+            negativeProbability: 0.35,
+            positiveProbability: 0.65,
+          }
+        : {
+            label: "承担更多负荷",
+            negativeProbability: 0.3,
+            positiveProbability: 0.7,
+          };
+
+    expect(accept).toMatchObject({
+      club: null,
+      outcomePreviews: [
+        {
+          outcomeKind: "positive",
+          probability: expected.positiveProbability,
+          text: "成为绝对主力",
+        },
+        {
+          outcomeKind: "negative",
+          probability: expected.negativeProbability,
+          text: "降为替补",
+        },
+      ],
+      role: "",
+      stars: "",
+      title: expected.label,
+    });
+    expect(accept?.subtitle).not.toBe(accept?.title);
+  });
+
+  it("projects the committed event result and milestone queue without re-resolving either", () => {
+    const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+      ({ id }) => id === "matrix-long-support-high",
+    );
+
+    if (fixture === undefined) {
+      throw new Error("Missing season-load golden fixture");
+    }
+
+    const eventChoiceIndex = fixture.choices.findIndex(
+      ({ optionId }) =>
+        optionId === "event:season_load:accept",
+    );
+    const before = replayClassicCareer({
+      choices: fixture.choices.slice(0, eventChoiceIndex),
+      contentVersion: fixture.contentVersion,
+      identity: fixture.identity,
+      mode: fixture.mode,
+      seed: fixture.seed,
+    });
+    const choice = fixture.choices[eventChoiceIndex];
+
+    if (choice === undefined) {
+      throw new Error("Missing season-load choice");
+    }
+
+    const resolved = applyClassicChoiceWithResult(before, {
+      ...choice,
+      forcedOutcome: "positive",
+    });
+    const seasonIndex = before.seasons.length;
+    const season = resolved.career.seasons[seasonIndex]!;
+    const career = {
+      ...resolved.career,
+      seasons: resolved.career.seasons.map((candidate, index) =>
+        index === seasonIndex
+          ? {
+              ...candidate,
+              awards: ["golden_boot" as const],
+              trophies: [
+                ...candidate.trophies,
+                "league" as const,
+              ],
+            }
+          : candidate,
+      ),
+    };
+    const eventView = createCareerPresentation({
+      activeRevealItem: {
+        dwellMs: 1_600,
+        kind: "event_result",
+        result: resolved.result,
+      },
+      career,
+      isRevealing: true,
+      recentEventResult: resolved.result,
+      visibleSeasonCount: career.seasons.length,
+    });
+
+    expect(eventView.panel).toMatchObject({
+      age: before.currentDecision?.age,
+      choiceLabel: "接受双倍训练",
+      kind: "event_result",
+      summary: "成为绝对主力",
+      title: "双倍训练结果",
+      tone: "positive",
+    });
+    expect(eventView.recentEventResult).toBeNull();
+
+    const milestoneView = createCareerPresentation({
+      activeRevealItem: {
+        dwellMs: 1_700,
+        kind: "milestone",
+        seasonIndex,
+      },
+      career,
+      isRevealing: true,
+      recentEventResult: resolved.result,
+      visibleSeasonCount: career.seasons.length,
+    });
+
+    expect(milestoneView.panel).toMatchObject({
+      age: season.age,
+      honors: expect.arrayContaining([
+        expect.objectContaining({
+          kind: "trophy",
+          label: "联赛冠军",
+          trophy: "league",
+        }),
+        expect.objectContaining({
+          award: "golden_boot",
+          kind: "award",
+          label: "金靴奖",
+        }),
+      ]),
+      kind: "milestone",
+      title: "赛季里程碑",
+    });
+
+    const immediateView = createCareerPresentation({
+      activeRevealItem: null,
+      career,
+      isRevealing: false,
+      recentEventResult: resolved.result,
+      visibleSeasonCount: career.seasons.length,
+    });
+
+    expect(immediateView.panel.kind).toBe("decision");
+    expect(immediateView.recentEventResult).toMatchObject({
+      summary: "成为绝对主力",
+      title: "双倍训练结果",
+      tone: "positive",
+    });
+  });
+
+  it("retains every season honor, national result, suspension, relegation, and observable tier change", () => {
+    const committed = committedCareer(
+      "issue-14:complete-season-narrative",
+    );
+    const first = committed.seasons[0]!;
+    const second = committed.seasons[1]!;
+    const honorCareer = {
+      ...committed,
+      seasons: [
+        {
+          ...first,
+          awards: ["golden_boot" as const],
+          nationalTournamentRecords: [
+            {
+              result: "champion" as const,
+              status: "played" as const,
+              trophy: "world_cup" as const,
+            },
+            {
+              status: "not_selected" as const,
+              trophy: "national_continental" as const,
+            },
+          ],
+          trophies: [
+            "league" as const,
+            "cup" as const,
+            "world_cup" as const,
+          ],
+        },
+        second,
+      ],
+    };
+    const honorRow = createCareerPresentation({
+      career: honorCareer,
+      isRevealing: true,
+      visibleSeasonCount: 1,
+    }).timeline.find(
+      (row) => row.kind === "season" && row.age === first.age,
+    );
+
+    expect(honorRow).toMatchObject({
+      competitionTier: first.competitionTier,
+      honors: [
+        {
+          kind: "trophy",
+          label: "联赛冠军",
+          scope: "club",
+          trophy: "league",
+        },
+        {
+          kind: "trophy",
+          label: "国内杯赛冠军",
+          scope: "club",
+          trophy: "cup",
+        },
+        {
+          kind: "trophy",
+          label: "世界杯冠军",
+          scope: "national",
+          trophy: "world_cup",
+        },
+        {
+          award: "golden_boot",
+          kind: "award",
+          label: "金靴奖",
+        },
+      ],
+      nationalTournaments: [
+        {
+          label: "世界杯 · 冠军",
+          result: "champion",
+          status: "played",
+          trophy: "world_cup",
+        },
+        {
+          label: "洲际国家队赛事 · 未入选",
+          result: null,
+          status: "not_selected",
+          trophy: "national_continental",
+        },
+      ],
+      statuses: [],
+      tierChange: null,
+    });
+
+    const statusCareer = {
+      ...committed,
+      seasons: [
+        {
+          ...first,
+          awards: [],
+          competitionTier: 1 as const,
+          nationalTournamentRecords: [],
+          relegated: true,
+          suspended: false,
+          trophies: [],
+        },
+        {
+          ...second,
+          awards: [],
+          competitionTier: 2 as const,
+          nationalTournamentRecords: [],
+          relegated: false,
+          suspended: true,
+          teamId: first.teamId,
+          trophies: [],
+        },
+      ],
+    };
+    const statusRows = createCareerPresentation({
+      career: statusCareer,
+      isRevealing: true,
+      visibleSeasonCount: 2,
+    }).timeline.filter((row) => row.kind === "season");
+
+    expect(statusRows[0]).toMatchObject({
+      statuses: [
+        {
+          kind: "relegation",
+          label: "降入次级联赛",
+        },
+      ],
+      tierChange: null,
+    });
+    expect(statusRows[1]).toMatchObject({
+      statuses: [
+        {
+          kind: "suspension",
+          label: "停赛",
+        },
+      ],
+      tierChange: {
+        from: 1,
+        label: "进入次级联赛",
+        to: 2,
+      },
+    });
+  });
+
+  it("uses stars or an explicit dash only for club-backed decisions", () => {
+    const initial = startClassicCareer({
+      identity: {
+        lastName: "星级",
+        nationalityFifaCode: "CHN",
+        position: "ST",
+        preferredNumber: 9,
+      },
+      mode: "normal",
+      seed: "issue-14:club-star-semantics",
+    });
+    const decision = initial.currentDecision;
+
+    if (decision === null) {
+      throw new Error("Expected an academy decision");
+    }
+
+    const career = {
+      ...initial,
+      currentDecision: {
+        ...decision,
+        options: [
+          {
+            clubId: "real-madrid",
+            id: "join:real-madrid",
+            kind: "join_club" as const,
+            label: "Join real-madrid",
+          },
+          {
+            clubId: "preston",
+            id: "join:preston",
+            kind: "join_club" as const,
+            label: "Join preston",
+          },
+        ],
+      },
+    };
+    const presentation = createCareerPresentation({
+      career,
+      isRevealing: false,
+      visibleSeasonCount: 0,
+    });
+
+    expect(
+      CLASSIC_CATALOG.clubById.get("real-madrid")
+        ?.internationalReputation,
+    ).toBe(5);
+    expect(
+      CLASSIC_CATALOG.clubById.get("preston")
+        ?.internationalReputation,
+    ).toBe(0);
+    expect(presentation.panel).toMatchObject({
+      kind: "decision",
+      options: [
+        {
+          club: { id: "real-madrid" },
+          stars: "★★★★★",
+        },
+        {
+          club: { id: "preston" },
+          stars: "—",
+        },
+      ],
+    });
+  });
 });
+
+function committedCareer(seed: string) {
+  const initial = startClassicCareer({
+    identity: {
+      lastName: "叙事",
+      nationalityFifaCode: "CHN",
+      position: "ST",
+      preferredNumber: 9,
+    },
+    mode: "normal",
+    seed,
+  });
+  const decision = initial.currentDecision;
+
+  if (decision === null) {
+    throw new Error("Expected an academy decision");
+  }
+
+  return applyClassicChoice(initial, {
+    decisionId: decision.id,
+    decisionType: decision.type,
+    optionId: decision.options[0]!.id,
+  });
+}

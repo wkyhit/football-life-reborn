@@ -130,6 +130,31 @@ describe("career causal ledger", () => {
     );
   });
 
+  it("records the actual resolved event outcome instead of only the forced test input", () => {
+    const career = replayFixture(
+      fixtureWithChoice("event:season_load:accept"),
+    );
+    const event = createCareerLedger(career).find(
+      (entry) =>
+        entry.type === "event" &&
+        entry.optionId === "event:season_load:accept",
+    );
+
+    expect(event).toMatchObject({
+      effects: {
+        roleOverride:
+          event?.type === "event" &&
+          event.outcomeKind === "positive"
+            ? "starter"
+            : "substitute",
+      },
+      eventKey: "season_load",
+      forcedOutcome: null,
+      outcomeKind: expect.stringMatching(/^(positive|negative)$/),
+      type: "event",
+    });
+  });
+
   it("rejects a career whose visible outcome cannot be reproduced from its deterministic inputs", () => {
     const career = replayFixture(
       fixtureWithChoice("event:injury:"),

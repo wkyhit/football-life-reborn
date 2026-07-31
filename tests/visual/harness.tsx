@@ -311,6 +311,7 @@ function presentation(input: {
             options: input.options,
             title: input.panel === "academy" ? "青训报价" : "外租",
           },
+    recentEventResult: null,
     timeline,
     totals,
   };
@@ -326,9 +327,14 @@ function season(
   return {
     age,
     club: TONGLIANG,
+    competitionTier: 1,
+    honors: [],
     kind: "season",
+    nationalTournaments: [],
     overall,
     stats: { appearances, assists, goals },
+    statuses: [],
+    tierChange: null,
   };
 }
 
@@ -343,6 +349,7 @@ function clubOption(
   return {
     club,
     id,
+    outcomePreviews: [],
     role,
     roleTone,
     stars,
@@ -370,12 +377,14 @@ function attackerSummary(): SummaryPresentation {
       {
         count: 1,
         id: "trophy:中甲冠军",
+        identity: "league",
         kind: "trophy",
         label: "中甲冠军",
       },
       {
         count: 1,
         id: "trophy:中国足协杯",
+        identity: "cup",
         kind: "trophy",
         label: "中国足协杯",
       },
@@ -418,6 +427,7 @@ function goalkeeperSummary(): SummaryPresentation {
       {
         count: 1,
         id: "trophy:中甲冠军",
+        identity: "league",
         kind: "trophy",
         label: "中甲冠军",
       },
@@ -476,6 +486,7 @@ function noTitleSummary(): SummaryPresentation {
       {
         count: 2,
         id: "trophy:中国足协杯",
+        identity: "cup",
         kind: "trophy",
         label: "中国足协杯",
       },

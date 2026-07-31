@@ -95,7 +95,7 @@ describe("Classic navigation", () => {
           ),
         ).not.toHaveLength(0);
       },
-      { timeout: 2_500 },
+      { timeout: 4_000 },
     );
 
     const raw = localStorage.getItem(

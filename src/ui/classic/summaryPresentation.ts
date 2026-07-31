@@ -23,10 +23,12 @@ import {
   positionLabel,
   type CareerClubPresentation,
 } from "./careerPresentation";
+import type { HonorIdentityKey } from "../shared/HonorIdentity";
 
 export type SummaryHonorPresentation = {
   readonly count: number;
   readonly id: string;
+  readonly identity: HonorIdentityKey;
   readonly kind: "award" | "trophy";
   readonly label: string;
 };
@@ -257,13 +259,20 @@ function aggregateHonors(
         trophy,
         nationalConfederation,
       );
-      addHonor(honors, `trophy:${label}`, "trophy", label);
+      addHonor(
+        honors,
+        `trophy:${trophy}:${label}`,
+        trophy,
+        "trophy",
+        label,
+      );
     }
 
     for (const award of season.awards) {
       addHonor(
         honors,
         `award:${award}`,
+        award,
         "award",
         awardLabel(award),
       );
@@ -279,6 +288,7 @@ function addHonor(
     Omit<SummaryHonorPresentation, "count"> & { count: number }
   >,
   id: string,
+  identity: HonorIdentityKey,
   kind: SummaryHonorPresentation["kind"],
   label: string,
 ): void {
@@ -289,7 +299,13 @@ function addHonor(
     return;
   }
 
-  honors.set(id, { count: 1, id, kind, label });
+  honors.set(id, {
+    count: 1,
+    id,
+    identity,
+    kind,
+    label,
+  });
 }
 
 function trophyLabel(

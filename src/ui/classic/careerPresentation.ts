@@ -3,8 +3,19 @@ import type {
   ClassicCareerState,
   ClassicDecision,
   ClassicDecisionOption,
+  ClassicDecisionResult,
 } from "../../domain/classicEngine";
-import type { CareerEventKey } from "../../domain/careerEvents";
+import type { PersonalAward } from "../../domain/awards";
+import {
+  selectCareerEventNarrative,
+  type CareerTrophy,
+  type CareerEventOutcomePreview,
+  type NationalTrophy,
+} from "../../domain/careerEvents";
+import type {
+  NationalTournamentRecord,
+  NationalTournamentResult,
+} from "../../domain/nationalTeam";
 import {
   CLASSIC_CATALOG,
   type Club,
@@ -17,6 +28,11 @@ import {
   type ClassicSeasonStats,
   type ClassicSquadRole,
 } from "../../domain/role";
+import {
+  createEventResultReveal,
+  type ClassicEventResultReveal,
+  type SeasonRevealQueueItem,
+} from "../../features/season-reveal/seasonReveal";
 
 export type CareerClubPresentation = {
   readonly abbreviation: string;
@@ -30,6 +46,7 @@ export type CareerClubPresentation = {
 export type CareerDecisionOptionPresentation = {
   readonly club: CareerClubPresentation | null;
   readonly id: string;
+  readonly outcomePreviews: readonly CareerEventOutcomePreview[];
   readonly role: string;
   readonly roleTone:
     | "danger"
@@ -50,7 +67,57 @@ export type CareerDecisionPanelPresentation =
       readonly options: readonly CareerDecisionOptionPresentation[];
       readonly title: string;
     }
+  | ({
+      readonly age: number;
+      readonly kind: "event_result";
+    } & ClassicEventResultReveal)
+  | {
+      readonly age: number;
+      readonly club: CareerClubPresentation;
+      readonly honors: readonly CareerSeasonHonorPresentation[];
+      readonly kind: "milestone";
+      readonly nationalTournaments: readonly CareerNationalTournamentPresentation[];
+      readonly statuses: readonly CareerSeasonStatusPresentation[];
+      readonly tierChange: CareerTierChangePresentation | null;
+      readonly title: "赛季里程碑";
+    }
   | { readonly kind: "simulating" };
+
+export type CareerSeasonHonorPresentation =
+  | {
+      readonly award: PersonalAward;
+      readonly kind: "award";
+      readonly label: string;
+    }
+  | {
+      readonly kind: "trophy";
+      readonly label: string;
+      readonly scope: "club" | "national";
+      readonly trophy: CareerTrophy;
+    };
+
+export type CareerNationalTournamentPresentation = {
+  readonly label: string;
+  readonly result: NationalTournamentResult | null;
+  readonly status: NationalTournamentRecord["status"];
+  readonly trophy: NationalTrophy;
+};
+
+export type CareerSeasonStatusPresentation =
+  | {
+      readonly kind: "relegation";
+      readonly label: string;
+    }
+  | {
+      readonly kind: "suspension";
+      readonly label: string;
+    };
+
+export type CareerTierChangePresentation = {
+  readonly from: 1 | 2;
+  readonly label: string;
+  readonly to: 1 | 2;
+};
 
 export type CareerTimelineRowPresentation =
   | {
@@ -64,12 +131,17 @@ export type CareerTimelineRowPresentation =
   | {
       readonly age: number;
       readonly club: CareerClubPresentation;
+      readonly competitionTier: 1 | 2;
+      readonly honors: readonly CareerSeasonHonorPresentation[];
       readonly kind: "season";
+      readonly nationalTournaments: readonly CareerNationalTournamentPresentation[];
       readonly overall: number;
       readonly stats: Pick<
         ClassicSeasonStats,
         "appearances" | "assists" | "goals"
       >;
+      readonly statuses: readonly CareerSeasonStatusPresentation[];
+      readonly tierChange: CareerTierChangePresentation | null;
     };
 
 export type CareerPresentation = {
@@ -92,6 +164,7 @@ export type CareerPresentation = {
     >;
   };
   readonly panel: CareerDecisionPanelPresentation;
+  readonly recentEventResult: ClassicEventResultReveal | null;
   readonly timeline: readonly CareerTimelineRowPresentation[];
   readonly totals: {
     readonly appearances: number;
@@ -102,8 +175,10 @@ export type CareerPresentation = {
 };
 
 type CareerPresentationInput = {
+  readonly activeRevealItem?: SeasonRevealQueueItem | null;
   readonly career: ClassicCareerState;
   readonly isRevealing: boolean;
+  readonly recentEventResult?: ClassicDecisionResult | null;
   readonly visibleSeasonCount: number;
 };
 
@@ -128,6 +203,40 @@ const POSITION_LABELS: Readonly<Record<ClassicPosition, string>> = {
   RM: "右前",
   RW: "右边",
   ST: "中锋",
+};
+
+const TROPHY_LABELS: Readonly<Record<CareerTrophy, string>> = {
+  club_world_cup: "世俱杯冠军",
+  continental_primary: "顶级洲际赛事冠军",
+  continental_secondary: "次级洲际赛事冠军",
+  cup: "国内杯赛冠军",
+  league: "联赛冠军",
+  national_continental: "洲际国家队冠军",
+  world_cup: "世界杯冠军",
+};
+
+const AWARD_LABELS: Readonly<Record<PersonalAward, string>> = {
+  ballon_dor: "金球奖",
+  golden_boot: "金靴奖",
+  golden_glove: "金手套奖",
+};
+
+const NATIONAL_TOURNAMENT_LABELS: Readonly<
+  Record<NationalTrophy, string>
+> = {
+  national_continental: "洲际国家队赛事",
+  world_cup: "世界杯",
+};
+
+const NATIONAL_RESULT_LABELS: Readonly<
+  Record<NationalTournamentResult, string>
+> = {
+  champion: "冠军",
+  final: "亚军",
+  group: "小组赛",
+  qf: "八强",
+  r16: "十六强",
+  sf: "四强",
 };
 
 const DECISION_COPY: Readonly<
@@ -166,125 +275,11 @@ const DECISION_COPY: Readonly<
   },
 };
 
-const EVENT_COPY: Readonly<
-  Record<CareerEventKey, { readonly description: string; readonly title: string }>
-> = {
-  club_crisis: {
-    description: "俱乐部正经历动荡。你准备怎么面对？",
-    title: "俱乐部危机",
-  },
-  club_national_team_conflict: {
-    description: "俱乐部和国家队的赛程撞在了一起。",
-    title: "征召冲突",
-  },
-  club_priority: {
-    description: "赛程太密集了，只能把精力放在一条战线。",
-    title: "赛季取舍",
-  },
-  controversial_statement: {
-    description: "一句话把你推上了风口浪尖。",
-    title: "争议发言",
-  },
-  decisive_penalty: {
-    description: "决定冠军的点球就在你脚下。踢哪边？",
-    title: "决胜点球",
-  },
-  fan_backlash: {
-    description: "看台上的质疑声越来越大。",
-    title: "球迷倒戈",
-  },
-  finish_high_school: {
-    description: "你还有机会完成高中学业。",
-    title: "回到课堂",
-  },
-  foreign_grandfather: {
-    description: "另一支国家队向你发出了邀请。",
-    title: "血缘选择",
-  },
-  giant_tattoo: {
-    description: "有人提议把信念永久留在皮肤上。",
-    title: "巨幅纹身",
-  },
-  injury: {
-    description: "伤病打断了你的节奏，只能耐心恢复。",
-    title: "意外伤病",
-  },
-  injury_at_peak: {
-    description: "最重要的比赛就在眼前，但你的身体亮起红灯。",
-    title: "带伤上阵",
-  },
-  mysterious_substance: {
-    description: "有人递来一瓶成分不明的补剂。",
-    title: "神秘补剂",
-  },
-  personal_coach: {
-    description: "一位私人教练愿意为你制定专属计划。",
-    title: "私人教练",
-  },
-  position_change: {
-    description: "教练认为换个位置会打开新的可能。",
-    title: "位置改造",
-  },
-  position_competition: {
-    description: "新援到来，你的位置不再稳固。",
-    title: "位置竞争",
-  },
-  return_home: {
-    description: "家乡球队希望你回去成为旗帜。",
-    title: "回到故乡",
-  },
-  rival_offer: {
-    description: "死敌送来了一份很难拒绝的合同。",
-    title: "死敌邀约",
-  },
-  season_load: {
-    description: "教练组希望你承担更多比赛和训练任务。",
-    title: "赛季负荷",
-  },
-  tax_trouble: {
-    description: "场外的税务问题正在变得棘手。",
-    title: "税务风波",
-  },
-  training_extra: {
-    description: "训练结束后，教练问你要不要再加一组。",
-    title: "额外训练",
-  },
-  triumphant_return: {
-    description: "最初的俱乐部希望功成名就的你回家。",
-    title: "荣归故里",
-  },
-  unexpected_prospect: {
-    description: "一位天赋惊人的年轻人来到了更衣室。",
-    title: "后起之秀",
-  },
-};
-
-const EVENT_OPTION_LABELS: Readonly<Record<string, string>> = {
-  accept: "接受",
-  apologize: "公开道歉",
-  comply: "服从俱乐部",
-  compete: "正面竞争",
-  consume: "喝下补剂",
-  continue: "专心康复",
-  go_anyway: "前往国家队",
-  keep_national_team: "留在当前国家队",
-  left: "踢向左边",
-  mentor: "主动带他训练",
-  play_injured: "带伤出战",
-  prioritize_continental: "优先洲际赛事",
-  prioritize_league: "优先联赛",
-  recover: "安心恢复",
-  reject: "拒绝",
-  right: "踢向右边",
-  stay_abroad: "继续留洋",
-  stay_and_fight: "留下来战斗",
-  stay_calm: "保持冷静",
-  switch_national_team: "更换国家队",
-};
-
 export function createCareerPresentation({
+  activeRevealItem = null,
   career,
   isRevealing,
+  recentEventResult = null,
   visibleSeasonCount,
 }: CareerPresentationInput): CareerPresentation {
   const country = requireCountry(career.nationalityFifaCode);
@@ -294,11 +289,9 @@ export function createCareerPresentation({
   );
   const visibleSeasons = career.seasons.slice(0, safeVisibleCount);
   const latestVisibleSeason = visibleSeasons.at(-1);
-  const revealIsPartial =
-    isRevealing &&
-    safeVisibleCount > 0 &&
-    safeVisibleCount < career.seasons.length;
-  const headerSeason = revealIsPartial ? latestVisibleSeason : undefined;
+  const headerSeason = isRevealing
+    ? latestVisibleSeason
+    : undefined;
   const currentClubId =
     headerSeason?.teamId ?? career.currentClubId;
   const headerClub =
@@ -330,6 +323,23 @@ export function createCareerPresentation({
   const seasonsByAge = new Map(
     visibleSeasons.map((season) => [season.age, season]),
   );
+  const timeline = Array.from({ length: 24 }, (_, index) => {
+    const age = 16 + index;
+    const season = seasonsByAge.get(age);
+
+    if (season !== undefined) {
+      return seasonPresentation(
+        season,
+        seasonsByAge.get(age - 1),
+      );
+    }
+
+    if (age === currentDecisionAge) {
+      return { age, kind: "current" as const };
+    }
+
+    return { age, kind: "empty" as const };
+  });
 
   return {
     header: {
@@ -347,23 +357,16 @@ export function createCareerPresentation({
       name: `${country.nameZh}国家队`,
       stats: nationalStats,
     },
-    panel: isRevealing
-      ? { kind: "simulating" }
-      : decisionPresentation(career),
-    timeline: Array.from({ length: 24 }, (_, index) => {
-      const age = 16 + index;
-      const season = seasonsByAge.get(age);
-
-      if (season !== undefined) {
-        return seasonPresentation(season);
-      }
-
-      if (age === currentDecisionAge) {
-        return { age, kind: "current" as const };
-      }
-
-      return { age, kind: "empty" as const };
+    panel: revealPanelPresentation({
+      activeRevealItem,
+      career,
+      isRevealing,
     }),
+    recentEventResult:
+      !isRevealing && recentEventResult !== null
+        ? createEventResultReveal(recentEventResult)
+        : null,
+    timeline,
     totals: {
       appearances: totals.appearances,
       assists: totals.assists,
@@ -374,6 +377,56 @@ export function createCareerPresentation({
       ),
     },
   };
+}
+
+function revealPanelPresentation(input: {
+  readonly activeRevealItem: SeasonRevealQueueItem | null;
+  readonly career: ClassicCareerState;
+  readonly isRevealing: boolean;
+}): CareerDecisionPanelPresentation {
+  if (!input.isRevealing) {
+    return decisionPresentation(input.career);
+  }
+
+  const item = input.activeRevealItem;
+
+  if (item?.kind === "event_result") {
+    const result = createEventResultReveal(item.result);
+
+    return result === null
+      ? { kind: "simulating" }
+      : {
+          ...result,
+          age: item.result.decision.age,
+          kind: "event_result",
+        };
+  }
+
+  if (item?.kind === "milestone") {
+    const season = input.career.seasons[item.seasonIndex];
+
+    if (season === undefined) {
+      return { kind: "simulating" };
+    }
+
+    const presentation = seasonPresentation(
+      season,
+      input.career.seasons[item.seasonIndex - 1],
+    );
+
+    return {
+      age: presentation.age,
+      club: presentation.club,
+      honors: presentation.honors,
+      kind: "milestone",
+      nationalTournaments: presentation.nationalTournaments,
+      statuses: presentation.statuses,
+      tierChange: presentation.tierChange,
+      title: "赛季里程碑",
+    };
+  }
+
+  return { kind: "simulating" };
 }
 
 function decisionPresentation(
@@ -387,7 +440,13 @@ function decisionPresentation(
 
   const copy =
     decision.type === "career_event" && decision.event
-      ? EVENT_COPY[decision.event.eventKey]
+      ? selectCareerEventNarrative({
+          eventKey: decision.event.eventKey,
+          injuryType: decision.event.injuryType,
+          targetClubTrophy: decision.event.targetClubTrophy,
+          targetTrophy: decision.event.targetTrophy,
+          variantKey: decision.event.variantKey,
+        })
       : DECISION_COPY[
           decision.type as Exclude<
             ClassicDecision["type"],
@@ -439,10 +498,25 @@ function optionPresentation(
           overall: career.overall,
           roleGroup: roleGroupForPosition(career.identity.position),
         });
+  const eventOption =
+    decision.type === "career_event" &&
+    decision.event !== undefined &&
+    option.optionKey !== undefined
+      ? selectCareerEventNarrative({
+          eventKey: decision.event.eventKey,
+          injuryType: decision.event.injuryType,
+          optionKey: option.optionKey,
+          targetClubTrophy: decision.event.targetClubTrophy,
+          targetTrophy: decision.event.targetTrophy,
+          variantKey: decision.event.variantKey,
+        }).option
+      : null;
+  const outcomePreviews = eventOption?.previews ?? [];
 
   return {
     club: club === null ? null : clubPresentation(club),
     id: option.id,
+    outcomePreviews,
     role: role === null ? "" : roleLabel(role),
     roleTone: role === null ? "positive" : roleTone(role),
     stars:
@@ -451,11 +525,15 @@ function optionPresentation(
         : "★".repeat(club.internationalReputation) || "—",
     subtitle:
       club === null
-        ? option.optionKey === undefined
-          ? ""
-          : EVENT_OPTION_LABELS[option.optionKey] ?? option.optionKey
+        ? formatOutcomePreviews(outcomePreviews)
         : clubSubtitle(club),
-    title: optionTitle(career, decision, option, club),
+    title: optionTitle(
+      career,
+      decision,
+      option,
+      club,
+      eventOption?.label ?? null,
+    ),
   };
 }
 
@@ -464,6 +542,7 @@ function optionTitle(
   decision: ClassicDecision,
   option: ClassicDecisionOption,
   club: Club | null,
+  eventOptionLabel: string | null,
 ): string {
   if (option.kind === "retire") {
     return "现在退役";
@@ -490,27 +569,124 @@ function optionTitle(
     return `加盟 ${club.nameZh}`;
   }
 
-  if (option.optionKey !== undefined) {
-    return EVENT_OPTION_LABELS[option.optionKey] ?? option.label;
+  if (eventOptionLabel !== null) {
+    return eventOptionLabel;
   }
 
   return option.label;
 }
 
+function formatOutcomePreviews(
+  previews: readonly CareerEventOutcomePreview[],
+): string {
+  return previews
+    .map((preview) =>
+      preview.probability === undefined
+        ? preview.text
+        : `${Math.round(preview.probability * 100)}% ${preview.text}`,
+    )
+    .join(" / ");
+}
+
 function seasonPresentation(
   season: ClassicCareerSeason,
-): CareerTimelineRowPresentation {
+  previousSeason: ClassicCareerSeason | undefined,
+): Extract<
+  CareerTimelineRowPresentation,
+  { readonly kind: "season" }
+> {
+  const tierChange =
+    previousSeason !== undefined &&
+    previousSeason.teamId === season.teamId &&
+    previousSeason.competitionTier !== season.competitionTier
+      ? {
+          from: previousSeason.competitionTier,
+          label:
+            season.competitionTier === 1
+              ? "进入顶级联赛"
+              : "进入次级联赛",
+          to: season.competitionTier,
+        }
+      : null;
+
   return {
     age: season.age,
     club: clubPresentation(requireClub(season.teamId)),
+    competitionTier: season.competitionTier,
+    honors: [
+      ...season.trophies.map((trophy) => ({
+        kind: "trophy" as const,
+        label: TROPHY_LABELS[trophy],
+        scope: isNationalTrophy(trophy)
+          ? ("national" as const)
+          : ("club" as const),
+        trophy,
+      })),
+      ...season.awards.map((award) => ({
+        award,
+        kind: "award" as const,
+        label: AWARD_LABELS[award],
+      })),
+    ],
     kind: "season",
+    nationalTournaments: season.nationalTournamentRecords.map(
+      nationalTournamentPresentation,
+    ),
     overall: season.overall,
     stats: {
       appearances: season.stats.appearances,
       assists: season.stats.assists,
       goals: season.stats.goals,
     },
+    statuses: [
+      ...(season.suspended
+        ? [
+            {
+              kind: "suspension" as const,
+              label: "停赛",
+            },
+          ]
+        : []),
+      ...(season.relegated
+        ? [
+            {
+              kind: "relegation" as const,
+              label: "降入次级联赛",
+            },
+          ]
+        : []),
+    ],
+    tierChange,
   };
+}
+
+function nationalTournamentPresentation(
+  record: NationalTournamentRecord,
+): CareerNationalTournamentPresentation {
+  const result =
+    record.status === "played" ? record.result : null;
+  const resultLabel =
+    record.status === "played"
+      ? NATIONAL_RESULT_LABELS[record.result]
+      : record.status === "not_qualified"
+        ? "未晋级"
+        : "未入选";
+
+  return {
+    label: `${NATIONAL_TOURNAMENT_LABELS[record.trophy]} · ${resultLabel}`,
+    result,
+    status: record.status,
+    trophy: record.trophy,
+  };
+}
+
+function isNationalTrophy(
+  trophy: CareerTrophy,
+): trophy is NationalTrophy {
+  return (
+    trophy === "national_continental" ||
+    trophy === "world_cup"
+  );
 }
 
 export function clubPresentation(
