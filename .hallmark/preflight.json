@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-31T05:12:00Z",
+  "baselineCommit": "67c33f9e4a31ad128cfd51fc4157270e95b45847",
+  "framework": "React 19 + Vite 8 + Tailwind CSS 4",
+  "motion": "motion-cut",
+  "designSystem": {
+    "lockedRootDesign": "design.md",
+    "hallmarkLog": ".hallmark/log.json"
+  },
+  "releaseGate": ".hallmark/release.json",
+  "fontStack": "Big Shoulders Display / Geist / Geist Mono with PingFang SC, Noto Sans SC, and system fallbacks",
+  "typographySources": [
+    "design.md",
+    "tokens.css",
+    "src/ui/enhanced/DESIGN.md",
+    "src/ui/classic/tokens.css",
+    "src/styles.css"
+  ],
+  "paletteSources": [
+    "design.md",
+    "tokens.css",
+    "tokens.json",
+    "src/styles.css",
+    "src/ui/classic/tokens.css",
+    "src/ui/enhanced/DESIGN.md"
+  ],
+  "spacingSources": [
+    "design.md",
+    "tokens.css",
+    "src/ui/enhanced/DESIGN.md",
+    "Tailwind CSS default utilities"
+  ],
+  "inputDigests": {
+    "package.json": "f2d47fc31c1da758f808b990ab261063f266538c1233f05de34fdbd22d07f7c1",
+    "src/styles.css": "dc67145b77b8180d525d2833c5d26ed7cee2e684dc5558260f21fa1351d4d1b8",
+    "src/ui/enhanced/DESIGN.md": "b8619936678a73f7171a3de734b53786b3157e0d8c04bf6f8438497e5a50b583",
+    "vite.config.ts": "d0797ddcfe94ac9d5a037d7186f4d583b58dfd0440b5d617da0a3f7e4fa7c857",
+    "design.md": "f73fc7a7e6636ba8546a1efd504f2c11ec04db83cc841c0ce5d54bc5ad912033",
+    "tokens.css": "1cc1412bada2e0f2096462e36a973b8a0c14f6b6883e0a3da55647dfc6f4fa7c",
+    "tokens.json": "6a167dd89688a7a8ff408acfd864a3cb365f82c65b7551bb1b27575b3e59a6a5",
+    ".hallmark/log.json": "b961711d33182b45220c4186204b590886839c27107c49d5ea41b0f682e0adf0",
+    ".hallmark/release.json": "56ac1424758c0ade522871466ab06ab782e72f5d39e9a220898b245128baccfa"
+  },
+  "sourceFiles": [
+    "src/app/App.tsx",
+    "src/features/archive/EnhancedArchiveScreen.tsx",
+    "src/features/challenges/ChallengeProgressPanel.tsx",
+    "src/features/replay/ReplayRouteScreen.tsx",
+    "src/features/share-card/ShareCardOverlay.tsx",
+    "src/ui/classic/SummaryScreen.tsx",
+    "src/ui/enhanced/EnhancedOnboarding.tsx",
+    "src/ui/enhanced/EnhancedShell.tsx",
+    "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
+    "src/ui/enhanced/onboarding/EnhancedLandingScreen.tsx",
+    "src/ui/enhanced/onboarding/EnhancedNationalityScreen.tsx",
+    "src/ui/shared/Dialog.tsx"
+  ],
+  "preserve": [
+    "Classic token and screenshot baselines",
+    "deterministic engine and controller behavior",
+    "storage and replay formats",
+    "static, analytics-free runtime",
+    "existing route and component ownership"
+  ],
+  "introduce": [
+    "one root Hallmark design.md",
+    "portable named tokens and exports",
+    "multi-page macrostructure discipline",
+    "complete interaction state contracts",
+    "responsive and reduced-motion release gates"
+  ]
+}

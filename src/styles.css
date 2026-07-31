@@ -1,7 +1,17 @@
+/*
+ * Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4
+ * macrostructure: Narrative Workflow / Workbench / Index-First
+ * contrast: pass (40–41)
+ * nav: N7 · footer: Ft5 · slop: pass (42–45)
+ * honest: pass (46) · chrome: pass (47) · tokens: pass (48)
+ * responsive: pass (49) · icons: pass (30)
+ * mobile: pass (34, 49, 50–57)
+ */
+@import "../tokens.css";
 @import "./ui/classic/tokens.css";
 @import "tailwindcss";
 
-@theme {
+@theme inline {
   --color-canvas: var(--classic-canvas);
   --color-surface: var(--classic-surface);
   --color-surface-elevated: var(--classic-surface-elevated);
@@ -21,16 +31,24 @@
   --color-china-ink: oklch(0.97 0.04 88);
   --color-field: oklch(0.18 0.035 162.48);
   --color-field-line: oklch(0.42 0.07 162.48 / 0.38);
-  --color-enhanced-canvas: oklch(0.125 0.008 164);
-  --color-enhanced-surface: oklch(0.17 0.012 164);
-  --color-enhanced-raised: oklch(0.22 0.014 164);
-  --color-enhanced-strong: oklch(0.96 0.012 164);
-  --color-enhanced-supporting: oklch(0.7 0.02 164);
-  --color-enhanced-line: oklch(0.34 0.018 164 / 0.55);
-  --color-enhanced-pitch: oklch(0.73 0.16 160);
-  --color-enhanced-pitch-ink: oklch(0.13 0.02 160);
-  --color-enhanced-trophy: oklch(0.78 0.15 76);
-  --color-enhanced-alert: oklch(0.62 0.2 28);
+  --color-enhanced-canvas: var(--color-paper);
+  --color-enhanced-surface: var(--color-paper-2);
+  --color-enhanced-raised: var(--color-paper-3);
+  --color-enhanced-strong: var(--color-ink);
+  --color-enhanced-ink-2: var(--color-ink-2);
+  --color-enhanced-supporting: var(--color-muted);
+  --color-enhanced-neutral: var(--color-neutral);
+  --color-enhanced-line: var(--color-rule);
+  --color-enhanced-line-soft: var(--color-rule-2);
+  --color-enhanced-pitch: var(--color-accent);
+  --color-enhanced-pitch-ink: var(--color-accent-ink);
+  --color-enhanced-focus: var(--color-focus);
+  --color-enhanced-trophy: var(--color-warning);
+  --color-enhanced-alert: var(--color-error);
+  --color-enhanced-success: var(--color-success);
+  --font-enhanced-display: var(--font-display);
+  --font-enhanced-body: var(--font-body);
+  --font-enhanced-mono: var(--font-outlier);
   --font-sans: var(--classic-font);
 }
 
@@ -51,6 +69,11 @@
 
   html {
     background: var(--color-canvas);
+  }
+
+  html:has([data-enhanced-shell]),
+  body:has([data-enhanced-shell]) {
+    overflow-x: clip;
   }
 
   body {
@@ -74,10 +97,91 @@
   }
 }
 
+[data-enhanced-shell] {
+  --color-muted: var(--hallmark-color-muted);
+  --color-accent: var(--hallmark-color-accent);
+  --color-accent-ink: var(--hallmark-color-accent-ink);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-synthesis: none;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-enhanced-shell] :is(h1, h2, h3, h4, h5, h6) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+[data-enhanced-shell]
+  :where(button, a, input, select, textarea) {
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+}
+
 [data-enhanced-shell]
   :where(button, a, input, select, textarea):focus-visible {
-  outline: 2px solid var(--color-enhanced-pitch);
-  outline-offset: 3px;
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 1px var(--color-paper);
+  transition: none;
+}
+
+[data-enhanced-shell] button {
+  transition-duration: var(--dur-short);
+  transition-property: transform, opacity;
+  transition-timing-function: var(--ease-out);
+}
+
+[data-enhanced-shell] button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+[data-enhanced-shell] button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+[data-enhanced-shell]
+  :where(button, input, select, textarea)[class*="border-enhanced-line"] {
+  border-color: var(--color-neutral);
+}
+
+[data-enhanced-shell]
+  [data-enhanced-action="danger"] {
+  border-color: var(--color-error);
+}
+
+[data-enhanced-shell]
+  [data-interaction-state="error"] {
+  border-color: var(--color-error);
+}
+
+[data-enhanced-shell]
+  [data-interaction-state="success"] {
+  border-color: var(--color-success);
+}
+
+[data-enhanced-shell]
+  :where(input, select, textarea)[data-enhanced-field] {
+  min-height: var(--control-size);
+  padding-inline-end: var(--space-xl);
+}
+
+@media (max-width: 639px) {
+  [data-enhanced-shell]
+    :where(input, select, textarea)[data-enhanced-field] {
+    font-size: 1rem;
+  }
+}
+
+[data-enhanced-shell]
+  :where(input, select, textarea)[data-field-state="error"] {
+  border-color: var(--color-error);
+}
+
+[data-enhanced-shell]
+  :where(input, select, textarea)[data-field-state="success"] {
+  border-color: var(--color-success);
 }
 
 [data-enhanced-shell]
@@ -104,19 +208,71 @@
   }
 }
 
+@keyframes enhanced-state-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.enhanced-loading-indicator {
+  opacity: 0;
+  animation: enhanced-state-pulse var(--dur-long)
+    var(--ease-in-out) var(--dur-short) infinite;
+}
+
 .enhanced-reveal-enter {
-  animation: enhanced-reveal-enter 280ms
-    cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: enhanced-reveal-enter var(--dur-long)
+    var(--ease-out) both;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-enhanced-shell]
+    button:not([data-enhanced-action]):hover:not(:disabled),
+  [data-enhanced-shell]
+    :where(input, select, textarea):hover:not(:disabled) {
+    border-color: var(--color-accent);
+  }
+
+  [data-enhanced-action="primary"]:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  [data-enhanced-action="secondary"][data-interaction-state="default"]:hover:not(:disabled) {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+
+  [data-enhanced-action="danger"]:hover:not(:disabled) {
+    border-color: var(--color-error);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  [data-enhanced-shell],
+  [data-enhanced-shell] *,
+  [data-enhanced-shell] *::before,
+  [data-enhanced-shell] *::after {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transform: none !important;
+    transition-duration: var(--dur-reduced) !important;
+    transition-property: opacity !important;
+  }
+
+  [data-enhanced-shell] [data-interaction-state="loading"],
+  [data-enhanced-shell] [data-enhanced-state="loading"] {
+    animation: none !important;
+  }
+
+  [data-enhanced-shell] .enhanced-loading-indicator {
+    animation: none !important;
+    opacity: 0.7 !important;
   }
 }
 

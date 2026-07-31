@@ -6,8 +6,11 @@ import {
 
 import { evaluateChallengeProgress } from "../challenges/progress";
 import type { ShareCardChallenge } from "../share-card/shareCardContract";
-import { SummaryScreen } from "../../ui/classic/SummaryScreen";
 import { createSummaryPresentation } from "../../ui/classic/summaryPresentation";
+import { EnhancedAction } from "../../ui/enhanced/components/EnhancedAction";
+import { EnhancedAppBar } from "../../ui/enhanced/components/EnhancedAppBar";
+import { EnhancedStateSurface } from "../../ui/enhanced/components/EnhancedStateSurface";
+import { EnhancedSummaryScreen } from "../../ui/enhanced/summary/EnhancedSummaryScreen";
 import type { ReplayRouteResult } from "./route";
 
 const ReplayShareCardOverlay = lazy(async () => {
@@ -60,7 +63,7 @@ function ReadyReplayScreen({
 
   return (
     <div className="contents" data-replay-route="ready">
-      <SummaryScreen
+      <EnhancedSummaryScreen
         challenge={{
           daily: route.challenge,
           progress,
@@ -90,11 +93,12 @@ function ReadyReplayScreen({
         view={view}
       />
       {shareOpen ? (
-        <Suspense fallback={null}>
+        <Suspense fallback={<ReplayOverlayLoading />}>
           <ReplayShareCardOverlay
             challenge={shareChallenge}
             onClose={() => setShareOpen(false)}
             qrPayload={replayUrl}
+            variant="enhanced"
             view={view}
           />
         </Suspense>
@@ -113,40 +117,57 @@ function ReplayErrorScreen({
 }) {
   return (
     <main
-      className="flex min-h-dvh items-center bg-enhanced-canvas px-5 py-10 text-zinc-100"
+      className="min-h-dvh bg-enhanced-canvas text-enhanced-strong"
+      data-hallmark-macrostructure="Index-First"
       data-replay-error-kind={route.kind}
       data-replay-route="error"
       id="main-content"
+      tabIndex={-1}
     >
-      <section
-        aria-labelledby="replay-error-heading"
-        className="mx-auto w-full max-w-lg rounded-[16px] border border-red-400/20 bg-zinc-900 p-6 shadow-2xl"
-        role="alert"
-      >
-        <p className="text-[10px] font-bold tracking-[0.14em] text-red-300">
-          REPLAY RECOVERY
-        </p>
-        <h1
-          className="mt-3 text-2xl font-extrabold"
-          id="replay-error-heading"
-        >
-          {route.title}
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-zinc-300">
-          {route.detail}
-        </p>
-        <p className="mt-3 rounded-[10px] bg-black/20 p-3 text-xs leading-5 text-zinc-400">
-          {route.recovery}
-        </p>
-        <button
-          className="mt-6 min-h-12 w-full rounded-[10px] bg-emerald-400 px-4 text-sm font-extrabold text-zinc-950"
-          onClick={returnToEntry}
-          type="button"
-        >
-          返回普通入口
-        </button>
-      </section>
+      {/* Hallmark · genre: playful · macrostructure: Index-First · theme: custom (tuned) · design-system: design.md · designed-as-app */}
+      <EnhancedAppBar
+        context="Replay recovery"
+        currentLabel="回放"
+      />
+      <div className="mx-auto w-full max-w-[var(--shell-max)] px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        <EnhancedStateSurface
+          action={
+            <EnhancedAction
+              onClick={returnToEntry}
+              tone="primary"
+            >
+              返回入口
+            </EnhancedAction>
+          }
+          description={route.detail}
+          detail={
+            <p className="max-w-[52ch]">
+              {route.recovery}
+            </p>
+          }
+          eyebrow="Replay recovery"
+          state="error"
+          title={route.title}
+        />
+      </div>
     </main>
+  );
+}
+
+function ReplayOverlayLoading() {
+  return (
+    <div
+      aria-busy="true"
+      className="fixed inset-x-4 bottom-4 z-[var(--z-modal)] mx-auto flex min-h-14 max-w-md items-center gap-3 border border-enhanced-line bg-enhanced-raised px-4 text-sm font-bold text-enhanced-strong"
+      data-enhanced-state="loading"
+      role="status"
+    >
+      <span
+        aria-hidden="true"
+        className="h-2 w-2 bg-enhanced-pitch motion-safe:animate-[enhanced-state-pulse_var(--dur-long)_var(--ease-in-out)_infinite]"
+      />
+      正在生成分享卡片
+    </div>
   );
 }
 

@@ -1,0 +1,342 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-31T05:12:00Z",
+  "baselineCommit": "76c98b8a3974aa8db955177d6bf632c70e0f1f88",
+  "runner": "ego-browser",
+  "taskSpaceId": 24,
+  "slice": 6,
+  "status": "approved",
+  "viewportWidths": [
+    320,
+    375,
+    414,
+    768,
+    1280,
+    1440
+  ],
+  "assertions": {
+    "documentHorizontalOverflowPx": 0,
+    "continuousWidthSweep": {
+      "minimumWidth": 320,
+      "maximumWidth": 1920,
+      "step": 1,
+      "widthsPerRoute": 1601,
+      "routes": [
+        "landing",
+        "setup-nationality",
+        "archive",
+        "career-workbench",
+        "career-challenge",
+        "summary"
+      ],
+      "maximumHorizontalOverflowPx": 0
+    },
+    "minimumInteractiveTargetPx": 44,
+    "sharedActionLabelWhiteSpace": "nowrap",
+    "setupProgress": [
+      "1.0 / 3.0",
+      "2.0 / 3.0",
+      "3.0 / 3.0"
+    ]
+  },
+  "acceptance": {
+    "widths": [
+      {
+        "width": 320,
+        "horizontalOverflow": 0
+      },
+      {
+        "width": 375,
+        "horizontalOverflow": 0
+      },
+      {
+        "width": 414,
+        "horizontalOverflow": 0
+      },
+      {
+        "width": 768,
+        "horizontalOverflow": 0
+      },
+      {
+        "width": 1280,
+        "horizontalOverflow": 0
+      },
+      {
+        "width": 1440,
+        "horizontalOverflow": 0
+      }
+    ],
+    "zoom200": {
+      "completion": true,
+      "horizontalOverflow": 0
+    },
+    "fold1280x800": {
+      "primaryActionVisible": true,
+      "paddingBlockStartPx": 32,
+      "paddingBlockEndPx": 48,
+      "paddingRatio": 1.5,
+      "horizontalOverflow": 0
+    },
+    "keyboardOnly": true,
+    "accessibilityTree": {
+      "runner": "ego-browser CDP Accessibility",
+      "unnamedInteractiveElements": 0
+    },
+    "focusRing": {
+      "keyboardFocused": true,
+      "outlineCssPixels": 2,
+      "outlineOffsetCssPixels": 1,
+      "contrast": 12.4
+    },
+    "mobileFocusZoom": {
+      "fontCssPixels": 16,
+      "horizontalOffset": 0,
+      "visualViewportScale": 1
+    },
+    "targets": {
+      "minimumCssPixels": 44
+    },
+    "contrast": {
+      "body": 7.68,
+      "control": 4.4,
+      "focus": 12.4
+    },
+    "reducedMotion": {
+      "opacityOnly": true,
+      "spatialTransform": "none",
+      "transitionMs": 150
+    },
+    "axeSeriousOrCritical": 0,
+    "nativeEnhancedDialog": true
+  },
+  "entries": [
+    {
+      "id": "landing",
+      "status": "approved",
+      "sourceFiles": [
+        "src/ui/enhanced/onboarding/EnhancedLandingScreen.tsx",
+        "src/ui/enhanced/components/EnhancedAppBar.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/landing-320x844.png",
+        "tests/visual/enhanced/after/landing-375x812.png",
+        "tests/visual/enhanced/after/landing-414x896.png",
+        "tests/visual/enhanced/after/landing-768x1024.png",
+        "tests/visual/enhanced/after/landing-1280x800.png",
+        "tests/visual/enhanced/after/landing-1280x830.png",
+        "tests/visual/enhanced/after/landing-1440x900.png"
+      ]
+    },
+    {
+      "id": "setup-nationality",
+      "status": "approved",
+      "sourceFiles": [
+        "src/ui/enhanced/onboarding/EnhancedNationalityScreen.tsx",
+        "src/ui/enhanced/components/EnhancedAppBar.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/setup-nationality-320x844.png",
+        "tests/visual/enhanced/after/setup-nationality-375x812.png",
+        "tests/visual/enhanced/after/setup-nationality-414x896.png",
+        "tests/visual/enhanced/after/setup-nationality-768x1024.png",
+        "tests/visual/enhanced/after/setup-nationality-1280x830.png",
+        "tests/visual/enhanced/after/setup-nationality-1440x900.png"
+      ]
+    },
+    {
+      "id": "setup-identity",
+      "status": "approved",
+      "sourceFiles": [
+        "src/ui/enhanced/EnhancedOnboarding.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/setup-identity-390x844.png"
+      ]
+    },
+    {
+      "id": "setup-position",
+      "status": "approved",
+      "sourceFiles": [
+        "src/ui/enhanced/EnhancedOnboarding.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/setup-position-390x844.png"
+      ]
+    },
+    {
+      "id": "empty",
+      "status": "approved",
+      "sourceFiles": [
+        "src/ui/enhanced/components/EnhancedStateSurface.tsx",
+        "src/ui/enhanced/onboarding/EnhancedNationalityScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/empty-390x844.png"
+      ]
+    },
+    {
+      "id": "loading",
+      "status": "approved",
+      "sourceFiles": [
+        "src/app/App.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/loading-390x844.png"
+      ]
+    },
+    {
+      "id": "error",
+      "status": "approved",
+      "sourceFiles": [
+        "src/app/App.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/save-error-390x844.png"
+      ]
+    },
+    {
+      "id": "recovery",
+      "status": "approved",
+      "sourceFiles": [
+        "src/app/App.tsx",
+        "src/ui/enhanced/recovery/EnhancedRecoveryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/recovery-390x844.png"
+      ]
+    },
+    {
+      "id": "install",
+      "status": "approved",
+      "sourceFiles": [
+        "src/ui/enhanced/components/EnhancedStateSurface.tsx",
+        "src/ui/enhanced/onboarding/EnhancedLandingScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/install-390x844.png"
+      ]
+    },
+    {
+      "id": "career-workbench",
+      "status": "approved",
+      "sourceFiles": [
+        "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
+        "src/ui/enhanced/components/EnhancedAppBar.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/career-320x844.png",
+        "tests/visual/enhanced/after/career-375x812.png",
+        "tests/visual/enhanced/after/career-414x896.png",
+        "tests/visual/enhanced/after/career-768x1024.png",
+        "tests/visual/enhanced/after/career-1280x830.png",
+        "tests/visual/enhanced/after/career-1440x900.png"
+      ]
+    },
+    {
+      "id": "summary",
+      "status": "approved",
+      "sourceFiles": [
+        "src/app/App.tsx",
+        "src/ui/enhanced/summary/EnhancedSummaryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/summary-390x844.png",
+        "tests/visual/enhanced/after/summary-1440x900.png"
+      ]
+    },
+    {
+      "id": "share",
+      "status": "approved",
+      "sourceFiles": [
+        "src/features/share-card/ShareCardOverlay.tsx",
+        "src/ui/shared/Dialog.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/share-390x844.png"
+      ]
+    },
+    {
+      "id": "archive",
+      "status": "approved",
+      "sourceFiles": [
+        "src/features/archive/EnhancedArchiveScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/archive-empty-390x844.png",
+        "tests/visual/enhanced/after/archive-populated-390x844.png",
+        "tests/visual/enhanced/after/archive-populated-1440x900.png"
+      ]
+    },
+    {
+      "id": "branching",
+      "status": "approved",
+      "sourceFiles": [
+        "src/features/archive/EnhancedArchiveScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/branch-create-390x844.png",
+        "tests/visual/enhanced/after/branch-compare-390x844.png",
+        "tests/visual/enhanced/after/branch-compare-1440x900.png"
+      ]
+    },
+    {
+      "id": "challenge",
+      "status": "approved",
+      "sourceFiles": [
+        "src/features/challenges/ChallengeProgressPanel.tsx",
+        "src/ui/enhanced/summary/EnhancedSummaryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/challenge-390x844.png",
+        "tests/visual/enhanced/after/challenge-summary-390x844.png"
+      ]
+    },
+    {
+      "id": "replay",
+      "status": "approved",
+      "sourceFiles": [
+        "src/features/replay/ReplayRouteScreen.tsx",
+        "src/ui/enhanced/summary/EnhancedSummaryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/replay-ready-390x844.png",
+        "tests/visual/enhanced/after/replay-error-390x844.png"
+      ]
+    },
+    {
+      "id": "interaction-states",
+      "status": "approved",
+      "sourceFiles": [
+        "src/ui/enhanced/components/EnhancedAction.tsx",
+        "src/ui/enhanced/EnhancedOnboarding.tsx",
+        "src/ui/enhanced/summary/EnhancedSummaryScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/interaction-states-390x844.png",
+        "tests/visual/enhanced/after/focus-ring-390x844.png"
+      ]
+    },
+    {
+      "id": "accessibility-zoom",
+      "status": "approved",
+      "sourceFiles": [
+        "src/app/App.tsx",
+        "src/ui/enhanced/career/EnhancedCareerScreen.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/accessibility-zoom-1280x830.png"
+      ]
+    },
+    {
+      "id": "reduced-motion",
+      "status": "approved",
+      "sourceFiles": [
+        "src/styles.css",
+        "src/ui/enhanced/components/EnhancedAction.tsx"
+      ],
+      "evidence": [
+        "tests/visual/enhanced/after/reduced-motion-640x415.png"
+      ]
+    }
+  ]
+}

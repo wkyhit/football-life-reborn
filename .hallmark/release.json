@@ -1,0 +1,370 @@
+{
+  "version": 1,
+  "auditDate": "2026-07-31T05:12:00Z",
+  "runner": "ego-browser",
+  "genre": "playful",
+  "passed": 58,
+  "findings": {
+    "critical": 0,
+    "major": 0,
+    "minor": 0
+  },
+  "axes": {
+    "philosophy": 5,
+    "hierarchy": 5,
+    "execution": 4,
+    "specificity": 5,
+    "restraint": 5,
+    "variety": 4
+  },
+  "gates": {
+    "1": {
+      "answer": "no",
+      "evidence": [
+        "tokens.css uses bundled Big Shoulders Display for the roman display role; Inter, Roboto, Open Sans, Poppins, Lato, and system-default display faces are absent."
+      ]
+    },
+    "2": {
+      "answer": "no",
+      "evidence": [
+        "The Enhanced token and route sources contain no gradient declaration or gradient text; depth comes from tinted paper tokens and rules."
+      ]
+    },
+    "3": {
+      "answer": "no",
+      "evidence": [
+        "Narrative Workflow, Workbench, and Index-First use sequences, ledgers, and record rows rather than a three-equal-column icon-card grid."
+      ]
+    },
+    "4": {
+      "answer": "no",
+      "evidence": [
+        "Enhanced sections group content with whitespace and hairlines; the former nested Classic summary cards were replaced by EnhancedSummaryScreen record bands."
+      ]
+    },
+    "5": {
+      "answer": "no",
+      "evidence": [
+        "No Enhanced card uses a thick coloured side stripe; the summary peak-rating rule is a factual record marker, not card decoration."
+      ]
+    },
+    "6": {
+      "answer": "no",
+      "evidence": [
+        "The landing is an edge-aligned 7/5 Narrative Workflow split, not a centred full-viewport hero; ego-browser confirms its primary action inside the 1280x800 fold."
+      ]
+    },
+    "7": {
+      "answer": "no",
+      "evidence": [
+        "tokens.css defines tinted OKLCH paper and ink bases; Enhanced does not use pure #000 or #fff."
+      ]
+    },
+    "8": {
+      "answer": "no",
+      "evidence": [
+        ".hallmark/log.json records one app system with three route-specific macrostructures; no Hero-to-three-features-to-CTA template or copied prior fingerprint is used."
+      ]
+    },
+    "9": {
+      "answer": "no",
+      "evidence": [
+        "The rendered route families alternate dense ledgers, open narrative bands, border groups, and task rails instead of equal whitespace between every section."
+      ]
+    },
+    "10": {
+      "answer": "no",
+      "evidence": [
+        "hallmark-release-gate.test.ts scans all Enhanced motion owners and rejects transition-all, transition-colors, and transition: all."
+      ]
+    },
+    "11": {
+      "answer": "no",
+      "evidence": [
+        "The release gate rejects hover and active scale utilities; control feedback uses a one-pixel active translation."
+      ]
+    },
+    "12": {
+      "answer": "no",
+      "evidence": [
+        "tokens.css exposes only named enter, exit, and state easings without bounce or overshoot curves."
+      ]
+    },
+    "13": {
+      "answer": "no",
+      "evidence": [
+        "Enhanced hover rules change one state signal at a time; translation is reserved for active state and no hover combines scale, shadow, rotate, and colour."
+      ]
+    },
+    "14": {
+      "answer": "no",
+      "evidence": [
+        "The release gate rejects animated width, height, top, left, margin, and padding; only transform and opacity animate."
+      ]
+    },
+    "15": {
+      "answer": "no",
+      "evidence": [
+        "The root :focus-visible rule declares transition: none and the keyboard proof shows the focus outline appears immediately."
+      ]
+    },
+    "16": {
+      "answer": "no",
+      "evidence": [
+        "Visible copy success changes the initiating action label to 已复制; no redundant celebratory success toast is emitted."
+      ]
+    },
+    "17": {
+      "answer": "no",
+      "evidence": [
+        "Enhanced ships no custom tooltip surface or delayed tooltip interaction."
+      ]
+    },
+    "18": {
+      "answer": "no",
+      "evidence": [
+        "Enhanced contains no auto-rotating carousel, banner, or statistic."
+      ]
+    },
+    "19": {
+      "answer": "no",
+      "evidence": [
+        "Fixtures and visible records use deterministic football identities and catalog clubs; startup clichés and Jane/John placeholders are absent."
+      ]
+    },
+    "20": {
+      "answer": "no",
+      "evidence": [
+        "src/styles.css begins with the truthful Hallmark pre-emit, macrostructure, contrast, chrome, responsive, and mobile release stamp."
+      ]
+    },
+    "21": {
+      "answer": "no",
+      "evidence": [
+        "The playful app uses Narrative Workflow, Workbench, and Index-First; it does not fall through to the editorial Specimen archetype."
+      ]
+    },
+    "22": {
+      "answer": "no",
+      "evidence": [
+        "The release contract parses every Hallmark neutral colour in tokens.css and requires chroma of at least 0.005."
+      ]
+    },
+    "23": {
+      "answer": "no",
+      "evidence": [
+        "Accent is limited to active state, rules, and the single task-primary fill; reviewed sentinel captures stay within the approved approximately three-to-five-percent footprint."
+      ]
+    },
+    "24": {
+      "answer": "no",
+      "evidence": [
+        "Enhanced component sources contain no fractional Tailwind margin, padding, gap, or space utility and no 20px safe-area exception; all audited spacing is on the four-pixel scale."
+      ]
+    },
+    "25": {
+      "answer": "no",
+      "evidence": [
+        "Running prose uses deliberate 58ch, 60ch, and 65ch measures or equivalent bounded widths; the shorter 28ch block is a display statement, not prose."
+      ]
+    },
+    "26": {
+      "answer": "no",
+      "evidence": [
+        "EnhancedAction and the root interaction rules cover hover, focus-visible, active, disabled, loading, error, and success; interactive-states.spec.tsx verifies the state matrix."
+      ]
+    },
+    "27": {
+      "answer": "no",
+      "evidence": [
+        "Every Enhanced animation is covered by prefers-reduced-motion; ego-browser computed opacity-only 150ms fallback with spatial transform none."
+      ]
+    },
+    "28": {
+      "answer": "no",
+      "evidence": [
+        "The application has no hero demo video or autoplaying media."
+      ]
+    },
+    "29": {
+      "answer": "no",
+      "evidence": [
+        "The landing and route canvases use flat named paper tokens without abstract blobs, mesh gradients, or animated background decoration."
+      ]
+    },
+    "30": {
+      "answer": "no",
+      "evidence": [
+        "Country flags and club crests communicate real football identity; no generic feature emoji or mixed icon-library value-prop row is used."
+      ]
+    },
+    "31": {
+      "answer": "no",
+      "evidence": [
+        "No Lottie package, asset, or runtime is present; the limited state motion is native CSS."
+      ]
+    },
+    "32": {
+      "answer": "no",
+      "evidence": [
+        "The single app log deliberately varies route knobs: staged setup sequence, fixed decision workbench, and index-led record documents."
+      ]
+    },
+    "33": {
+      "answer": "no",
+      "evidence": [
+        "Visual-only Enhanced art is hidden from the accessibility tree and informative flags and crests retain names; the app AX tree has zero unnamed interactive elements."
+      ]
+    },
+    "34": {
+      "answer": "no",
+      "evidence": [
+        "ego-browser scanned every integer width from 320 through 1920 on six representative routes, 9606 viewports total, with maximum document horizontal overflow of 0; html and body both use overflow-x: clip."
+      ]
+    },
+    "35": {
+      "answer": "no",
+      "evidence": [
+        "Enhanced uses no highlighter band, decorative underline, accent stroke, or text ornament requiring positional compensation."
+      ]
+    },
+    "36": {
+      "answer": "no",
+      "evidence": [
+        "EnhancedAppBar and every mixed icon/text action row explicitly use items-center; sentinel captures confirm aligned intrinsic heights."
+      ]
+    },
+    "37": {
+      "answer": "no",
+      "evidence": [
+        "The release contract finds exactly three bundled families: Big Shoulders Display, Geist, and Geist Mono."
+      ]
+    },
+    "38": {
+      "answer": "no",
+      "evidence": [
+        "design.md locks the outlier to two semantic slots only: machine/step labels and tabular-data labels; no third prose or heading role consumes Geist Mono."
+      ]
+    },
+    "38a": {
+      "answer": "no",
+      "evidence": [
+        "All bundled faces declare font-style normal and the Enhanced release scan finds no italic utility or italic heading markup."
+      ]
+    },
+    "39": {
+      "answer": "no",
+      "evidence": [
+        "Inputs keep a one-pixel border, stable 44px base height, reserved helper height, and native disabled state; the root reserves a transparent 2px outline and keyboard focus swaps it to the focus token at a 1px offset without geometry shift."
+      ]
+    },
+    "40": {
+      "answer": "no",
+      "evidence": [
+        "ego-browser measured WCAG ratios of 7.68 for body text, 4.4 for control boundaries, and 12.4 for the focus indicator."
+      ]
+    },
+    "41": {
+      "answer": "no",
+      "evidence": [
+        "The named accent fill always applies --color-accent-ink, while dark Enhanced surfaces inherit light ink tokens; computed primary-action text remains distinct from its fill."
+      ]
+    },
+    "42": {
+      "answer": "no",
+      "evidence": [
+        "Enhanced uses the approved N7 brutal slab app bar with product context and compact text utilities, not the white five-link SaaS navigation fingerprint."
+      ]
+    },
+    "43": {
+      "answer": "no",
+      "evidence": [
+        "Only the landing uses the approved Ft5 statement close; the app has no four-column Product/Company/Resources/Legal footer."
+      ]
+    },
+    "44": {
+      "answer": "no",
+      "evidence": [
+        "At exactly 1280x800 ego-browser measured landing padding 32px start and 48px end, ratio 1.5, and the primary action bottom at 505.875px with no scrolling."
+      ]
+    },
+    "45": {
+      "answer": "no",
+      "evidence": [
+        "The landing close names the deterministic seed property and product wordmark; it contains no unanchored cursor, blob, sticker, or arbitrary numeral."
+      ]
+    },
+    "46": {
+      "answer": "no",
+      "evidence": [
+        "Landing counts 61 countries, 192 clubs, and 12 positions come from the frozen catalog; career and archive metrics come from deterministic state rather than fabricated proof claims."
+      ]
+    },
+    "47": {
+      "answer": "no",
+      "evidence": [
+        "No Enhanced route redraws browser, phone, terminal, code-window, or IDE chrome."
+      ]
+    },
+    "48": {
+      "answer": "no",
+      "evidence": [
+        "tokens.css is the canonical Enhanced colour and font source and src/styles.css maps named roles; raw Classic compatibility styling remains outside the Enhanced audit boundary."
+      ]
+    },
+    "49": {
+      "answer": "no",
+      "evidence": [
+        "The 320-to-1920 landing sweep found zero wrapped action labels; each daily challenge button now contains only one truncated title and its explanation is adjacent non-clickable copy."
+      ]
+    },
+    "50": {
+      "answer": "no",
+      "evidence": [
+        "Image-bearing explicit grid tracks use minmax(0,1fr), while Tailwind repeat grids compile their fractional tracks with zero minima."
+      ]
+    },
+    "51": {
+      "answer": "no",
+      "evidence": [
+        "The root Enhanced heading rule applies min-width: 0 and overflow-wrap: anywhere to h1 through h6; the continuous sweep found no heading overflow."
+      ]
+    },
+    "52": {
+      "answer": "no",
+      "evidence": [
+        "Enhanced has one locked app theme and no per-theme multi-column section-head override that survives onto mobile."
+      ]
+    },
+    "53": {
+      "answer": "no",
+      "evidence": [
+        "Filters and pacing controls use semantic buttons and React state; there is no CSS-only absolutely positioned radio-tab pattern."
+      ]
+    },
+    "54": {
+      "answer": "no",
+      "evidence": [
+        "Every wrapper that combines a Hallmark eyebrow with a heading stacks them in one column; adjacent dates and metrics are factual peer data rather than section eyebrows."
+      ]
+    },
+    "55": {
+      "answer": "no",
+      "evidence": [
+        "Display headings are roman with line-height at or above 1.0 when uppercase; no all-caps display wrap uses a sub-1.0 line box."
+      ]
+    },
+    "56": {
+      "answer": "no",
+      "evidence": [
+        "The released Enhanced sources declare no secondary sticky top:0 element and therefore cannot bleed beneath the app bar."
+      ]
+    },
+    "57": {
+      "answer": "no",
+      "evidence": [
+        "No study diagnosis exists in this goal; the approved custom tuned theme is recorded directly in design.md and .hallmark/log.json."
+      ]
+    }
+  }
+}

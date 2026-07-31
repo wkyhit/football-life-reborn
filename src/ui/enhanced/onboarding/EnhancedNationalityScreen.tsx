@@ -19,6 +19,9 @@ import {
   rememberRecentCountry,
   type CountryFilter,
 } from "../countryDiscovery";
+import { EnhancedAction } from "../components/EnhancedAction";
+import { EnhancedAppBar } from "../components/EnhancedAppBar";
+import { EnhancedStateSurface } from "../components/EnhancedStateSurface";
 
 type EnhancedNationalityScreenProps = {
   readonly dispatch: Dispatch<CareerAction>;
@@ -59,33 +62,35 @@ export function EnhancedNationalityScreen({
   return (
     <main
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
+      data-enhanced-stage="1.0"
       data-enhanced-setup-shell="nationality"
+      data-hallmark-macrostructure="Narrative Workflow"
       id="main-content"
       tabIndex={-1}
     >
-      <header className="shrink-0 border-b border-enhanced-line px-4 pb-4 pt-[max(20px,env(safe-area-inset-top))] sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-5xl items-end justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold tracking-[0.12em] text-emerald-400">
-              PLAYER SETUP · 01
-            </p>
-            <h1 className="mt-1 text-[22px] font-extrabold">
-              选择国籍
-            </h1>
-            <p className="mt-1 text-[13px] text-zinc-400">
-              国家队门槛不同，但 61 个选择都能走完整生涯
-            </p>
-          </div>
-          <span className="shrink-0 text-xs font-bold text-enhanced-supporting">
-            1 / 3
-          </span>
+      {/* Hallmark · genre: playful · macrostructure: Narrative Workflow · theme: custom (tuned) · design-system: design.md · designed-as-app */}
+      <EnhancedAppBar
+        context="Player setup · 1.0"
+        currentLabel="选择国籍"
+        stage={{ current: 1, total: 3 }}
+      />
+      <div className="shrink-0 border-b border-enhanced-line px-4 py-3 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
+          <h1 className="[overflow-wrap:anywhere] text-[22px] font-bold">
+            选择国籍
+          </h1>
+          <p className="mt-1 text-sm leading-relaxed text-enhanced-supporting">
+            国家队门槛不同，但 61 个选择都能走完整生涯
+          </p>
         </div>
-      </header>
+      </div>
 
       <section className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 py-4 sm:px-6 lg:px-8">
         <input
           aria-label="搜索国家"
-          className="h-12 shrink-0 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-4 text-[15px] text-enhanced-strong outline-none placeholder:text-enhanced-supporting focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/25"
+          className="h-12 shrink-0 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-4 text-[15px] text-enhanced-strong outline-none placeholder:text-enhanced-supporting focus:border-enhanced-pitch focus:ring-2 focus:ring-enhanced-focus/25"
+          data-enhanced-field=""
+          data-field-state="default"
           onChange={(event) => setQuery(event.target.value)}
           placeholder="搜索中文、英文或 FIFA code"
           type="search"
@@ -111,8 +116,8 @@ export function EnhancedNationalityScreen({
                 aria-pressed={selected}
                 className={
                   selected
-                    ? "min-h-11 shrink-0 rounded-full border border-emerald-400 bg-emerald-400/10 px-4 text-xs font-bold text-emerald-300"
-                    : "min-h-11 shrink-0 rounded-full border border-enhanced-line bg-enhanced-surface px-4 text-xs font-bold text-zinc-400"
+                    ? "min-h-11 shrink-0 rounded-full border border-enhanced-pitch bg-enhanced-pitch/10 px-4 text-xs font-bold text-enhanced-pitch"
+                    : "min-h-11 shrink-0 rounded-full border border-enhanced-line bg-enhanced-surface px-4 text-xs font-bold text-enhanced-supporting"
                 }
                 key={option.id}
                 onClick={() => setFilter(option.id)}
@@ -134,7 +139,7 @@ export function EnhancedNationalityScreen({
               aria-label="最近选择"
               className="mb-4 border-b border-enhanced-line pb-4"
             >
-              <h2 className="mb-2 text-[11px] font-bold text-enhanced-supporting">
+              <h2 className="mb-2 text-xs font-bold text-enhanced-supporting">
                 最近选择
               </h2>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -154,15 +159,14 @@ export function EnhancedNationalityScreen({
           ) : null}
 
           {visibleCountries.length === 0 ? (
-            <div className="flex min-h-48 items-center justify-center text-center">
-              <div>
-                <p className="text-base font-bold">
-                  没有匹配的国家
-                </p>
-                <p className="mt-1 text-[13px] text-enhanced-supporting">
-                  换个中文、英文或 FIFA code 试试
-                </p>
-              </div>
+            <div className="min-h-48">
+              <EnhancedStateSurface
+                compact
+                description="换个中文、英文或 FIFA code 试试。"
+                eyebrow="Country index"
+                state="empty"
+                title="没有匹配的国家"
+              />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 pb-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -182,23 +186,23 @@ export function EnhancedNationalityScreen({
         </div>
 
         <footer className="grid shrink-0 grid-cols-[auto_minmax(0,1fr)] gap-3 border-t border-enhanced-line pt-3">
-          <button
-            className="min-h-12 rounded-[10px] border border-enhanced-line bg-enhanced-surface px-5 text-sm font-bold"
+          <EnhancedAction
+            className="min-h-12"
             onClick={() => dispatch({ type: "back" })}
-            type="button"
           >
             返回
-          </button>
-          <button
-            className="min-h-12 rounded-[10px] bg-enhanced-pitch px-5 text-sm font-bold text-enhanced-pitch-ink disabled:bg-zinc-800 disabled:text-zinc-600"
+          </EnhancedAction>
+          <EnhancedAction
+            className="min-h-12 w-full"
             disabled={state.player.nationality === null}
+            disabledReason="选择一个国家后才能继续"
             onClick={() =>
               dispatch({ type: "continue_setup" })
             }
-            type="button"
+            tone="primary"
           >
             下一步
-          </button>
+          </EnhancedAction>
         </footer>
       </section>
     </main>
@@ -220,8 +224,8 @@ function CountryButton({
       aria-pressed={selected}
       className={
         selected
-          ? "flex min-h-14 items-center gap-2 rounded-[10px] border border-emerald-400 bg-emerald-400/10 p-2.5 text-left"
-          : "flex min-h-14 items-center gap-2 rounded-[10px] border border-enhanced-line bg-enhanced-surface p-2.5 text-left"
+          ? "flex min-h-14 items-center gap-2 rounded-[10px] border border-enhanced-pitch bg-enhanced-pitch/10 p-3 text-left"
+          : "flex min-h-14 items-center gap-2 rounded-[10px] border border-enhanced-line bg-enhanced-surface p-3 text-left"
       }
       data-country-confederation={country.confederation}
       data-enhanced-country={country.fifaCode}
@@ -235,14 +239,14 @@ function CountryButton({
         <span className="block truncate text-[13px] font-bold">
           {country.nameZh}
         </span>
-        <span className="block text-[10px] text-enhanced-supporting">
+        <span className="block text-xs text-enhanced-supporting">
           {country.fifaCode}
         </span>
       </span>
       {selected ? (
         <span
           aria-hidden="true"
-          className="ml-auto text-emerald-300"
+          className="ml-auto text-enhanced-pitch"
         >
           ✓
         </span>
