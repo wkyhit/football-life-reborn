@@ -189,6 +189,11 @@
   color: var(--color-enhanced-supporting);
 }
 
+[data-ui-mode="classic"]
+  :where(.text-zinc-500, .text-zinc-600, .text-zinc-700, .text-zinc-800) {
+  color: var(--classic-muted);
+}
+
 [data-enhanced-shell]
   [role="dialog"]
   .bg-emerald-500.text-zinc-950 {

@@ -70,12 +70,16 @@ export function EnhancedSummaryScreen({
         currentLabel={contextLabel}
       />
 
-      <article className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <article
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-enhanced-focus"
+        tabIndex={0}
+      >
         <div className="mx-auto w-full max-w-[var(--shell-max)] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           <header className="grid gap-6 border-b-2 border-enhanced-line pb-8 md:grid-cols-[11rem_minmax(0,1fr)_auto] md:items-end">
             <div
               aria-label={`生涯最高能力 ${view.maxOverall}`}
               className="border-l-4 border-enhanced-trophy pl-4"
+              role="group"
             >
               <p className="font-enhanced-mono text-xs uppercase tracking-[0.08em] text-enhanced-supporting">
                 Peak rating

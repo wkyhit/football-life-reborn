@@ -41,8 +41,11 @@ export function SummaryScreen({
       tabIndex={-1}
     >
       <div
-        className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-6"
+        aria-label="生涯总结"
+        className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-6 outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
         data-classic-summary-scroll=""
+        role="region"
+        tabIndex={0}
       >
         <article className="animate-rise overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900 p-4">
           {contextLabel ? (

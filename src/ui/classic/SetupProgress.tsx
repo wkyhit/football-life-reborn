@@ -8,7 +8,11 @@ export function SetupProgress({ current }: SetupProgressProps) {
   return (
     <div
       aria-label={`建档进度：第 ${current} 步，共 3 步`}
+      aria-valuemax={3}
+      aria-valuemin={1}
+      aria-valuenow={current}
       className="mb-4 flex shrink-0 gap-1.5"
+      role="progressbar"
     >
       {steps.map((step, index) => {
         const reached = index + 1 <= current;
@@ -28,7 +32,7 @@ export function SetupProgress({ current }: SetupProgressProps) {
               className={
                 reached
                   ? "mt-1.5 text-[10px] font-bold leading-[15px] text-accent"
-                  : "mt-1.5 text-[10px] font-bold leading-[15px] text-zinc-600"
+                  : "mt-1.5 text-[10px] font-bold leading-[15px] text-muted"
               }
             >
               {step}
