@@ -162,6 +162,8 @@ formats do not consume Enhanced tokens and must remain unchanged.
   [Production acceptance](docs/deployment/production-acceptance.md) contract;
   mutable commit, deployment, browser, and rollback results remain in the
   Issue #9 pull-request and issue timelines.
+- Recovery follows the dashboard-only
+  [rollback and restore runbook](docs/deployment/vercel-runbook.md).
 
 ## Verification
 
