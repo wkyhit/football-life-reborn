@@ -348,6 +348,9 @@ function clubOption(
 ): CareerDecisionOptionPresentation {
   return {
     club,
+    consequences: [],
+    contract: null,
+    honorOpportunities: [],
     id,
     outcomePreviews: [],
     role,

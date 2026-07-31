@@ -278,6 +278,7 @@ Modify:
 - `src/ui/classic/careerPresentation.ts`
 - `src/ui/classic/summaryPresentation.ts`
 - `src/ui/classic/CareerScreen.tsx` and `src/ui/classic/SummaryScreen.tsx` only for the approved minimal economy/story parity
+- `src/ui/shared/CareerMilestoneNarrative.tsx` only to render shared structured decision-economy details and committed contract results without calculating economy facts
 - `src/ui/enhanced/EnhancedOnboarding.tsx`
 - `src/ui/enhanced/career/EnhancedCareerScreen.tsx`
 - `src/ui/enhanced/summary/EnhancedSummaryScreen.tsx`

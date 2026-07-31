@@ -7,6 +7,7 @@ import {
   startClassicCareer,
 } from "../../domain/classicEngine";
 import { CLASSIC_CATALOG } from "../../domain/catalog/classicCatalog";
+import { createCareerEconomyChoiceResult } from "../../domain/economy/careerEconomyProjection";
 import { CLASSIC_GOLDEN_FIXTURES } from "../../../tests/golden/fixtures";
 import { createCareerPresentation } from "./careerPresentation";
 
@@ -139,6 +140,22 @@ describe("Classic career presentation", () => {
 
     expect(accept).toMatchObject({
       club: null,
+      consequences: [
+        {
+          probability: expected.positiveProbability,
+          probabilityLabel: `${Math.round(expected.positiveProbability * 100)}%`,
+          semanticLabel: "正向",
+          text: "成为绝对主力",
+          tone: "positive",
+        },
+        {
+          probability: expected.negativeProbability,
+          probabilityLabel: `${Math.round(expected.negativeProbability * 100)}%`,
+          semanticLabel: "风险",
+          text: "降为替补",
+          tone: "negative",
+        },
+      ],
       outcomePreviews: [
         {
           outcomeKind: "positive",
@@ -156,6 +173,164 @@ describe("Classic career presentation", () => {
       title: expected.label,
     });
     expect(accept?.subtitle).not.toBe(accept?.title);
+  });
+
+  it("builds five scan layers for an exact academy contract and a retained loan contract", () => {
+    const initial = startClassicCareer({
+      identity: {
+        lastName: "合同",
+        nationalityFifaCode: "ENG",
+        position: "ST",
+        preferredNumber: 19,
+      },
+      mode: "normal",
+      seed: "golden:special:loan-heavy:0",
+    });
+    const academyView = createCareerPresentation({
+      career: initial,
+      isRevealing: false,
+      visibleSeasonCount: 0,
+    });
+
+    if (academyView.panel.kind !== "decision") {
+      throw new Error("Expected academy decision");
+    }
+
+    const arsenal = academyView.panel.options.find(
+      (option) => option.id === "join:arsenal",
+    );
+    expect(arsenal).toMatchObject({
+      club: {
+        id: "arsenal",
+        subtitle: "英超",
+      },
+      consequences: [],
+      contract: {
+        annualSalary: 20_000,
+        certainty: "exact",
+        kind: "new_contract",
+        label: "年薪 ¥20,000",
+      },
+      honorOpportunities: [
+        "联赛",
+        "国内杯赛",
+        "洲际赛事",
+      ],
+      role: expect.any(String),
+      stars: expect.stringMatching(/^(★+|—)$/),
+      title: "加盟 阿森纳",
+    });
+
+    const academyDecision = initial.currentDecision!;
+    const signed = applyClassicChoice(initial, {
+      decisionId: academyDecision.id,
+      decisionType: academyDecision.type,
+      optionId: "join:arsenal",
+    });
+    const loanView = createCareerPresentation({
+      career: signed,
+      isRevealing: false,
+      visibleSeasonCount: signed.seasons.length,
+    });
+
+    if (loanView.panel.kind !== "decision") {
+      throw new Error("Expected loan decision");
+    }
+
+    expect(
+      loanView.panel.options.find(
+        (option) => option.id === "loan:qpr",
+      ),
+    ).toMatchObject({
+      club: { id: "qpr" },
+      contract: {
+        annualSalary: 20_000,
+        kind: "contract_unchanged",
+        label: "母队合同不变 · 年薪 ¥20,000",
+        reason: "loan",
+      },
+      title: "租借去 女王公园巡游者",
+    });
+  });
+
+  it("labels event-dependent salary as estimated and retirement as no contract", () => {
+    const eventFixture = CLASSIC_GOLDEN_FIXTURES.find(
+      ({ id }) => id === "special-journeyman",
+    );
+    const retirementFixture = CLASSIC_GOLDEN_FIXTURES.find(
+      ({ id }) => id === "matrix-long-attacker-high",
+    );
+
+    if (
+      eventFixture === undefined ||
+      retirementFixture === undefined
+    ) {
+      throw new Error("Missing economy decision fixtures");
+    }
+
+    const eventIndex = eventFixture.choices.findIndex(
+      ({ optionId }) => optionId === "join:eibar",
+    );
+    const eventCareer = replayClassicCareer({
+      choices: eventFixture.choices.slice(0, eventIndex),
+      contentVersion: eventFixture.contentVersion,
+      identity: eventFixture.identity,
+      mode: eventFixture.mode,
+      seed: eventFixture.seed,
+    });
+    const eventView = createCareerPresentation({
+      career: eventCareer,
+      isRevealing: false,
+      visibleSeasonCount: eventCareer.seasons.length,
+    });
+
+    expect(eventView.panel).toMatchObject({
+      kind: "decision",
+      options: expect.arrayContaining([
+        expect.objectContaining({
+          club: expect.objectContaining({ id: "eibar" }),
+          contract: expect.objectContaining({
+            certainty: "estimated",
+            kind: "new_contract",
+            label: expect.stringMatching(
+              /^预计年薪 ¥[\d,]+$/,
+            ),
+          }),
+          honorOpportunities: expect.arrayContaining([
+            "联赛/升级",
+            "国内杯赛",
+          ]),
+        }),
+      ]),
+    });
+
+    const retirementCareer = replayClassicCareer({
+      choices: retirementFixture.choices.slice(0, -1),
+      contentVersion: retirementFixture.contentVersion,
+      identity: retirementFixture.identity,
+      mode: retirementFixture.mode,
+      seed: retirementFixture.seed,
+    });
+    const retirementView = createCareerPresentation({
+      career: retirementCareer,
+      isRevealing: false,
+      visibleSeasonCount:
+        retirementCareer.seasons.length,
+    });
+
+    expect(retirementView.panel).toMatchObject({
+      kind: "decision",
+      options: expect.arrayContaining([
+        expect.objectContaining({
+          contract: {
+            kind: "no_contract",
+            label: "退役后停止收入",
+            reason: "retire",
+          },
+          id: "retire",
+        }),
+      ]),
+    });
   });
 
   it("projects the committed event result and milestone queue without re-resolving either", () => {
@@ -188,6 +363,8 @@ describe("Classic career presentation", () => {
       ...choice,
       forcedOutcome: "positive",
     });
+    const contractResult =
+      createCareerEconomyChoiceResult(before, resolved);
     const seasonIndex = before.seasons.length;
     const season = resolved.career.seasons[seasonIndex]!;
     const career = {
@@ -207,12 +384,14 @@ describe("Classic career presentation", () => {
     };
     const eventView = createCareerPresentation({
       activeRevealItem: {
+        contractResult,
         dwellMs: 1_600,
         kind: "event_result",
         result: resolved.result,
       },
       career,
       isRevealing: true,
+      recentEventContractResult: contractResult,
       recentEventResult: resolved.result,
       visibleSeasonCount: career.seasons.length,
     });
@@ -235,6 +414,7 @@ describe("Classic career presentation", () => {
       },
       career,
       isRevealing: true,
+      recentEventContractResult: contractResult,
       recentEventResult: resolved.result,
       visibleSeasonCount: career.seasons.length,
     });
@@ -261,6 +441,7 @@ describe("Classic career presentation", () => {
       activeRevealItem: null,
       career,
       isRevealing: false,
+      recentEventContractResult: contractResult,
       recentEventResult: resolved.result,
       visibleSeasonCount: career.seasons.length,
     });

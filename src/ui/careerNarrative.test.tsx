@@ -1,10 +1,25 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
+import {
+  afterEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import {
   applyClassicChoice,
+  applyClassicChoiceWithResult,
+  replayClassicCareer,
   startClassicCareer,
 } from "../domain/classicEngine";
+import { createCareerEconomyChoiceResult } from "../domain/economy/careerEconomyProjection";
+import { CLASSIC_GOLDEN_FIXTURES } from "../../tests/golden/fixtures";
 import { CareerScreen } from "./classic/CareerScreen";
 import { createCareerPresentation } from "./classic/careerPresentation";
 import { EnhancedCareerScreen } from "./enhanced/career/EnhancedCareerScreen";
@@ -21,7 +36,207 @@ const SEASON_LABELS = [
   "进入次级联赛",
 ] as const;
 
+afterEach(cleanup);
+
 describe("complete career narrative rendering", () => {
+  it.each(["classic", "enhanced"] as const)(
+    "renders the five-layer contract choice card in %s",
+    (variant) => {
+      const view = academyEconomyView();
+      const arsenal =
+        view.panel.kind === "decision"
+          ? view.panel.options.find(
+              (option) => option.id === "join:arsenal",
+            )
+          : undefined;
+
+      if (arsenal === undefined) {
+        throw new Error("Expected Arsenal academy offer");
+      }
+
+      const rendered =
+        variant === "classic"
+          ? render(
+              <CareerScreen
+                onChoose={vi.fn()}
+                view={view}
+              />,
+            )
+          : render(
+              <EnhancedCareerScreen
+                onChoose={vi.fn()}
+                view={view}
+              />,
+            );
+      const option = screen.getByRole("button", {
+        name: /加盟 阿森纳/,
+      });
+      const card = within(option);
+
+      expect(card.getByText("英超")).toBeVisible();
+      expect(card.getByText(arsenal.role)).toBeVisible();
+      expect(card.getByText(arsenal.stars)).toBeVisible();
+      expect(
+        card.getByText("年薪 ¥20,000"),
+      ).toBeVisible();
+      expect(
+        card.getByText(
+          "荣誉机会：联赛 · 国内杯赛 · 洲际赛事",
+        ),
+      ).toBeVisible();
+
+      rendered.unmount();
+    },
+  );
+
+  it.each(["classic", "enhanced"] as const)(
+    "renders explicit consequence semantics and no-contract nodes in %s",
+    (variant) => {
+      const eventView = eventEconomyView();
+      const rendered =
+        variant === "classic"
+          ? render(
+              <CareerScreen
+                onChoose={vi.fn()}
+                view={eventView}
+              />,
+            )
+          : render(
+              <EnhancedCareerScreen
+                onChoose={vi.fn()}
+                view={eventView}
+              />,
+            );
+      const option = screen.getByRole("button", {
+        name: /接受双倍训练|承担更多负荷/,
+      });
+      const card = within(option);
+
+      expect(
+        card.getByText(/^正向 · \d+%$/),
+      ).toBeVisible();
+      expect(
+        card.getByText(/^风险 · \d+%$/),
+      ).toBeVisible();
+      expect(card.getByText("成为绝对主力")).toBeVisible();
+      expect(card.getByText("降为替补")).toBeVisible();
+      expect(
+        card.getByText(/^合同不变 · 年薪 ¥[\d,]+$/),
+      ).toBeVisible();
+
+      rendered.unmount();
+
+      const retirementView = retirementEconomyView();
+      if (variant === "classic") {
+        render(
+          <CareerScreen
+            onChoose={vi.fn()}
+            view={retirementView}
+          />,
+        );
+      } else {
+        render(
+          <EnhancedCareerScreen
+            onChoose={vi.fn()}
+            view={retirementView}
+          />,
+        );
+      }
+
+      expect(
+        within(
+          screen.getByRole("button", {
+            name: /现在退役/,
+          }),
+        ).getByText("退役后停止收入"),
+      ).toBeVisible();
+    },
+  );
+
+  it.each(["classic", "enhanced"] as const)(
+    "keeps a club subtitle and its event consequence visible in %s",
+    (variant) => {
+      const view = rivalOfferEconomyView();
+      const rivalOffer =
+        view.panel.kind === "decision"
+          ? view.panel.options.find(
+              (option) =>
+                option.id === "event:rival_offer:accept",
+            )
+          : undefined;
+
+      if (
+        rivalOffer === undefined ||
+        rivalOffer.club === null
+      ) {
+        throw new Error("Expected rival club offer");
+      }
+
+      const rendered =
+        variant === "classic"
+          ? render(
+              <CareerScreen
+                onChoose={vi.fn()}
+                view={view}
+              />,
+            )
+          : render(
+              <EnhancedCareerScreen
+                onChoose={vi.fn()}
+                view={view}
+              />,
+            );
+      const option = within(
+        screen.getByRole("button", {
+          name: new RegExp(rivalOffer.title),
+        }),
+      );
+
+      expect(
+        option.getByText(rivalOffer.club.subtitle),
+      ).toBeVisible();
+      expect(
+        option.getByText(
+          "加盟报价俱乐部，角色按新环境结算",
+        ),
+      ).toBeVisible();
+      expect(option.getByText("中性")).toBeVisible();
+      expect(
+        option.getByText(/^预计年薪 ¥[\d,]+$/),
+      ).toBeVisible();
+
+      rendered.unmount();
+    },
+  );
+
+  it.each(["classic", "enhanced"] as const)(
+    "renders the exact committed contract in the %s actual-result reveal",
+    (variant) => {
+      const view = eventTransferActualView();
+      const rendered =
+        variant === "classic"
+          ? render(
+              <CareerScreen
+                onChoose={vi.fn()}
+                view={view}
+              />,
+            )
+          : render(
+              <EnhancedCareerScreen
+                onChoose={vi.fn()}
+                view={view}
+              />,
+            );
+
+      expect(
+        screen.getByText(
+          /^实际合同：新合同生效 · 年薪 ¥[\d,]+$/,
+        ),
+      ).toBeVisible();
+      rendered.unmount();
+    },
+  );
+
   it("shows identical season honors and statuses in Classic and Enhanced", () => {
     const view = completeNarrativeView();
     const classic = render(
@@ -96,6 +311,151 @@ describe("complete career narrative rendering", () => {
     ).toHaveClass("enhanced-reveal-enter");
   });
 });
+
+function academyEconomyView() {
+  const career = startClassicCareer({
+    identity: {
+      lastName: "合同",
+      nationalityFifaCode: "ENG",
+      position: "ST",
+      preferredNumber: 19,
+    },
+    mode: "normal",
+    seed: "golden:special:loan-heavy:0",
+  });
+
+  return createCareerPresentation({
+    career,
+    isRevealing: false,
+    visibleSeasonCount: 0,
+  });
+}
+
+function eventEconomyView() {
+  const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+    ({ id }) => id === "matrix-long-support-high",
+  );
+
+  if (fixture === undefined) {
+    throw new Error("Missing season-load fixture");
+  }
+
+  const eventChoiceIndex = fixture.choices.findIndex(
+    ({ optionId }) =>
+      optionId === "event:season_load:accept",
+  );
+  const career = replayClassicCareer({
+    choices: fixture.choices.slice(0, eventChoiceIndex),
+    contentVersion: fixture.contentVersion,
+    identity: fixture.identity,
+    mode: fixture.mode,
+    seed: fixture.seed,
+  });
+
+  return createCareerPresentation({
+    career,
+    isRevealing: false,
+    visibleSeasonCount: career.seasons.length,
+  });
+}
+
+function retirementEconomyView() {
+  const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+    ({ id }) => id === "matrix-long-attacker-high",
+  );
+
+  if (fixture === undefined) {
+    throw new Error("Missing retirement fixture");
+  }
+
+  const career = replayClassicCareer({
+    choices: fixture.choices.slice(0, -1),
+    contentVersion: fixture.contentVersion,
+    identity: fixture.identity,
+    mode: fixture.mode,
+    seed: fixture.seed,
+  });
+
+  return createCareerPresentation({
+    career,
+    isRevealing: false,
+    visibleSeasonCount: career.seasons.length,
+  });
+}
+
+function eventTransferActualView() {
+  const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+    ({ id }) => id === "special-journeyman",
+  );
+
+  if (fixture === undefined) {
+    throw new Error("Missing event-transfer fixture");
+  }
+
+  const choiceIndex = fixture.choices.findIndex(
+    ({ optionId }) => optionId === "join:eibar",
+  );
+  const before = replayClassicCareer({
+    choices: fixture.choices.slice(0, choiceIndex),
+    contentVersion: fixture.contentVersion,
+    identity: fixture.identity,
+    mode: fixture.mode,
+    seed: fixture.seed,
+  });
+  const choice = fixture.choices[choiceIndex];
+
+  if (choice === undefined) {
+    throw new Error("Missing event-transfer choice");
+  }
+
+  const transition = applyClassicChoiceWithResult(
+    before,
+    choice,
+  );
+
+  return createCareerPresentation({
+    activeRevealItem: {
+      contractResult: createCareerEconomyChoiceResult(
+        before,
+        transition,
+      ),
+      dwellMs: 1_600,
+      kind: "event_result",
+      result: transition.result,
+    },
+    career: transition.career,
+    isRevealing: true,
+    visibleSeasonCount: transition.career.seasons.length,
+  });
+}
+
+function rivalOfferEconomyView() {
+  const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+    ({ id }) => id === "special-suspension-redemption",
+  );
+
+  if (fixture === undefined) {
+    throw new Error("Missing rival-offer fixture");
+  }
+
+  const choiceIndex = fixture.choices.findIndex(
+    ({ optionId }) =>
+      optionId === "event:rival_offer:accept",
+  );
+  const career = replayClassicCareer({
+    choices: fixture.choices.slice(0, choiceIndex),
+    contentVersion: fixture.contentVersion,
+    identity: fixture.identity,
+    mode: fixture.mode,
+    seed: fixture.seed,
+  });
+
+  return createCareerPresentation({
+    career,
+    isRevealing: false,
+    visibleSeasonCount: career.seasons.length,
+  });
+}
 
 function completeNarrativeView(
   activeRevealItem:

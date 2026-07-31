@@ -1,4 +1,7 @@
-import type { CareerPresentation } from "../classic/careerPresentation";
+import type {
+  CareerDecisionOptionPresentation,
+  CareerPresentation,
+} from "../classic/careerPresentation";
 import {
   HonorIdentity,
   type HonorIdentityKey,
@@ -19,6 +22,88 @@ type SeasonRow = Extract<
   CareerPresentation["timeline"][number],
   { readonly kind: "season" }
 >;
+
+export function CareerDecisionEconomyDetails({
+  option,
+  variant,
+}: {
+  readonly option: CareerDecisionOptionPresentation;
+  readonly variant: "classic" | "enhanced";
+}) {
+  const enhanced = variant === "enhanced";
+
+  return (
+    <>
+      {option.consequences.length > 0 ? (
+        <span
+          className={
+            enhanced
+              ? "mt-3 block space-y-2 border-t border-enhanced-line pt-3"
+              : "mt-2 block space-y-1 border-t border-zinc-700/70 pt-2"
+          }
+          data-career-decision-consequences=""
+          role="list"
+        >
+          <span className="sr-only">可能后果：</span>
+          {option.consequences.map((consequence) => (
+            <span
+              className={
+                enhanced
+                  ? "flex items-start gap-2 text-xs leading-4"
+                  : "flex items-start gap-2 text-[11px] leading-4"
+              }
+              key={`${consequence.semanticLabel}:${consequence.text}`}
+              role="listitem"
+            >
+              <span
+                className={`shrink-0 font-bold ${consequenceToneClass(consequence.tone, variant)}`}
+              >
+                {consequence.semanticLabel}
+                {consequence.probabilityLabel === null
+                  ? ""
+                  : ` · ${consequence.probabilityLabel}`}
+              </span>
+              <span
+                className={
+                  enhanced
+                    ? "text-enhanced-strong"
+                    : "text-zinc-300"
+                }
+              >
+                {consequence.text}
+              </span>
+            </span>
+          ))}
+        </span>
+      ) : null}
+      {option.contract ? (
+        <span
+          className={
+            enhanced
+              ? "mt-3 block text-xs font-bold text-enhanced-success"
+              : "mt-2 block text-[11px] font-bold text-emerald-300"
+          }
+          data-career-decision-contract=""
+        >
+          {option.contract.label}
+        </span>
+      ) : null}
+      {option.honorOpportunities.length > 0 ? (
+        <span
+          className={
+            enhanced
+              ? "mt-1 block text-xs leading-4 text-enhanced-trophy"
+              : "mt-1 block text-[10px] leading-4 text-amber-300"
+          }
+          data-career-decision-honors=""
+        >
+          荣誉机会：
+          {option.honorOpportunities.join(" · ")}
+        </span>
+      ) : null}
+    </>
+  );
+}
 
 type CareerMilestoneNarrativeProps = Pick<
   MilestonePanel,
@@ -243,6 +328,18 @@ export function CareerEventResultNarrative({
       >
         {panel.summary}
       </p>
+      {panel.contractSummary ? (
+        <p
+          className={
+            enhanced
+              ? "mt-3 text-xs font-bold text-enhanced-success"
+              : "mt-2 text-xs font-bold text-emerald-300"
+          }
+          data-career-event-contract-result=""
+        >
+          {panel.contractSummary}
+        </p>
+      ) : null}
     </>
   );
 }
@@ -270,8 +367,45 @@ export function CareerRecentEventResult({
       <span className={`${enhanced ? "mt-1" : "mt-0.5"} block`}>
         {result.summary}
       </span>
+      {result.contractSummary ? (
+        <span
+          className={`${enhanced ? "mt-2" : "mt-1"} block font-bold`}
+          data-career-event-contract-result=""
+        >
+          {result.contractSummary}
+        </span>
+      ) : null}
     </div>
   );
+}
+
+function consequenceToneClass(
+  tone: CareerDecisionOptionPresentation["consequences"][number]["tone"],
+  variant: "classic" | "enhanced",
+): string {
+  if (variant === "enhanced") {
+    switch (tone) {
+      case "positive":
+        return "text-enhanced-success";
+      case "neutral":
+        return "text-enhanced-supporting";
+      case "warning":
+        return "text-enhanced-trophy";
+      case "negative":
+        return "text-enhanced-alert";
+    }
+  }
+
+  switch (tone) {
+    case "positive":
+      return "text-lime-400";
+    case "neutral":
+      return "text-zinc-400";
+    case "warning":
+      return "text-yellow-400";
+    case "negative":
+      return "text-red-400";
+  }
 }
 
 function resultToneClass(

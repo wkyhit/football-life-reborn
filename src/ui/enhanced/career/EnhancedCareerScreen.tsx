@@ -8,6 +8,7 @@ import {
   type ChallengeSurface,
 } from "../../../features/challenges/ChallengeProgressPanel";
 import {
+  CareerDecisionEconomyDetails,
   CareerEventResultNarrative,
   CareerMilestoneNarrative,
   CareerRecentEventResult,
@@ -513,6 +514,10 @@ function DecisionOption({
           </span>
         ) : null}
       </span>
+      <CareerDecisionEconomyDetails
+        option={option}
+        variant="enhanced"
+      />
     </button>
   );
 }

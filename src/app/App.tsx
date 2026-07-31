@@ -909,6 +909,8 @@ function CareerExperience({
     activeRevealItem: reveal.activeItem,
     career: reveal.committedCareer,
     isRevealing: reveal.isRevealing,
+    recentEventContractResult:
+      reveal.recentEventContractResult,
     recentEventResult: reveal.recentEventResult,
     visibleSeasonCount: reveal.visibleSeasonCount,
   });

@@ -10,8 +10,14 @@ import {
   selectCareerEventNarrative,
   type CareerTrophy,
   type CareerEventOutcomePreview,
+  type CareerEventPreviewTone,
   type NationalTrophy,
 } from "../../domain/careerEvents";
+import {
+  createCareerEconomyProjection,
+  type CareerEconomyChoiceResult,
+  type CareerEconomyOptionQuote,
+} from "../../domain/economy/careerEconomyProjection";
 import type {
   NationalTournamentRecord,
   NationalTournamentResult,
@@ -45,6 +51,9 @@ export type CareerClubPresentation = {
 
 export type CareerDecisionOptionPresentation = {
   readonly club: CareerClubPresentation | null;
+  readonly consequences: readonly CareerDecisionConsequencePresentation[];
+  readonly contract: CareerDecisionContractPresentation | null;
+  readonly honorOpportunities: readonly string[];
   readonly id: string;
   readonly outcomePreviews: readonly CareerEventOutcomePreview[];
   readonly role: string;
@@ -57,6 +66,33 @@ export type CareerDecisionOptionPresentation = {
   readonly subtitle: string;
   readonly title: string;
 };
+
+export type CareerDecisionConsequencePresentation = {
+  readonly probability: number | null;
+  readonly probabilityLabel: string | null;
+  readonly semanticLabel: "中性" | "正向" | "注意" | "风险";
+  readonly text: string;
+  readonly tone: CareerEventPreviewTone;
+};
+
+export type CareerDecisionContractPresentation =
+  | {
+      readonly annualSalary: number;
+      readonly certainty: "estimated" | "exact";
+      readonly kind: "new_contract";
+      readonly label: string;
+    }
+  | {
+      readonly annualSalary: number;
+      readonly kind: "contract_unchanged";
+      readonly label: string;
+      readonly reason: "career_choice" | "loan" | "stay";
+    }
+  | {
+      readonly kind: "no_contract";
+      readonly label: string;
+      readonly reason: "free_agent" | "retire";
+    };
 
 export type CareerDecisionPanelPresentation =
   | {
@@ -178,6 +214,7 @@ type CareerPresentationInput = {
   readonly activeRevealItem?: SeasonRevealQueueItem | null;
   readonly career: ClassicCareerState;
   readonly isRevealing: boolean;
+  readonly recentEventContractResult?: CareerEconomyChoiceResult | null;
   readonly recentEventResult?: ClassicDecisionResult | null;
   readonly visibleSeasonCount: number;
 };
@@ -279,6 +316,7 @@ export function createCareerPresentation({
   activeRevealItem = null,
   career,
   isRevealing,
+  recentEventContractResult = null,
   recentEventResult = null,
   visibleSeasonCount,
 }: CareerPresentationInput): CareerPresentation {
@@ -364,7 +402,10 @@ export function createCareerPresentation({
     }),
     recentEventResult:
       !isRevealing && recentEventResult !== null
-        ? createEventResultReveal(recentEventResult)
+        ? createEventResultReveal(
+            recentEventResult,
+            recentEventContractResult,
+          )
         : null,
     timeline,
     totals: {
@@ -391,7 +432,10 @@ function revealPanelPresentation(input: {
   const item = input.activeRevealItem;
 
   if (item?.kind === "event_result") {
-    const result = createEventResultReveal(item.result);
+    const result = createEventResultReveal(
+      item.result,
+      item.contractResult,
+    );
 
     return result === null
       ? { kind: "simulating" }
@@ -453,6 +497,13 @@ function decisionPresentation(
             "career_event"
           >
         ];
+  const economy = tryCreateEconomyProjection(career);
+  const economyByOptionId = new Map(
+    economy?.optionQuotes.map((quote) => [
+      quote.optionId,
+      quote,
+    ]) ?? [],
+  );
   const options = [...decision.options]
     .sort((left, right) => {
       if (left.kind === "stay") {
@@ -465,7 +516,14 @@ function decisionPresentation(
 
       return 0;
     })
-    .map((option) => optionPresentation(career, decision, option));
+    .map((option) =>
+      optionPresentation(
+        career,
+        decision,
+        option,
+        economyByOptionId.get(option.id) ?? null,
+      ),
+    );
 
   return {
     age: decision.age,
@@ -481,6 +539,7 @@ function optionPresentation(
   career: ClassicCareerState,
   decision: ClassicDecision,
   option: ClassicDecisionOption,
+  economyQuote: CareerEconomyOptionQuote | null,
 ): CareerDecisionOptionPresentation {
   const clubId =
     option.clubId ??
@@ -515,6 +574,14 @@ function optionPresentation(
 
   return {
     club: club === null ? null : clubPresentation(club),
+    consequences: outcomePreviews.map(
+      consequencePresentation,
+    ),
+    contract: contractPresentation(economyQuote),
+    honorOpportunities: honorOpportunities(
+      decision,
+      club,
+    ),
     id: option.id,
     outcomePreviews,
     role: role === null ? "" : roleLabel(role),
@@ -525,7 +592,9 @@ function optionPresentation(
         : "★".repeat(club.internationalReputation) || "—",
     subtitle:
       club === null
-        ? formatOutcomePreviews(outcomePreviews)
+        ? outcomePreviews.length === 0
+          ? ""
+          : "查看可能后果"
         : clubSubtitle(club),
     title: optionTitle(
       career,
@@ -535,6 +604,162 @@ function optionPresentation(
       eventOption?.label ?? null,
     ),
   };
+}
+
+function consequencePresentation(
+  preview: CareerEventOutcomePreview,
+): CareerDecisionConsequencePresentation {
+  return {
+    probability: preview.probability ?? null,
+    probabilityLabel:
+      preview.probability === undefined
+        ? null
+        : `${Math.round(preview.probability * 100)}%`,
+    semanticLabel: consequenceSemanticLabel(
+      preview.tone,
+    ),
+    text: preview.text,
+    tone: preview.tone,
+  };
+}
+
+function consequenceSemanticLabel(
+  tone: CareerEventPreviewTone,
+): CareerDecisionConsequencePresentation["semanticLabel"] {
+  switch (tone) {
+    case "positive":
+      return "正向";
+    case "negative":
+      return "风险";
+    case "warning":
+      return "注意";
+    case "neutral":
+      return "中性";
+  }
+}
+
+function contractPresentation(
+  quote: CareerEconomyOptionQuote | null,
+): CareerDecisionContractPresentation | null {
+  if (quote === null) {
+    return null;
+  }
+
+  if (quote.kind === "new_contract") {
+    return {
+      annualSalary: quote.quote.annualSalary,
+      certainty: quote.certainty,
+      kind: "new_contract",
+      label: `${
+        quote.certainty === "estimated"
+          ? "预计年薪"
+          : "年薪"
+      } ${formatYuan(quote.quote.annualSalary)}`,
+    };
+  }
+
+  if (quote.kind === "contract_unchanged") {
+    return {
+      annualSalary: quote.contract.annualSalary,
+      kind: "contract_unchanged",
+      label: `${
+        quote.reason === "loan"
+          ? "母队合同不变"
+          : "合同不变"
+      } · 年薪 ${formatYuan(quote.contract.annualSalary)}`,
+      reason: quote.reason,
+    };
+  }
+
+  return {
+    kind: "no_contract",
+    label:
+      quote.reason === "retire"
+        ? "退役后停止收入"
+        : "本选项不签新合同",
+    reason: quote.reason,
+  };
+}
+
+function honorOpportunities(
+  decision: ClassicDecision,
+  club: Club | null,
+): readonly string[] {
+  const opportunities: string[] = [];
+
+  if (club !== null) {
+    const competition =
+      CLASSIC_CATALOG.competitionById.get(
+        club.competitionId,
+      );
+
+    if (
+      club.tier === 2 ||
+      club.domesticReputation > 0
+    ) {
+      opportunities.push(
+        club.tier === 2 ? "联赛/升级" : "联赛",
+      );
+    }
+
+    if (
+      competition !== undefined &&
+      CLASSIC_CATALOG.domesticCupById.has(
+        competition.domesticCupId,
+      )
+    ) {
+      opportunities.push("国内杯赛");
+    }
+
+    if (club.continentalReputation > 0) {
+      opportunities.push("洲际赛事");
+    }
+  }
+
+  const targetedTrophy =
+    decision.event?.targetClubTrophy ??
+    decision.event?.targetTrophy;
+
+  if (targetedTrophy !== undefined) {
+    const label = TROPHY_LABELS[targetedTrophy].replace(
+      "冠军",
+      "",
+    );
+
+    const alreadyCovered =
+      opportunities.includes(label) ||
+      (label === "联赛" &&
+        opportunities.includes("联赛/升级"));
+
+    if (!alreadyCovered) {
+      opportunities.push(label);
+    }
+  }
+
+  return opportunities;
+}
+
+function tryCreateEconomyProjection(
+  career: ClassicCareerState,
+): ReturnType<typeof createCareerEconomyProjection> | null {
+  try {
+    return createCareerEconomyProjection(career);
+  } catch (error) {
+    if (!(error instanceof RangeError)) {
+      throw error;
+    }
+
+    // Invalid/recovery presentation may still render, but it never
+    // invents a fallback amount.
+    return null;
+  }
+}
+
+function formatYuan(value: number): string {
+  return `¥${String(value).replace(
+    /\B(?=(\d{3})+(?!\d))/g,
+    ",",
+  )}`;
 }
 
 function optionTitle(
@@ -574,18 +799,6 @@ function optionTitle(
   }
 
   return option.label;
-}
-
-function formatOutcomePreviews(
-  previews: readonly CareerEventOutcomePreview[],
-): string {
-  return previews
-    .map((preview) =>
-      preview.probability === undefined
-        ? preview.text
-        : `${Math.round(preview.probability * 100)}% ${preview.text}`,
-    )
-    .join(" / ");
 }
 
 function seasonPresentation(

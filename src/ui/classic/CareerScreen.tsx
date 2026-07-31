@@ -4,6 +4,7 @@ import type {
   CareerTimelineRowPresentation,
 } from "./careerPresentation";
 import {
+  CareerDecisionEconomyDetails,
   CareerEventResultNarrative,
   CareerMilestoneNarrative,
   CareerRecentEventResult,
@@ -403,6 +404,10 @@ function DecisionOption({
           </span>
         ) : null}
       </span>
+      <CareerDecisionEconomyDetails
+        option={option}
+        variant="classic"
+      />
     </button>
   );
 }

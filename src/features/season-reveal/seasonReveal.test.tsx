@@ -8,7 +8,11 @@ import {
   startClassicCareer,
   type ClassicChoiceTransition,
 } from "../../domain/classicEngine";
-import { useSeasonReveal } from "./seasonReveal";
+import { createCareerEconomyProjection } from "../../domain/economy/careerEconomyProjection";
+import {
+  createEventResultReveal,
+  useSeasonReveal,
+} from "./seasonReveal";
 
 describe("useSeasonReveal", () => {
   afterEach(() => {
@@ -98,6 +102,9 @@ describe("useSeasonReveal", () => {
       vi.advanceTimersByTime(550);
     });
     expect(result.current.activeItem).toMatchObject({
+      contractResult: {
+        kind: "contract_unchanged",
+      },
       dwellMs: 1_600,
       kind: "event_result",
       result: {
@@ -130,9 +137,63 @@ describe("useSeasonReveal", () => {
     expect(result.current.recentEventResult).toBe(
       transition.result,
     );
+    expect(
+      result.current.recentEventContractResult,
+    ).toMatchObject({
+      kind: "contract_unchanged",
+    });
     expect(result.current.announcement).toContain(
       "双倍训练结果",
     );
+  });
+
+  it("replaces an estimated event offer with the exact signed contract in the actual-result reveal", () => {
+    const { before, transition } = eventTransferTransition();
+    const choiceLogIndex = before.choiceLog.length;
+    const signed = createCareerEconomyProjection(
+      transition.career,
+    ).ledger.find(
+      (entry) =>
+        entry.kind === "contract_signed" &&
+        entry.contract.signedAtChoiceLogIndex ===
+          choiceLogIndex,
+    );
+
+    if (signed?.kind !== "contract_signed") {
+      throw new Error("Expected exact event contract");
+    }
+
+    const { result } = renderHook(() =>
+      useSeasonReveal(before),
+    );
+    act(() => {
+      result.current.commitTransition(transition);
+    });
+    const eventItem = result.current.revealQueue.find(
+      (item) => item.kind === "event_result",
+    );
+
+    expect(eventItem).toMatchObject({
+      contractResult: {
+        contract: {
+          annualSalary: signed.contract.annualSalary,
+          clubId: "eibar",
+        },
+        kind: "new_contract",
+      },
+      kind: "event_result",
+    });
+    expect(
+      createEventResultReveal(
+        transition.result,
+        eventItem?.kind === "event_result"
+          ? eventItem.contractResult
+          : null,
+      ),
+    ).toMatchObject({
+      contractSummary: `实际合同：新合同生效 · 年薪 ¥${signed.contract.annualSalary.toLocaleString("en-US")}`,
+      summary: expect.any(String),
+    });
   });
 
   it("finishes immediately for reduced motion and cancels its timer on unmount", () => {
@@ -255,5 +316,42 @@ function milestoneTransition(): {
       career,
       result: resolved.result,
     },
+  };
+}
+
+function eventTransferTransition(): {
+  before: ReturnType<typeof replayClassicCareer>;
+  transition: ClassicChoiceTransition;
+} {
+  const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+    ({ id }) => id === "special-journeyman",
+  );
+
+  if (fixture === undefined) {
+    throw new Error("Missing event-transfer golden fixture");
+  }
+
+  const choiceIndex = fixture.choices.findIndex(
+    ({ optionId }) => optionId === "join:eibar",
+  );
+  const before = replayClassicCareer({
+    choices: fixture.choices.slice(0, choiceIndex),
+    contentVersion: fixture.contentVersion,
+    identity: fixture.identity,
+    mode: fixture.mode,
+    seed: fixture.seed,
+  });
+  const choice = fixture.choices[choiceIndex];
+
+  if (choice === undefined) {
+    throw new Error("Missing event-transfer choice");
+  }
+
+  return {
+    before,
+    transition: applyClassicChoiceWithResult(
+      before,
+      choice,
+    ),
   };
 }

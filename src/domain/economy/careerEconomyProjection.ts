@@ -4,6 +4,7 @@ import {
 } from "../classicEngine";
 import type {
   ClassicCareerState,
+  ClassicChoiceTransition,
   ClassicDecision,
   ClassicDecisionOption,
 } from "../classicEngine";
@@ -104,6 +105,22 @@ export type CareerEconomyProjection = {
   readonly seasonSalaries: readonly CareerSeasonSalary[];
   readonly totalIncome: number;
 };
+
+export type CareerEconomyChoiceResult =
+  | {
+      readonly certainty: "exact";
+      readonly contract: CareerContract;
+      readonly kind: "new_contract";
+    }
+  | {
+      readonly contract: CareerContract;
+      readonly kind: "contract_unchanged";
+      readonly reason: "career_choice" | "loan" | "stay";
+    }
+  | {
+      readonly kind: "no_contract";
+      readonly reason: "free_agent" | "retire";
+    };
 
 export function createCareerEconomyProjection(
   career: ClassicCareerState,
@@ -318,6 +335,107 @@ export function createCareerEconomyProjection(
       (total, salary) => total + salary.income,
       0,
     ),
+  });
+}
+
+export function createCareerEconomyChoiceResult(
+  previousCareer: ClassicCareerState,
+  transition: ClassicChoiceTransition,
+): CareerEconomyChoiceResult {
+  const choiceLogIndex = previousCareer.choiceLog.length;
+  const choice = transition.career.choiceLog[choiceLogIndex];
+
+  if (
+    transition.career.choiceLog.length !==
+      choiceLogIndex + 1 ||
+    choice === undefined ||
+    stableStringify(
+      transition.career.choiceLog.slice(
+        0,
+        choiceLogIndex,
+      ),
+    ) !== stableStringify(previousCareer.choiceLog) ||
+    choice.decisionId !== transition.result.decision.id ||
+    choice.decisionType !==
+      transition.result.decision.type ||
+    choice.optionId !== transition.result.option.id
+  ) {
+    throw new RangeError(
+      "Economy choice result requires one appended committed choice",
+    );
+  }
+
+  if (transition.result.option.kind === "retire") {
+    return Object.freeze({
+      kind: "no_contract",
+      reason: "retire",
+    });
+  }
+
+  const currentContract =
+    createCareerEconomyProjection(previousCareer)
+      .currentContract;
+
+  if (
+    isLoanOption(
+      transition.result.decision,
+      transition.result.option,
+    )
+  ) {
+    return currentContract === null
+      ? Object.freeze({
+          kind: "no_contract",
+          reason: "free_agent",
+        })
+      : Object.freeze({
+          contract: currentContract,
+          kind: "contract_unchanged",
+          reason: "loan",
+        });
+  }
+
+  if (transition.result.option.clubId !== undefined) {
+    const canonicalTransition =
+      applyClassicChoiceWithResult(
+        previousCareer,
+        choice,
+      );
+    const signed = createCareerEconomyProjection(
+      canonicalTransition.career,
+    ).ledger.find(
+      (entry) =>
+        entry.kind === "contract_signed" &&
+        entry.contract.signedAtChoiceLogIndex ===
+          choiceLogIndex,
+    );
+
+    if (signed?.kind !== "contract_signed") {
+      throw new RangeError(
+        "Committed club choice has no exact contract",
+      );
+    }
+
+    return Object.freeze({
+      certainty: "exact",
+      contract: signed.contract,
+      kind: "new_contract",
+    });
+  }
+
+  if (currentContract === null) {
+    return Object.freeze({
+      kind: "no_contract",
+      reason: "free_agent",
+    });
+  }
+
+  return Object.freeze({
+    contract: currentContract,
+    kind: "contract_unchanged",
+    reason:
+      transition.result.option.kind === "stay"
+        ? "stay"
+        : "career_choice",
   });
 }
 
