@@ -158,6 +158,10 @@ formats do not consume Enhanced tokens and must remain unchanged.
   local-first build; career data stays in browser storage.
 - Production is available at
   [football-life-reborn.vercel.app](https://football-life-reborn.vercel.app/).
+- Release evidence follows the versioned
+  [Production acceptance](docs/deployment/production-acceptance.md) contract;
+  mutable commit, deployment, browser, and rollback results remain in the
+  Issue #9 pull-request and issue timelines.
 
 ## Verification
 
