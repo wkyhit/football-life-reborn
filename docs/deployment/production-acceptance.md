@@ -1,7 +1,8 @@
 # Vercel Production acceptance
 
-The release boundary is the accepted `main` merge commit created by the final
-Issue #9 pull request. Vercel must create the automatic Git Integration Production deployment from that exact commit.
+The release boundary is the accepted `main` merge commit created by the
+reviewed pull request for the release under verification. Vercel must create
+the automatic Git Integration Production deployment from that exact commit.
 Do not promote or rebuild an alternate commit to manufacture a passing release.
 
 The public alias is
@@ -10,6 +11,14 @@ The alias is accepted only after the Vercel dashboard shows one `Ready`
 Production deployment for the full merge SHA and `main`, and the alias resolves
 to that unique deployment. Mutable results belong in the pull request and issue
 timeline rather than this versioned contract.
+
+The latest accepted product release at this revision is
+[Issue #25](https://github.com/wkyhit/football-life-reborn/issues/25),
+delivered by
+[PR #26](https://github.com/wkyhit/football-life-reborn/pull/26). Its exact
+commit, unique deployment, browser measurements, and error scans remain in the
+[PR Production evidence](https://github.com/wkyhit/football-life-reborn/pull/26#issuecomment-5149241659)
+and issue timeline, not duplicated as mutable values in this contract.
 
 ## Production evidence block
 
@@ -25,8 +34,11 @@ timeline rather than this versioned contract.
 - Browser verification: `<ego-browser task space and passed assertions>`
 
 The evidence also records the verification time, production-alias read-back,
-first-party error scan, and the previous known-good Production deployment used
-by the rollback drill.
+first-party error scan, and the previous known-good Production candidate for
+recovery. Run the rollback drill only when the governing release requires it
+or when a failed acceptance boundary requires recovery; a passing automatic
+Production deployment does not require a manual rollback/restore alias change
+after acceptance.
 
 ## Clean-context critical journey
 
@@ -41,9 +53,15 @@ executors for this contract.
    reload, resume from local storage, and finish at the expected summary.
 4. Open a storage-independent replay hash in a clean context and hard reload
    it without changing the rendered result.
-5. Fetch the manifest and icons; require document revalidation and immutable
+5. Repeat the Preview `career-workbench` regression at 195×415, 390×667,
+   568×320, and 1280×830. Require a centered current year, fixed timeline
+   chrome, bounded internal scrolling, held selection/result acknowledgement,
+   one persisted yearly story, exact-money disclosures, goalkeeper table
+   semantics, deliberate follow suspension and return, and Classic
+   compatibility.
+6. Fetch the manifest and icons; require document revalidation and immutable
    one-year caching for hashed assets.
-6. Drain console and network evidence. Fail on an uncaught error, failed
+7. Drain console and network evidence. Fail on an uncaught error, failed
    first-party request, mixed content, or unexpected `/api/` business request.
 
 The smoke also checks no horizontal overflow at mobile and desktop widths, no

@@ -27,23 +27,26 @@ The economy policy reuses the canonical `MARKET_VALUE_CURVE` and
 interpolation implementation for both the existing football valuation
 and contract quotes.
 
-| Overall | Market value |
+| Overall | Market value (EUR) |
 | ---: | ---: |
-| 50 | ¥100,000 |
-| 55 | ¥250,000 |
-| 60 | ¥500,000 |
-| 65 | ¥1,200,000 |
-| 70 | ¥3,000,000 |
-| 75 | ¥5,000,000 |
-| 80 | ¥15,000,000 |
-| 85 | ¥50,000,000 |
-| 90 | ¥100,000,000 |
-| 95 | ¥150,000,000 |
-| 99 | ¥250,000,000 |
+| 50 | €100,000 |
+| 55 | €250,000 |
+| 60 | €500,000 |
+| 65 | €1,200,000 |
+| 70 | €3,000,000 |
+| 75 | €5,000,000 |
+| 80 | €15,000,000 |
+| 85 | €50,000,000 |
+| 90 | €100,000,000 |
+| 95 | €150,000,000 |
+| 99 | €250,000,000 |
 
 Values between nodes use linear interpolation. Inputs below 50 or above
 99 clamp to the closest node, matching the existing football
-valuation.
+valuation. The Issue #18 proposal expressed these nodes with a `¥` glyph,
+but the released football and presentation contracts treat market value as
+EUR. The salary policy directly reuses that deterministic numeric magnitude
+to produce CNY amounts; no foreign-exchange conversion occurs.
 
 ## Annual salary
 
@@ -86,6 +89,21 @@ Apply the rules in this order:
 
 `saudi-pro-league` is a policy key approved by Issue #18. It does not
 add or mutate clubs in the frozen Classic catalog.
+
+## UI amount presentation
+
+- Market value is labelled and formatted as EUR (`€`).
+- Annual salary, contract results, season income, and career income are
+  labelled and formatted as CNY (`¥`).
+- Enhanced career-workbench surfaces may show a compact amount at the first
+  level. When the compact and exact values differ there, a native, focusable
+  disclosure with at least a 44×44 CSS-pixel target exposes the exact amount
+  on tap, click, or keyboard activation; exact values are never hover-only.
+- Career header, decision quote, event-result contract, season history,
+  summary, archive, and share consumers preserve the same EUR/CNY convention.
+  Summary/archive/share may render one formatted value rather than an exact
+  disclosure. Consumers do not infer a currency from the glyph or recalculate
+  an amount.
 
 ## Career projection and ledger
 

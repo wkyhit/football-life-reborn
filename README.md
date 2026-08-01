@@ -1,6 +1,9 @@
 # Football Life Reborn
 
-A private research project that clean-room reimplements the observable behavior and visual design of the Football Life career simulator, then evolves it with an enhanced UI, local career archives, parallel-life branching, and deterministic challenges.
+A clean-room research project that reimplements the observable behavior and
+visual design of the Football Life career simulator, then evolves it with an
+Enhanced UI, local career archives, parallel-life branching, deterministic
+challenges, and storage-independent replay.
 
 ## Status
 
@@ -15,6 +18,16 @@ Phase 6 adds three deterministic daily challenges, live rule progress,
 challenge result cards, and storage-independent replay links.
 Phase 7 gives the complete Enhanced application one Hallmark-governed
 visual system while preserving the Classic and simulation contracts.
+Phase 8 establishes exact-commit Vercel Git Integration delivery,
+Production acceptance, and recovery boundaries. Post-roadmap
+[Issue #23](https://github.com/wkyhit/football-life-reborn/issues/23) and
+[Issue #25](https://github.com/wkyhit/football-life-reborn/issues/25)
+harden the real career journey: complete late-career timelines, explicit Seed
+intent, replay v3 presentation identity, viewport-contained workbench layout,
+centered timeline follow, persistent decision feedback, exact-money
+disclosure, and position-correct metrics. Issue #25 was delivered by
+[PR #26](https://github.com/wkyhit/football-life-reborn/pull/26) and passed
+the full Production acceptance contract.
 
 ## Phase 1 scope
 
@@ -152,6 +165,26 @@ must remain unchanged. The renderer-neutral presentation DTO in
 Enhanced consumers only when Classic markup, behavior, and golden output stay
 byte-identical.
 
+### Career workbench
+
+The Enhanced career route is a viewport-contained workbench with a semantic,
+independently scrollable timeline and decision rail. The latest/current year
+follows the center of the visible timeline until the player deliberately
+browses history; `回到最新` restores follow. At narrow and short-landscape
+boundaries, secondary visual detail compacts or hides before primary career
+facts, while the complete table remains available to assistive technology.
+
+Decision cards keep salary, role, star/core indicators, and primary risk at
+the first level. A committed option remains visibly selected beside its held
+result, event results require explicit acknowledgement, and the yearly story
+persists the selected option, actual outcome, and actual contract exactly
+once. Market value is presented in EUR; salary, contracts, and income are
+presented in CNY. Compact values expose their exact amount through a
+focusable, touch-sized disclosure.
+
+See [the career workbench contract](docs/career-workbench.md) for the
+responsive, interaction, semantic, and compatibility rules.
+
 ## UI modes and deployment
 
 - `/` opens the responsive Enhanced presentation by default.
@@ -168,19 +201,17 @@ byte-identical.
 - Release evidence follows the versioned
   [Production acceptance](docs/deployment/production-acceptance.md) contract;
   mutable commit, deployment, browser, and rollback results remain in the
-  Issue #9 pull-request and issue timelines.
+  governing release pull-request and issue timelines. The latest product
+  release evidence is recorded on
+  [PR #26](https://github.com/wkyhit/football-life-reborn/pull/26#issuecomment-5149241659)
+  and
+  [Issue #25](https://github.com/wkyhit/football-life-reborn/issues/25#issuecomment-5149243876).
 - Recovery follows the dashboard-only
   [rollback and restore runbook](docs/deployment/vercel-runbook.md).
 
 ## Verification
 
-Install the Playwright-managed Chromium revision once:
-
-```bash
-npx playwright install chromium
-```
-
-Run the complete Classic behavior gate:
+Run the current local quality gate:
 
 ```bash
 npm run lint
@@ -188,13 +219,15 @@ npm run typecheck
 npm test
 npm run test:golden
 npm run test:property
-npm run test:e2e
-npm run build
+npm run test:performance
+npm run test:deployment
+npm run test:budget
 ```
 
-The E2E suite completes the full career in pinned Chromium at 390×667 and
-1280×830. Failure traces, screenshots, and reports are written under
-`output/playwright/`.
+Remote Preview and Production browser acceptance uses `ego-browser` against
+the exact deployed commit. The repository retains `test:e2e` and
+`test:visual` as optional local Playwright diagnostics, but Chrome and
+Playwright output are not release acceptance evidence.
 
 ## GitHub roadmap
 
@@ -208,6 +241,13 @@ The E2E suite completes the full career in pinned Chromium at 390×667 and
 - [Phase 7: Hallmark audit and full Enhanced UI redesign](https://github.com/wkyhit/football-life-reborn/issues/8)
 - [Phase 8: Vercel deployment and production journey verification](https://github.com/wkyhit/football-life-reborn/issues/9)
 
+Post-roadmap product releases:
+
+- [Career narrative parity](https://github.com/wkyhit/football-life-reborn/issues/14)
+- [Deterministic economy and contract storytelling](https://github.com/wkyhit/football-life-reborn/issues/18)
+- [Complete career UX and Replay v3](https://github.com/wkyhit/football-life-reborn/issues/23)
+- [Responsive workbench and persistent decision feedback](https://github.com/wkyhit/football-life-reborn/issues/25)
+
 ## Delivery workflow
 
 - GitHub issues are the source of truth.
@@ -216,11 +256,13 @@ The E2E suite completes the full career in pinned Chromium at 390×667 and
 - Every implementation pull request links its phase issue.
 - The frozen Classic experience remains the visual and behavioral compatibility baseline.
 - Enhanced pages share one Hallmark-governed design system and must pass its audit, responsive, accessibility, and anti-slop release gates.
-- Vercel Preview, Production, promotion, full-story browser verification, and rollback evidence are required before roadmap closure.
+- Vercel Preview, automatic exact-merge-SHA Production, full-story
+  `ego-browser` verification, and rollback readiness are required before
+  release closure.
 
 ## Product boundaries
 
-- Private research use.
+- Research-oriented public source and a publicly reachable Vercel demo.
 - Static, local-first application with no required runtime backend.
 - No accounts, payments, multiplayer, live match engine, or competitive leaderboard in the approved scope.
 - Brand, club, and crest usage has been confirmed as authorized for this project.

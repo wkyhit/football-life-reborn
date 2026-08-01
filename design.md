@@ -59,9 +59,18 @@ Career and branch comparison preserve the proven flexible timeline plus fixed `3
 Allowances:
 
 - Career retains one internal timeline scroller and a fixed decision rail.
+- Timeline chrome stays outside the year scroller. The current year follows
+  the center until deliberate keyboard, pointer, touch, wheel, or scrollbar
+  browsing suspends follow; `回到最新` restores it.
 - Comparison may use two asymmetric data columns, but both derive from the same row grammar.
 - Challenge progress sits inside the current task rail; it does not become a third dashboard column.
 - Mobile collapses to document order: current state, timeline, then action.
+- At extreme reflow widths, secondary visual metrics may hide only after
+  spacing and density compact; the full semantic table remains available.
+  Short landscape uses a side-by-side timeline and action rail.
+- A committed decision card remains visible beside its held result until the
+  required acknowledgement. Exact amounts are available through touch-sized,
+  focusable disclosure rather than hover.
 
 Stamp:
 
@@ -132,7 +141,9 @@ primary-action fill.
 
 The spacing scale follows a 4 px grid and uses named roles only: `4, 8, 12, 16, 24, 32, 40, 64, 96`. Raw spacing values are not added inside component markup.
 
-- Smallest page gutter: 16 px plus safe-area inset.
+- Smallest page gutter: 16 px plus safe-area inset. The Issue #25 career
+  workbench may reduce its shell gutter to 8 px and local density spacing to
+  4 px at 260 CSS px or narrower.
 - Tablet page gutter: 24 px.
 - Desktop page gutter: 32–40 px, capped by a `76rem` shell.
 - Workbench decision rail: `23.75rem` (`380px`), unchanged.
@@ -174,10 +185,14 @@ With `prefers-reduced-motion: reduce`, spatial transforms disappear and state ch
 
 ## 9. Responsive and accessibility gates
 
-The acceptance widths are 320, 375, 414, 768, 1280, and 1440. Every width must have:
+The general acceptance widths are 320, 375, 414, 768, 1280, and 1440. The
+career workbench additionally pins 195×415 reflow, 390×667 mobile, 568×320
+short landscape, and 1280×830 desktop. Every width must have:
 
 - zero document horizontal overflow;
-- no wrapped button, tab, nav, breadcrumb, or inline footer label;
+- no wrapped standalone CTA, tab, nav, breadcrumb, or inline footer label;
+  at 260 CSS px or narrower, decision-card titles and explanations may wrap
+  deliberately while controls and disclosure labels remain complete;
 - safe heading wrapping with `overflow-wrap: anywhere` and `min-width: 0`;
 - section heads collapsed to one column on mobile;
 - 200% zoom completion without loss of content or controls;
@@ -384,6 +399,38 @@ Frozen:
 - replay v1/v2 decoding semantics and existing stored v1/v2 recovery;
   v3 is additive and must create a recoverable v2 backup before its
   first persistent write
+
+### Issue #25 approved amendment
+
+[Issue #25](https://github.com/wkyhit/football-life-reborn/issues/25)
+is the approved, additive exception for viewport-contained career layout,
+fixed timeline chrome, centered follow, compact historical rows, persistent
+choice/result feedback, explicit event acknowledgement, first-level decision
+essentials, exact-money disclosure, goalkeeper metrics, and semantic timeline
+relationships. The stable product behavior is specified in
+[`docs/career-workbench.md`](docs/career-workbench.md).
+
+The amendment may create the real-App regression owner
+`src/app/AppCareerUx.test.tsx` and the workbench contract. It may modify:
+
+- `src/styles.css` for the named 195 px reflow, mobile, short-landscape,
+  internal-scroll, and desktop workbench rules;
+- `src/app/App.tsx` and `src/features/season-reveal/seasonReveal.ts` for
+  one guarded single-commit and single-acknowledgement choice/result sequence;
+- `src/ui/classic/careerPresentation.ts` only to expose additive,
+  renderer-neutral timeline, decision, story, metric, and amount facts;
+- `src/ui/enhanced/career/EnhancedCareerScreen.tsx`,
+  `useTimelineFollow.ts`, and `CareerKeyEventDialog.tsx` for the Enhanced
+  interaction and semantic contract;
+- `src/ui/shared/CareerMilestoneNarrative.tsx` for shared structured facts
+  with Enhanced disclosure and acknowledgement presentation;
+- adjacent unit/real-App tests, the visual harness, README, design
+  documentation, and Preview/Production acceptance contracts.
+
+Football simulation, RNG, catalogs, economy policy, state hashing, serialized
+formats, Classic renderers/tokens/reference images, and existing v1/v2 replay
+decoding remain frozen. Classic may consume the same presentation DTO only
+when its markup, behavior, screenshots, and golden output stay unchanged.
 
 ## 11. Portable exports
 

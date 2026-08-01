@@ -175,9 +175,10 @@ content, the economy policy, or the benchmark contract changes. A
 digest change without an intentional input-version change is a
 reproducibility failure.
 
-## Issue #9 handoff gate
+## Historical Issue #9 handoff gate
 
-Issue #9 may begin only after the Issue #18 branch passes and records:
+The Phase 8 Issue #9 release began only after the Issue #18 branch passed and
+recorded:
 
 ```sh
 npm run test:golden
@@ -197,11 +198,14 @@ keyboard and focus behavior, reader semantics, reduced motion, reload,
 v1 migration, import, replay, and branching consistency. Playwright and
 Chrome output are not accepted as Issue #18 browser evidence.
 
-The handoff comment must include the exact Issue #18 commit, Preview
+The handoff comment included the exact Issue #18 commit, Preview
 deployment URL, command results, `ego-browser` task-space evidence, and
-any intentional Classic screenshot delta. Production deployment,
-promotion, rollback rehearsal, and the final public story journey
-remain Issue #9 work.
+any intentional Classic screenshot delta. Production deployment, recovery
+readiness, and the final public story journey were then governed by Issue #9.
+Current releases use the generic
+[Vercel delivery](deployment/vercel-delivery.md) and
+[Production acceptance](deployment/production-acceptance.md) contracts rather
+than treating Issue #9 as a permanent release boundary.
 
 No temporary compatibility branch remains in the economy path. The v1
 readers and migration adapters are deliberate versioned support

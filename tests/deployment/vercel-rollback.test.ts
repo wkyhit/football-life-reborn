@@ -31,6 +31,7 @@ describe("Vercel rollback and restore contract", () => {
     expect(runbook).toContain(
       "Do not act when either target is ambiguous",
     );
+    expect(runbook).not.toContain("Issue #9");
   });
 
   it("defines one dashboard-only rollback and one restore with health gates", () => {

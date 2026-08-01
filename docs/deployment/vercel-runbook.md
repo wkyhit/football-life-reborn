@@ -9,7 +9,8 @@ Do not rebuild, redeploy, or change repository configuration during recovery.
 Resolve both immutable targets from the Vercel dashboard before opening any
 release action:
 
-- the intended release created from the accepted Issue #9 merge;
+- the intended release created from the accepted `main` merge for the
+  release being drilled;
 - the previous known-good release currently eligible for recovery.
 
 For each target, read back its full commit SHA, unique deployment URL,
@@ -62,6 +63,7 @@ action.
 - Restored-release health check: `<ego-browser task and passed assertions>`
 - Console/network error scan: `<no errors or exact blocking evidence>`
 
-Write the completed block to the Issue #9 and final pull-request timelines.
-Never record credentials, account identifiers, project identifiers, or internal deployment identifiers. Public deployment URLs and Git commit SHAs are the
-durable release evidence.
+Write the completed block to the governing release issue and pull-request
+timelines.
+Never record credentials, account identifiers, project identifiers, or internal deployment identifiers.
+Public deployment URLs and Git commit SHAs are the durable release evidence.
