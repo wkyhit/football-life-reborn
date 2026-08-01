@@ -28,6 +28,7 @@ describe("Vercel Production acceptance contract", () => {
     expect(contract).toContain(
       "Do not promote or rebuild an alternate commit",
     );
+    expect(contract).not.toContain("Issue #9 pull request");
   });
 
   it("requires a complete immutable Production evidence block", () => {
@@ -66,6 +67,10 @@ describe("Vercel Production acceptance contract", () => {
       "network",
       "`/api/`",
       "ego-browser",
+      "career-workbench",
+      "195×415",
+      "568×320",
+      "1280×830",
     ];
 
     for (const check of requiredChecks) {
@@ -81,6 +86,9 @@ describe("Vercel Production acceptance contract", () => {
 
     expect(readme).toContain(
       "[Production acceptance](docs/deployment/production-acceptance.md)",
+    );
+    expect(readme).not.toContain(
+      "Issue #9 pull-request and issue timelines",
     );
   });
 });

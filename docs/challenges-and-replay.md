@@ -54,14 +54,16 @@ screen explains the actual measurements behind each outcome.
 
 ## Replay wire contract
 
-A replay is stored only in the URL fragment after `#r=`. Codec version
-`1` serializes these logical fields:
+A replay is stored only in the URL fragment after `#r=`. Current writers
+emit codec version `3`, which supports both ordinary careers and Daily
+Challenges. It serializes these logical fields:
 
-- challenge ID;
-- Classic content version;
-- deterministic challenge seed;
-- pacing mode;
-- player identity;
+- route kind: `ordinary` or `daily_challenge`;
+- a versioned challenge ID for a Daily Challenge, or no challenge ID for an
+  ordinary career;
+- Classic content version and economy policy version;
+- deterministic seed and pacing mode;
+- player identity and the presentation profile's preferred foot;
 - compact ordered choice log, including a forced outcome when present;
 - final deterministic state fingerprint.
 
@@ -76,6 +78,10 @@ summary, and compares the rebuilt state fingerprint with the shared
 fingerprint. The replay screen is read-only and is resolved before any
 career storage is accessed.
 
+An ordinary replay reconstructs the same completed career without acquiring a
+Daily Challenge title, progress, or result card. A Daily Challenge replay also
+validates that its challenge ID and seed match the versioned derivation.
+
 The checksum and state fingerprint detect corruption or modification.
 They are not encryption, a signature, an identity proof, or an anti-cheat
 mechanism.
@@ -89,7 +95,15 @@ boundaries:
   version message.
 - An unknown Classic content version is rejected instead of being
   approximated with current content.
-- A challenge ID that does not match its versioned seed is rejected.
+- An unknown encoded economy policy is rejected rather than recalculated under
+  current rules.
+- Codec v1 and v2 links remain readable. Both legacy formats represent Daily
+  Challenges and decode with an unknown preferred foot. V1 receives the
+  released `economy-v1` compatibility value because it predates an encoded
+  economy field; v2 must carry the supported economy policy. Writers never
+  downgrade a new link.
+- A Daily Challenge ID that does not match its versioned seed is rejected, and
+  an ordinary replay carrying a challenge ID is invalid.
 - Invalid encoding, schema, checksum, choice path, or final state
   fingerprint produces a dedicated recovery screen.
 - A non-replay fragment continues through the normal application route.
@@ -102,7 +116,8 @@ Any future change that alters challenge derivation or rule semantics must
 increment the challenge version. Any incompatible wire change must
 increment the replay codec version. A Classic simulation or catalog change
 must follow the separate content-version policy in
-[`classic-versioning.md`](classic-versioning.md).
+[`classic-versioning.md`](classic-versioning.md); an economy rule change
+must follow [`economy-v1.md`](economy-v1.md) and define replay compatibility.
 
 ## Privacy and product boundary
 

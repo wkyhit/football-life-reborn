@@ -30,6 +30,10 @@ archive, summary, challenge, and replay states.
 | `replay-deep-link` | Open the generated replay hash with empty storage, hard reload, and require the same read-only result with no runtime API request or hash leakage into resource URLs. |
 | `ui-resilience` | Verify empty, loading, error/recovery, long-name, and missing-crest fallbacks plus responsive, accessibility, motion, zoom, keyboard, console, network, and performance boundaries. |
 
+The `career-workbench` story enforces the stable product behavior in
+[`docs/career-workbench.md`](../career-workbench.md); the table above is the
+remote release matrix, not a replacement for that functional contract.
+
 Stop at the first failed boundary. Fix it, rerun that story from a clean
 fixture, and then restart the remaining matrix; a homepage-only smoke cannot
 replace any story.
