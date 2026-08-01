@@ -345,11 +345,21 @@ function presentation(input: {
         ? {
             appearances: sum.appearances + row.stats.appearances,
             assists: sum.assists + row.stats.assists,
+            cleanSheets: sum.cleanSheets + row.stats.cleanSheets,
             goals: sum.goals + row.stats.goals,
+            goalsConceded:
+              sum.goalsConceded + row.stats.goalsConceded,
             trophies: sum.trophies,
           }
         : sum,
-    { appearances: 0, assists: 0, goals: 0, trophies: 0 },
+    {
+      appearances: 0,
+      assists: 0,
+      cleanSheets: 0,
+      goals: 0,
+      goalsConceded: 0,
+      trophies: 0,
+    },
   );
   const byAge = new Map(input.seasons.map((row) => [row.age, row]));
   const endAge = Math.max(
@@ -385,10 +395,17 @@ function presentation(input: {
       overall: input.overall,
       position: "中锋",
     },
+    goalkeeper: false,
     nationalTeam: {
       countryFlag: "🇨🇳",
       name: "中国国家队",
-      stats: { appearances: 0, assists: 0, goals: 0 },
+      stats: {
+        appearances: 0,
+        assists: 0,
+        cleanSheets: 0,
+        goals: 0,
+        goalsConceded: 0,
+      },
     },
     panel:
       input.panel === "simulating"
@@ -433,7 +450,14 @@ function season(
     marketValue: overall * 10_000,
     nationalTournaments: [],
     overall,
-    stats: { appearances, assists, goals },
+    stats: {
+      appearances,
+      assists,
+      cleanSheets: 0,
+      goals,
+      goalsConceded: 0,
+    },
+    story: null,
     statuses: [],
     tierChange: null,
   };

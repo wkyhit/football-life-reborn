@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type KeyboardEventHandler,
+  type PointerEventHandler,
   type RefObject,
   type TouchEventHandler,
   type WheelEventHandler,
@@ -13,6 +14,7 @@ const HISTORY_BROWSE_KEYS = new Set([
   "ArrowDown",
   "ArrowUp",
   "End",
+  "Enter",
   "Home",
   "PageDown",
   "PageUp",
@@ -20,9 +22,10 @@ const HISTORY_BROWSE_KEYS = new Set([
 ]);
 
 export type TimelineFollowController = {
-  readonly containerRef: RefObject<HTMLElement | null>;
+  readonly containerRef: RefObject<HTMLDivElement | null>;
   readonly isFollowing: boolean;
   readonly onKeyDown: KeyboardEventHandler<HTMLElement>;
+  readonly onPointerDown: PointerEventHandler<HTMLElement>;
   readonly onTouchStart: TouchEventHandler<HTMLElement>;
   readonly onWheel: WheelEventHandler<HTMLElement>;
   readonly resume: () => void;
@@ -32,15 +35,21 @@ export function useTimelineFollow(input: {
   readonly activeAge: number | null;
   readonly reducedMotion: boolean;
 }): TimelineFollowController {
-  const containerRef = useRef<HTMLElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const followingRef = useRef(true);
   const [isFollowing, setIsFollowing] = useState(true);
   const suspend = useCallback(() => {
+    followingRef.current = false;
     setIsFollowing(false);
   }, []);
   const centerLatest = useCallback(() => {
     const container = containerRef.current;
 
-    if (container === null || input.activeAge === null) {
+    if (
+      !followingRef.current ||
+      container === null ||
+      input.activeAge === null
+    ) {
       return;
     }
 
@@ -57,19 +66,32 @@ export function useTimelineFollow(input: {
       0,
       (container.clientHeight - initialAnchorRect.height) / 2,
     );
-    container.style.setProperty(
-      "--timeline-edge-space",
-      `${edgeSpace}px`,
-    );
+    const edgeSpaceValue = `${edgeSpace}px`;
+
+    if (
+      container.style.getPropertyValue("--timeline-edge-space") !==
+      edgeSpaceValue
+    ) {
+      container.style.setProperty(
+        "--timeline-edge-space",
+        edgeSpaceValue,
+      );
+    }
 
     const containerRect = container.getBoundingClientRect();
     const anchorRect = anchor.getBoundingClientRect();
+    const centerDelta =
+      anchorRect.top +
+      anchorRect.height / 2 -
+      (containerRect.top + container.clientHeight / 2);
+
+    if (Math.abs(centerDelta) <= 1) {
+      return;
+    }
+
     const top = Math.max(
       0,
-      container.scrollTop +
-        anchorRect.top -
-        containerRect.top -
-        (container.clientHeight - anchorRect.height) / 2,
+      container.scrollTop + centerDelta,
     );
 
     if (typeof container.scrollTo === "function") {
@@ -100,6 +122,13 @@ export function useTimelineFollow(input: {
 
     const observer = new ResizeObserver(centerLatest);
     observer.observe(container);
+    const rows = container.querySelector(
+      "[data-enhanced-timeline-rows]",
+    );
+
+    if (rows !== null) {
+      observer.observe(rows);
+    }
 
     return () => observer.disconnect();
   }, [centerLatest, isFollowing]);
@@ -112,8 +141,16 @@ export function useTimelineFollow(input: {
         suspend();
       }
     },
+    onPointerDown: (event) => {
+      if (event.button === 0) {
+        suspend();
+      }
+    },
     onTouchStart: suspend,
     onWheel: suspend,
-    resume: () => setIsFollowing(true),
+    resume: () => {
+      followingRef.current = true;
+      setIsFollowing(true);
+    },
   };
 }

@@ -16,6 +16,7 @@ describe("useTimelineFollow", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("centers the latest row, yields to manual browsing, and resumes on request", () => {
@@ -77,6 +78,8 @@ describe("useTimelineFollow", () => {
   it.each([
     ["touch", (element: HTMLElement) => fireEvent.touchStart(element)],
     ["keyboard", (element: HTMLElement) => fireEvent.keyDown(element, { key: "PageUp" })],
+    ["pointer", (element: HTMLElement) => fireEvent.pointerDown(element, { button: 0 })],
+    ["disclosure keyboard", (element: HTMLElement) => fireEvent.keyDown(element, { key: "Enter" })],
   ] as const)(
     "suspends follow for deliberate %s history browsing",
     (_label, browse) => {
@@ -113,6 +116,65 @@ describe("useTimelineFollow", () => {
       top: 80,
     });
   });
+
+  it("follows content-height reflow without restarting an already centered scroll", () => {
+    const observed = new Set<Element>();
+    let resize: ResizeObserverCallback | undefined;
+
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resize = callback;
+        }
+
+        disconnect() {}
+
+        observe(target: Element) {
+          observed.add(target);
+        }
+
+        unobserve() {}
+      },
+    );
+
+    const scrollTo = vi.fn();
+    render(
+      <TimelineHarness
+        activeAge={44}
+        rowTop={260}
+        scrollTo={scrollTo}
+      />,
+    );
+    const content = screen.getByTestId("timeline-rows");
+    const anchor = screen.getByTestId("latest-row");
+
+    expect(observed).toContain(content);
+    expect(resize).toBeDefined();
+
+    anchor.getBoundingClientRect = () =>
+      rect({ height: 40, top: 340 });
+    resize!([], {} as ResizeObserver);
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      behavior: "smooth",
+      top: 160,
+    });
+
+    anchor.getBoundingClientRect = () =>
+      rect({ height: 40, top: 180 });
+    scrollTo.mockClear();
+    resize!([], {} as ResizeObserver);
+    resize!([], {} as ResizeObserver);
+    expect(scrollTo).not.toHaveBeenCalled();
+
+    fireEvent.pointerDown(screen.getByTestId("timeline"), {
+      button: 0,
+    });
+    anchor.getBoundingClientRect = () =>
+      rect({ height: 40, top: 340 });
+    resize!([], {} as ResizeObserver);
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
 });
 
 function TimelineHarness({
@@ -140,7 +202,7 @@ function TimelineHarness({
     [rowTop],
   );
   const containerRef = useCallback(
-    (node: HTMLElement | null) => {
+    (node: HTMLDivElement | null) => {
       if (node !== null) {
         Object.defineProperty(node, "clientHeight", {
           configurable: true,
@@ -148,7 +210,7 @@ function TimelineHarness({
         });
         node.getBoundingClientRect = () =>
           rect({ height: 200, top: 100 });
-        node.scrollTo = scrollTo as HTMLElement["scrollTo"];
+        node.scrollTo = scrollTo as HTMLDivElement["scrollTo"];
       }
 
       setRef(follow.containerRef, node);
@@ -158,21 +220,27 @@ function TimelineHarness({
 
   return (
     <>
-      <section
+      <div
         data-testid="timeline"
         onKeyDown={follow.onKeyDown}
+        onPointerDown={follow.onPointerDown}
         onTouchStart={follow.onTouchStart}
         onWheel={follow.onWheel}
         ref={containerRef}
         tabIndex={0}
       >
         <div
-          aria-current="step"
-          data-career-season-row={activeAge}
-          data-testid="latest-row"
-          ref={rowRef}
-        />
-      </section>
+          data-enhanced-timeline-rows=""
+          data-testid="timeline-rows"
+        >
+          <div
+            aria-current="step"
+            data-career-season-row={activeAge}
+            data-testid="latest-row"
+            ref={rowRef}
+          />
+        </div>
+      </div>
       {!follow.isFollowing ? (
         <button onClick={follow.resume} type="button">
           回到最新
@@ -183,8 +251,8 @@ function TimelineHarness({
 }
 
 function setRef(
-  ref: RefObject<HTMLElement | null>,
-  value: HTMLElement | null,
+  ref: RefObject<HTMLDivElement | null>,
+  value: HTMLDivElement | null,
 ): void {
   ref.current = value;
 }

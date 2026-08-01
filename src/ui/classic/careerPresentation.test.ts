@@ -11,6 +11,8 @@ import {
   createCareerEconomyChoiceResult,
   createCareerEconomyProjection,
 } from "../../domain/economy/careerEconomyProjection";
+import { formatYuan } from "../../domain/economy/economyPolicy";
+import { createEventResultReveal } from "../../features/season-reveal/seasonReveal";
 import { CLASSIC_GOLDEN_FIXTURES } from "../../../tests/golden/fixtures";
 import {
   createCareerPresentation,
@@ -178,6 +180,18 @@ describe("Classic career presentation", () => {
           income: firstSalary.income,
         },
         marketValue: firstSeason.marketValue,
+        stats: {
+          appearances: firstSeason.stats.appearances,
+          assists: firstSeason.stats.assists,
+          cleanSheets: firstSeason.stats.cleanSheets,
+          goals: firstSeason.stats.goals,
+          goalsConceded: firstSeason.stats.goalsConceded,
+        },
+      });
+      expect(partial.goalkeeper).toBe(position === "GK");
+      expect(partial.totals).toMatchObject({
+        cleanSheets: firstSeason.stats.cleanSheets,
+        goalsConceded: firstSeason.stats.goalsConceded,
       });
 
       const complete = createCareerPresentation({
@@ -193,6 +207,197 @@ describe("Classic career presentation", () => {
       });
     },
   );
+
+  it("derives one replay-stable choice story for the first revealed season", () => {
+    const initial = startClassicCareer({
+      identity: {
+        lastName: "故事",
+        nationalityFifaCode: "ENG",
+        position: "ST",
+        preferredNumber: 9,
+      },
+      mode: "normal",
+      seed: "golden:special:loan-heavy:0",
+    });
+    const decision = initial.currentDecision!;
+    const career = applyClassicChoice(initial, {
+      decisionId: decision.id,
+      decisionType: decision.type,
+      optionId: "join:arsenal",
+    });
+    const hidden = createCareerPresentation({
+      career,
+      isRevealing: true,
+      visibleSeasonCount: 0,
+    });
+    const revealed = createCareerPresentation({
+      career,
+      isRevealing: true,
+      visibleSeasonCount: 1,
+    });
+    const first = revealed.timeline.find(
+      (row) => row.kind === "season",
+    );
+    const complete = createCareerPresentation({
+      career: replayClassicCareer({
+        choices: career.choiceLog,
+        contentVersion: career.contentVersion,
+        identity: career.identity,
+        mode: career.mode,
+        seed: career.seed,
+      }),
+      isRevealing: false,
+      visibleSeasonCount: career.seasons.length,
+    });
+    const reloadedFirst = complete.timeline.find(
+      (row) => row.kind === "season",
+    );
+    const reloadedSecond = complete.timeline.find(
+      (row) =>
+        row.kind === "season" && row.age === 17,
+    );
+
+    expect(
+      hidden.timeline.filter((row) => row.kind === "season"),
+    ).toHaveLength(0);
+    expect(first).toMatchObject({
+      story: {
+        choiceLabel: "加盟 阿森纳",
+        contractSummary: "实际合同：新合同生效 · 年薪 ¥20,000",
+        decisionTitle: "青训报价",
+        outcome: null,
+      },
+    });
+    expect(reloadedSecond).toMatchObject({
+      story: null,
+    });
+    expect(reloadedFirst).toMatchObject({
+      story: first?.kind === "season" ? first.story : null,
+    });
+  });
+
+  it("keeps a declined loan offer on the existing contract", () => {
+    const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+      ({ id }) => id === "matrix-long-attacker-high",
+    );
+
+    if (fixture === undefined) {
+      throw new Error("Missing declined-loan fixture");
+    }
+
+    const career = replayClassicCareer({
+      choices: fixture.choices.slice(0, 3),
+      contentVersion: fixture.contentVersion,
+      identity: fixture.identity,
+      mode: fixture.mode,
+      seed: fixture.seed,
+    });
+    const row = createCareerPresentation({
+      career,
+      isRevealing: false,
+      visibleSeasonCount: career.seasons.length,
+    }).timeline.find(
+      (candidate) =>
+        candidate.kind === "season" && candidate.age === 18,
+    );
+
+    expect(row).toMatchObject({
+      story: {
+        choiceLabel: "留在 埃尔切",
+        contractSummary: expect.stringMatching(
+          /^实际合同：合同不变 · 年薪 /,
+        ),
+      },
+    });
+  });
+
+  it("replaces an estimated event quote with the actual yearly outcome and contract", () => {
+    const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+      ({ id }) => id === "special-journeyman",
+    );
+
+    if (fixture === undefined) {
+      throw new Error("Missing event-transfer fixture");
+    }
+
+    const choiceIndex = fixture.choices.findIndex(
+      ({ optionId }) => optionId === "join:eibar",
+    );
+    const before = replayClassicCareer({
+      choices: fixture.choices.slice(0, choiceIndex),
+      contentVersion: fixture.contentVersion,
+      identity: fixture.identity,
+      mode: fixture.mode,
+      seed: fixture.seed,
+    });
+    const choice = fixture.choices[choiceIndex]!;
+    const preview = createCareerPresentation({
+      career: before,
+      isRevealing: false,
+      visibleSeasonCount: before.seasons.length,
+    });
+    const estimated =
+      preview.panel.kind === "decision"
+        ? preview.panel.options.find(
+            (option) => option.id === choice.optionId,
+          )
+        : undefined;
+    const transition = applyClassicChoiceWithResult(
+      before,
+      choice,
+    );
+    const firstSeasonIndex = before.seasons.length;
+    const firstSeason =
+      transition.career.seasons[firstSeasonIndex]!;
+    const result = createEventResultReveal(transition.result);
+    const hidden = createCareerPresentation({
+      career: transition.career,
+      isRevealing: true,
+      visibleSeasonCount: firstSeasonIndex,
+    });
+    const revealed = createCareerPresentation({
+      career: transition.career,
+      isRevealing: true,
+      visibleSeasonCount: firstSeasonIndex + 1,
+    });
+    const row = revealed.timeline.find(
+      (candidate) =>
+        candidate.kind === "season" &&
+        candidate.age === firstSeason.age,
+    );
+
+    expect(estimated?.contract).toMatchObject({
+      certainty: "estimated",
+    });
+    expect(result).not.toBeNull();
+    expect(
+      hidden.timeline.some(
+        (candidate) =>
+          candidate.kind === "season" &&
+          candidate.age === firstSeason.age,
+      ),
+    ).toBe(false);
+    expect(row).toMatchObject({
+      story: {
+        choiceLabel: "加盟 埃瓦尔",
+        contractSummary: `实际合同：新合同生效 · 年薪 ${
+          row?.kind === "season" && row.economy !== null
+            ? formatYuan(row.economy.annualSalary)
+            : ""
+        }`,
+        outcome: {
+          summary: result?.summary,
+          title: result?.title,
+          tone: result?.tone,
+        },
+      },
+    });
+    expect(
+      row?.kind === "season"
+        ? row.story?.contractSummary
+        : null,
+    ).not.toContain("预计");
+  });
 
   it("separates committed engine state from the visible reveal cursor", () => {
     const initial = startClassicCareer({
@@ -232,7 +437,9 @@ describe("Classic career presentation", () => {
     expect(immediate.totals).toEqual({
       appearances: 0,
       assists: 0,
+      cleanSheets: 0,
       goals: 0,
+      goalsConceded: 0,
       trophies: 0,
     });
     expect(immediate.panel).toEqual({ kind: "simulating" });

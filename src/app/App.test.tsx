@@ -220,6 +220,14 @@ describe("Classic navigation", () => {
       screen.getByText(/已选择：/),
     ).toBeInTheDocument();
     expect(screen.getByText("赛季进行中")).toBeInTheDocument();
+    const rail = document.querySelector<HTMLElement>(
+      "[data-enhanced-decision-rail]",
+    );
+
+    expect(rail).not.toBeNull();
+    expect(
+      within(rail!).getByRole("button", { pressed: true }),
+    ).toBeVisible();
     await waitFor(() => {
       const loaded = repository.load();
 

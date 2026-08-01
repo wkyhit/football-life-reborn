@@ -86,6 +86,9 @@ describe("complete career narrative rendering", () => {
           formatYuan(view.economy.totalIncome),
         ),
       ).toBeVisible();
+      expect(
+        header.querySelector("[data-enhanced-exact-money]"),
+      ).toBeNull();
 
       const seasonView = within(seasonRow);
       expect(seasonView.getByText("身价")).toBeVisible();
@@ -101,6 +104,9 @@ describe("complete career narrative rendering", () => {
           formatYuan(season.economy.income),
         ),
       ).toBeVisible();
+      expect(
+        seasonRow.querySelector("[data-enhanced-exact-money]"),
+      ).toBeNull();
 
       rendered.unmount();
     },
@@ -136,16 +142,16 @@ describe("complete career narrative rendering", () => {
         throw new Error("Expected Enhanced economy surfaces");
       }
 
-      expect(
-        within(header).getByLabelText(
-          `身价：€${view.header.marketValue.toLocaleString("en-US")}`,
-        ),
-      ).toBeVisible();
-      expect(
-        within(header).getByLabelText(
-          `年薪：${formatYuan(view.economy.annualSalary)}`,
-        ),
-      ).toBeVisible();
+      expectExactMoneyDisclosure(
+        header,
+        "身价",
+        `€${view.header.marketValue.toLocaleString("en-US")}`,
+      );
+      expectExactMoneyDisclosure(
+        header,
+        "年薪",
+        formatYuan(view.economy.annualSalary),
+      );
       const careerDetails = header.querySelector(
         "[data-enhanced-career-economy-details]",
       );
@@ -163,17 +169,32 @@ describe("complete career narrative rendering", () => {
           `累计收入：${formatYuan(view.economy.totalIncome)}`,
         ),
       ).toBeVisible();
+      expectExactMoneyDisclosure(
+        careerDetails,
+        "累计收入",
+        formatYuan(view.economy.totalIncome),
+      );
 
-      expect(
-        within(seasonRow).getByLabelText(
-          `身价：€${season.marketValue.toLocaleString("en-US")}`,
-        ),
-      ).toBeVisible();
-      expect(
-        within(seasonRow).getByLabelText(
-          `年薪：${formatYuan(season.economy.annualSalary)}`,
-        ),
-      ).toBeVisible();
+      const seasonDisclosure = seasonRow.querySelector(
+        'details[data-enhanced-season-row="season"]',
+      );
+
+      if (!(seasonDisclosure instanceof HTMLDetailsElement)) {
+        throw new Error("Expected collapsed season summary");
+      }
+
+      expect(seasonDisclosure).not.toHaveAttribute("open");
+      fireEvent.click(seasonDisclosure.querySelector("summary")!);
+      expectExactMoneyDisclosure(
+        seasonRow,
+        "身价",
+        `€${season.marketValue.toLocaleString("en-US")}`,
+      );
+      expectExactMoneyDisclosure(
+        seasonRow,
+        "年薪",
+        formatYuan(season.economy.annualSalary),
+      );
       const seasonDetails = seasonRow.querySelector(
         "[data-enhanced-season-details]",
       );
@@ -193,10 +214,56 @@ describe("complete career narrative rendering", () => {
           `收入：${formatYuan(season.economy.income)}`,
         ),
       ).toBeVisible();
+      expectExactMoneyDisclosure(
+        seasonDetails,
+        "收入",
+        formatYuan(season.economy.income),
+      );
 
       rendered.unmount();
     },
   );
+
+  it("renders the persisted yearly choice story only inside Enhanced season detail", () => {
+    const view = committedEconomyView("ST");
+    const enhanced = render(
+      <EnhancedCareerScreen onChoose={vi.fn()} view={view} />,
+    );
+    const season = enhanced.container.querySelector(
+      'details[data-enhanced-season-row="season"]',
+    );
+
+    if (!(season instanceof HTMLDetailsElement)) {
+      throw new Error("Expected a completed season");
+    }
+
+    fireEvent.click(season.querySelector("summary")!);
+    fireEvent.click(
+      season.querySelector(
+        "[data-enhanced-season-details] > summary",
+      )!,
+    );
+    const story = season.querySelector<HTMLElement>(
+      "[data-enhanced-season-choice-story]",
+    );
+
+    expect(story).not.toBeNull();
+    expect(within(story!).getByText("年度选择")).toBeVisible();
+    expect(
+      within(story!).getByText(/^实际合同：/),
+    ).toBeVisible();
+
+    enhanced.unmount();
+    const classic = render(
+      <CareerScreen onChoose={vi.fn()} view={view} />,
+    );
+
+    expect(
+      classic.container.querySelector(
+        "[data-enhanced-season-choice-story]",
+      ),
+    ).toBeNull();
+  });
 
   it.each(["classic", "enhanced"] as const)(
     "renders the five-layer contract choice card in %s",
@@ -242,26 +309,64 @@ describe("complete career narrative rendering", () => {
       const card = within(cardRoot);
 
       expect(card.getByText("英超")).toBeVisible();
-      expect(card.getByText(arsenal.role)).toBeVisible();
-      expect(card.getByText(arsenal.stars)).toBeVisible();
 
       if (variant === "enhanced") {
+        const details = cardRoot.querySelector(
+          "details[data-enhanced-decision-details]",
+        );
+
+        expect(details).not.toBeNull();
         expect(
-          card.getByText("年薪 ¥20,000"),
+          within(option).getByText("年薪 ¥20,000"),
+        ).toBeVisible();
+        expect(
+          within(option).getByText(
+            `预计角色 · ${arsenal.role}${
+              arsenal.roleTone === "primary"
+                ? " · 核心"
+                : ""
+            }`,
+          ),
+        ).toBeVisible();
+        expect(
+          within(option).getByRole("img", {
+            name: `俱乐部星级：${arsenal.stars.length} 星`,
+          }),
+        ).toBeVisible();
+        expect(
+          within(details as HTMLElement).getByText(
+            "年薪 ¥20,000",
+          ),
         ).not.toBeVisible();
         fireEvent.click(card.getByText("合同与完整故事"));
+        expect(
+          within(details as HTMLElement).getByText(
+            "年薪 ¥20,000",
+          ),
+        ).toBeVisible();
+      } else {
+        expect(card.getByText(arsenal.role)).toBeVisible();
+        expect(card.getByText(arsenal.stars)).toBeVisible();
+        expect(
+          cardRoot.querySelector(
+            "[data-enhanced-decision-essentials]",
+          ),
+        ).toBeNull();
+        expect(
+          card.getByText("年薪 ¥20,000"),
+        ).toBeVisible();
       }
 
-      expect(
-        card.getByText("年薪 ¥20,000"),
-      ).toBeVisible();
       expect(
         card.getByText(
           "荣誉机会：联赛 · 国内杯赛 · 洲际赛事",
         ),
       ).toBeVisible();
       expect(
-        card.getByText("年薪 ¥20,000").closest(
+        (variant === "enhanced"
+          ? within(option).getByText("年薪 ¥20,000")
+          : card.getByText("年薪 ¥20,000")
+        ).closest(
           "[data-semantic-tone]",
         ),
       ).toHaveAttribute("data-semantic-tone", "positive");
@@ -301,22 +406,40 @@ describe("complete career narrative rendering", () => {
       }
 
       const card = within(cardRoot);
+      const details = cardRoot.querySelector(
+        "details[data-enhanced-decision-details]",
+      );
 
       if (variant === "enhanced") {
-        expect(card.getByText(/^正向 · \d+%$/)).not.toBeVisible();
+        expect(details).not.toBeNull();
+        expect(
+          within(option).getByText(/^风险 · \d+% · 降为替补$/),
+        ).toHaveAttribute(
+          "data-enhanced-decision-primary-risk",
+        );
+        expect(
+          within(details as HTMLElement).getByText(
+            /^正向 · \d+%$/,
+          ),
+        ).not.toBeVisible();
         fireEvent.click(card.getByText("合同与完整故事"));
       }
 
+      const story =
+        variant === "enhanced"
+          ? within(details as HTMLElement)
+          : card;
+
       expect(
-        card.getByText(/^正向 · \d+%$/),
+        story.getByText(/^正向 · \d+%$/),
       ).toBeVisible();
       expect(
-        card.getByText(/^风险 · \d+%$/),
+        story.getByText(/^风险 · \d+%$/),
       ).toBeVisible();
-      expect(card.getByText("成为绝对主力")).toBeVisible();
-      expect(card.getByText("降为替补")).toBeVisible();
+      expect(story.getByText("成为绝对主力")).toBeVisible();
+      expect(story.getByText("降为替补")).toBeVisible();
       expect(
-        card.getByText(/^合同不变 · 年薪 ¥[\d,]+$/),
+        story.getByText(/^合同不变 · 年薪 ¥[\d,]+$/),
       ).toBeVisible();
 
       rendered.unmount();
@@ -351,14 +474,23 @@ describe("complete career narrative rendering", () => {
       }
 
       const retireCard = within(retireRoot);
+      const retireDetails = retireRoot.querySelector(
+        "details[data-enhanced-decision-details]",
+      );
 
       if (variant === "enhanced") {
+        expect(retireDetails).not.toBeNull();
         fireEvent.click(
           retireCard.getByText("合同与完整故事"),
         );
       }
 
-      const noContract = retireCard.getByText("退役后停止收入");
+      const noContract =
+        variant === "enhanced"
+          ? within(retireDetails as HTMLElement).getByText(
+              "退役后停止收入",
+            )
+          : retireCard.getByText("退役后停止收入");
       expect(noContract).toBeVisible();
       expect(
         noContract.closest("[data-semantic-tone]"),
@@ -412,8 +544,12 @@ describe("complete career narrative rendering", () => {
       }
 
       const option = within(optionRoot);
+      const details = optionRoot.querySelector(
+        "details[data-enhanced-decision-details]",
+      );
 
       if (variant === "enhanced") {
+        expect(details).not.toBeNull();
         expect(
           option.getByText(
             "加盟报价俱乐部，角色按新环境结算",
@@ -432,7 +568,10 @@ describe("complete career narrative rendering", () => {
       ).toBeVisible();
       expect(option.getByText("中性")).toBeVisible();
       expect(
-        option.getByText(/^预计年薪 ¥[\d,]+$/),
+        (variant === "enhanced"
+          ? within(details as HTMLElement)
+          : option
+        ).getByText(/^预计年薪 ¥[\d,]+$/),
       ).toBeVisible();
 
       rendered.unmount();
@@ -458,14 +597,117 @@ describe("complete career narrative rendering", () => {
               />,
             );
 
-      expect(
-        screen.getByText(
-          /^实际合同：新合同生效 · 年薪 ¥[\d,]+$/,
-        ),
-      ).toBeVisible();
+      const actualContract =
+        rendered.container.querySelector(
+          "[data-career-event-contract-result]",
+        );
+
+      expect(actualContract).toBeVisible();
+      expect(actualContract).toHaveTextContent(
+        /^实际合同：新合同生效 · 年薪 ¥[\d,]+$/,
+      );
       rendered.unmount();
     },
   );
+
+  it("requires explicit acknowledgement for the Enhanced actual result", () => {
+    const continued = vi.fn();
+    const view = eventTransferActualView();
+    const enhanced = render(
+      <EnhancedCareerScreen
+        onChoose={vi.fn()}
+        onContinueReveal={continued}
+        view={view}
+      />,
+    );
+    const confirm = screen.getByRole("button", {
+      name: "确认结果",
+    });
+
+    expect(confirm).toHaveFocus();
+    expect(
+      document.querySelector("[data-enhanced-decision-rail]"),
+    ).not.toHaveAttribute("aria-busy");
+    fireEvent.click(confirm);
+    expect(continued).toHaveBeenCalledTimes(1);
+
+    enhanced.unmount();
+    render(<CareerScreen onChoose={vi.fn()} view={view} />);
+    expect(
+      screen.queryByRole("button", { name: "确认结果" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps the selected event card beside its actual result", () => {
+    const decision = eventTransferDecisionView();
+    const result = eventTransferActualView();
+
+    if (
+      decision.panel.kind !== "decision" ||
+      result.panel.kind !== "event_result"
+    ) {
+      throw new Error("Expected event decision and result views");
+    }
+
+    const rendered = render(
+      <EnhancedCareerScreen
+        onChoose={() => true}
+        view={decision}
+      />,
+    );
+    const selected = screen.getByRole("button", {
+      name: /加盟 埃瓦尔/,
+    });
+    const selectedOption = decision.panel.options.find(
+      ({ title }) => /加盟 埃瓦尔/.test(title),
+    );
+
+    if (selectedOption?.contract === null || selectedOption === undefined) {
+      throw new Error("Expected selected option contract");
+    }
+
+    fireEvent.click(selected);
+    rendered.rerender(
+      <EnhancedCareerScreen
+        onChoose={() => true}
+        view={result}
+      />,
+    );
+
+    const rail = rendered.container.querySelector(
+      "[data-enhanced-decision-rail]",
+    );
+
+    const selectedReceipt = within(rail as HTMLElement).getByRole(
+      "button",
+      {
+        name: /加盟 埃瓦尔/,
+        pressed: true,
+      },
+    );
+
+    expect(selectedReceipt).toBeDisabled();
+    expect(
+      within(selectedReceipt).getByText(
+        selectedOption.contract.label,
+      ),
+    ).toBeVisible();
+    expect(
+      within(selectedReceipt).getByText(
+        "预计角色 · 绝对主力 · 核心",
+      ),
+    ).toBeVisible();
+    expect(
+      within(selectedReceipt).getByRole("img", {
+        name: "俱乐部星级：0 星",
+      }),
+    ).toBeVisible();
+    expect(
+      within(rail as HTMLElement).getByRole("heading", {
+        name: result.panel.title,
+      }),
+    ).toBeVisible();
+  });
 
   it("shows identical season honors and statuses in Classic and Enhanced", () => {
     const view = completeNarrativeView();
@@ -492,6 +734,11 @@ describe("complete career narrative rendering", () => {
 
     for (const label of SEASON_LABELS) {
       expect(screen.getByText(label)).not.toBeVisible();
+    }
+    for (const season of enhanced.container.querySelectorAll(
+      'details[data-enhanced-season-row="season"]',
+    )) {
+      fireEvent.click(season.querySelector("summary")!);
     }
     for (const details of enhanced.container.querySelectorAll(
       "[data-enhanced-season-details]",
@@ -728,6 +975,39 @@ function formatYuan(value: number | null): string {
   return `¥${value.toLocaleString("en-US")}`;
 }
 
+function expectExactMoneyDisclosure(
+  root: HTMLElement,
+  label: string,
+  fullValue: string,
+) {
+  const trigger = within(root).getByLabelText(
+    `${label}：${fullValue}`,
+  );
+  const disclosure = trigger.closest(
+    `details[data-enhanced-exact-money="${label}"]`,
+  );
+
+  if (!(disclosure instanceof HTMLDetailsElement)) {
+    throw new Error(`Expected ${label} exact-money disclosure`);
+  }
+
+  const exact = disclosure.querySelector(
+    "[data-enhanced-exact-money-value]",
+  );
+
+  expect(trigger.tagName).toBe("SUMMARY");
+  expect(trigger).toHaveClass("min-h-11", "min-w-11");
+  expect(trigger).toBeVisible();
+  expect(disclosure).not.toHaveAttribute("open");
+  expect(exact).toHaveTextContent(fullValue);
+  expect(exact).not.toBeVisible();
+  trigger.focus();
+  expect(trigger).toHaveFocus();
+  fireEvent.click(trigger);
+  expect(disclosure).toHaveAttribute("open");
+  expect(exact).toBeVisible();
+}
+
 function metricView(root: HTMLElement, label: string) {
   const metric = within(root).getByText(label).parentElement;
 
@@ -833,6 +1113,33 @@ function eventTransferActualView() {
     career: transition.career,
     isRevealing: true,
     visibleSeasonCount: transition.career.seasons.length,
+  });
+}
+
+function eventTransferDecisionView() {
+  const fixture = CLASSIC_GOLDEN_FIXTURES.find(
+    ({ id }) => id === "special-journeyman",
+  );
+
+  if (fixture === undefined) {
+    throw new Error("Missing event-transfer fixture");
+  }
+
+  const choiceIndex = fixture.choices.findIndex(
+    ({ optionId }) => optionId === "join:eibar",
+  );
+  const career = replayClassicCareer({
+    choices: fixture.choices.slice(0, choiceIndex),
+    contentVersion: fixture.contentVersion,
+    identity: fixture.identity,
+    mode: fixture.mode,
+    seed: fixture.seed,
+  });
+
+  return createCareerPresentation({
+    career,
+    isRevealing: false,
+    visibleSeasonCount: career.seasons.length,
   });
 }
 

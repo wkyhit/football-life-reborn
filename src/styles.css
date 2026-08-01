@@ -76,6 +76,24 @@
     overflow-x: clip;
   }
 
+  html:has([data-enhanced-career-shell]),
+  body:has([data-enhanced-career-shell]) {
+    block-size: 100dvh;
+    max-block-size: 100dvh;
+    overflow: clip;
+    overscroll-behavior: none;
+  }
+
+  html:has([data-enhanced-career-shell]) {
+    contain: paint;
+  }
+
+  body:has([data-enhanced-career-shell]) > #root {
+    block-size: 100%;
+    max-block-size: 100%;
+    overflow: clip;
+  }
+
   body {
     min-width: 0;
     min-height: 100dvh;
@@ -239,14 +257,37 @@
   padding-block: var(--timeline-edge-space, 0px);
 }
 
+.enhanced-timeline-grid {
+  grid-template-columns:
+    2rem minmax(0, 1fr) 2.625rem repeat(3, 2rem);
+}
+
+[data-scroll-region="career-timeline"]:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -3px;
+}
+
+[data-enhanced-season-row="season"] > summary {
+  cursor: pointer;
+}
+
+[data-enhanced-season-row="season"]
+  > summary:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
 [data-enhanced-secondary-career-facts] > summary,
-[data-enhanced-challenge-disclosure] > summary {
+[data-enhanced-challenge-disclosure] > summary,
+[data-enhanced-season-row="season"] > summary {
   list-style: none;
 }
 
 [data-enhanced-secondary-career-facts]
   > summary::-webkit-details-marker,
 [data-enhanced-challenge-disclosure]
+  > summary::-webkit-details-marker,
+[data-enhanced-season-row="season"]
   > summary::-webkit-details-marker {
   display: none;
 }
@@ -256,6 +297,33 @@
     var(--career-disclosure-width),
     calc(100vw - 2 * var(--space-sm))
   );
+}
+
+[data-enhanced-decision-rail] {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: var(--rule-hair) solid var(--color-rule);
+  background: var(--color-paper-2);
+  padding: var(--space-xs) var(--space-sm)
+    max(var(--space-md), env(safe-area-inset-bottom));
+}
+
+@media (min-width: 640px) {
+  [data-enhanced-decision-rail] {
+    padding-inline: var(--space-md);
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-enhanced-decision-rail] {
+    height: 100%;
+    max-height: none;
+    width: var(--rail-width);
+    border: var(--rule-hair) solid var(--color-rule);
+    border-radius: var(--radius-card);
+    padding: var(--space-md);
+  }
 }
 
 @media (max-width: 1023px) {
@@ -282,6 +350,87 @@
         var(--career-rail-min-height),
         min(36dvh, var(--career-rail-max-height))
       );
+  }
+}
+
+@media (max-width: 359px) {
+  .enhanced-timeline-grid {
+    grid-template-columns:
+      1.75rem minmax(0, 1fr) 2.25rem repeat(3, 1.75rem);
+    column-gap: var(--space-3xs);
+    padding-inline: var(--space-2xs);
+  }
+}
+
+@media (max-width: 220px) {
+  .enhanced-timeline-grid {
+    grid-template-columns:
+      1.5rem minmax(0, 1fr) 2rem 1.75rem;
+    column-gap: 0.125rem;
+    padding-inline: var(--space-3xs);
+  }
+
+  .enhanced-timeline-grid > :nth-child(5),
+  .enhanced-timeline-grid > :nth-child(6) {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) and (max-height: 500px) and (orientation: landscape) {
+  [data-enhanced-career-shell]
+    [data-enhanced-app-bar]
+    > div {
+    min-height: 3.25rem;
+    padding-block: var(--space-3xs);
+  }
+
+  [data-enhanced-career-header] {
+    padding-block: var(--space-3xs);
+  }
+
+  [data-enhanced-career-header]
+    [data-enhanced-career-overall] {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  [data-enhanced-primary-career-facts] {
+    margin-top: var(--space-3xs);
+  }
+
+  [data-enhanced-career-layout] {
+    grid-template-columns:
+      minmax(0, 3fr) minmax(16rem, 2fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  [data-enhanced-timeline] {
+    padding: var(--space-2xs);
+  }
+
+  [data-enhanced-timeline] > div:first-child {
+    align-items: center;
+    margin-bottom: var(--space-3xs);
+  }
+
+  [data-enhanced-timeline]
+    > div:first-child
+    p:first-child {
+    display: none;
+  }
+
+  [data-enhanced-timeline]
+    > div:first-child
+    h1 {
+    margin-top: 0;
+    font-size: var(--text-base);
+  }
+
+  [data-enhanced-decision-rail] {
+    height: auto;
+    min-height: 0;
+    border-top: 0;
+    border-left: var(--rule-hair) solid var(--color-rule);
   }
 }
 
@@ -333,32 +482,108 @@
 
 @media (max-width: 260px) {
   [data-enhanced-career-shell] {
-    height: auto;
-    min-height: 100dvh;
-    overflow: visible;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    overflow: clip;
+  }
+
+  [data-enhanced-career-shell]
+    [data-enhanced-app-bar]
+    > div {
+    min-height: 3.25rem;
+    flex-wrap: nowrap;
+    gap: var(--space-2xs);
+    padding: var(--space-3xs) var(--space-2xs);
+  }
+
+  [data-enhanced-career-shell]
+    [data-enhanced-app-bar]
+    a {
+    min-height: var(--control-size);
+    font-size: var(--text-base);
+  }
+
+  [data-enhanced-career-shell]
+    [data-enhanced-app-bar]
+    nav {
+    min-height: var(--control-size);
+    margin-inline-start: auto;
+  }
+
+  [data-enhanced-career-shell]
+    [data-enhanced-app-bar]
+    nav
+    > [aria-current="page"] {
+    display: none;
+  }
+
+  [data-enhanced-career-header] {
+    padding: var(--space-3xs) var(--space-2xs);
+  }
+
+  [data-enhanced-career-identity] {
+    gap: var(--space-3xs);
+  }
+
+  [data-enhanced-career-overall] {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  [data-enhanced-player-badges] {
+    display: none;
+  }
+
+  [data-enhanced-primary-career-facts] {
+    min-height: var(--control-size);
+    grid-template-columns:
+      minmax(0, 1fr) minmax(0, 1fr) 2.75rem;
+    margin-top: var(--space-3xs);
+  }
+
+  [data-enhanced-primary-career-facts] dd {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  [data-enhanced-secondary-career-facts]
+    > summary {
+    overflow: hidden;
+    font-size: 0;
+  }
+
+  [data-enhanced-secondary-career-facts]
+    > summary::after {
+    content: "明细";
+    font-size: 0.625rem;
   }
 
   [data-enhanced-career-layout] {
-    display: flex;
-    min-height: auto;
-    flex-direction: column;
+    display: grid;
+    min-height: 0;
+    grid-template-rows:
+      minmax(5.5rem, 1fr) minmax(6.5rem, 45%);
   }
 
   [data-enhanced-timeline] {
-    min-height: 12rem;
-    max-height: 70dvh;
-    flex: none;
+    min-height: 0;
+    max-height: none;
+    padding: var(--space-2xs);
   }
 
   [data-enhanced-timeline] > .overflow-hidden {
-    min-width: 20rem;
+    min-width: 0;
   }
 
   [data-enhanced-decision-rail] {
-    min-height: 12rem;
+    height: auto;
+    min-height: 0;
     max-height: none;
-    flex: none;
-    overflow: visible;
+    overflow-y: auto;
+    padding-inline: var(--space-2xs);
+    padding-top: var(--space-2xs);
   }
 
   [data-enhanced-decision-rail] button > span {
@@ -379,5 +604,18 @@
     overflow: visible;
     white-space: normal;
     text-overflow: clip;
+  }
+
+  [data-enhanced-timeline]
+    > div:first-child
+    p:first-child {
+    display: none;
+  }
+
+  [data-enhanced-timeline]
+    > div:first-child
+    h1 {
+    margin-top: 0;
+    font-size: var(--text-base);
   }
 }

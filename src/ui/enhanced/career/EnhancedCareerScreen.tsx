@@ -4,6 +4,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 
 import type {
@@ -14,17 +15,21 @@ import type {
 import {
   createMarketValuePresentation,
   createYuanPresentation,
-  type CareerCurrencyPresentation,
+  getCareerMetricPresentation,
+  type CareerMetricPresentation,
 } from "../../classic/careerPresentation";
 import {
   ChallengeProgressPanel,
   type ChallengeSurface,
 } from "../../../features/challenges/ChallengeProgressPanel";
 import {
+  CareerDecisionEssentials,
   CareerDecisionEconomyDetails,
   CareerEventResultNarrative,
   CareerRecentEventResult,
   CareerSeasonEconomy,
+  EnhancedExactMoneyMetric,
+  ExactMoneyDisclosure,
 } from "../../shared/CareerMilestoneNarrative";
 import { useDecisionFocusRestore } from "../../shared/useDecisionFocusRestore";
 import { useReducedMotion } from "../../shared/useReducedMotion";
@@ -51,9 +56,8 @@ type EnhancedCareerScreenProps = {
 
 type ChoiceReceipt = {
   readonly decisionId: string;
-  readonly optionId: string;
+  readonly option: CareerDecisionOptionPresentation;
   readonly selectedAt: number;
-  readonly title: string;
 };
 
 const MINIMUM_CHOICE_RECEIPT_MS = 150;
@@ -117,9 +121,8 @@ export function EnhancedCareerScreen({
 
       setChoiceReceipt({
         decisionId,
-        optionId: option.id,
+        option,
         selectedAt: performance.now(),
-        title: option.title,
       });
     } catch (error) {
       choiceGuardRef.current = null;
@@ -132,6 +135,7 @@ export function EnhancedCareerScreen({
       className="flex h-dvh min-w-0 flex-col overflow-hidden bg-enhanced-canvas text-enhanced-strong"
       data-enhanced-career-shell=""
       data-hallmark-macrostructure="Workbench"
+      data-scroll-boundary="viewport"
       id="main-content"
       tabIndex={-1}
     >
@@ -169,10 +173,11 @@ export function EnhancedCareerScreen({
       >
         <CareerTimeline view={view} />
         <DecisionRail
-          choiceReceipt={choiceReceipt}
-          onChoose={choose}
+          confirm={onContinueReveal}
+          choose={choose}
+          progress={challenge}
+          receipt={choiceReceipt}
           view={view}
-          {...(challenge === undefined ? {} : { challenge })}
         />
       </div>
       {view.panel.kind === "milestone" ? (
@@ -209,6 +214,10 @@ function CareerHeader({
     view.economy === null
       ? null
       : createYuanPresentation(view.economy.totalIncome);
+  const summaryMetrics = [
+    ...getCareerMetricPresentation(view.goalkeeper, totals),
+    { label: "奖杯" as const, value: totals.trophies },
+  ];
 
   return (
     <header
@@ -216,8 +225,14 @@ function CareerHeader({
       data-enhanced-career-header=""
     >
       <div className="mx-auto w-full max-w-[1440px]">
-        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(20rem,auto)] lg:gap-5">
-          <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-[8px] border border-enhanced-trophy/40 bg-enhanced-surface text-enhanced-trophy">
+        <div
+          className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 lg:grid-cols-[auto_minmax(0,1fr)_auto_minmax(20rem,auto)] lg:gap-5"
+          data-enhanced-career-identity=""
+        >
+          <div
+            className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-[8px] border border-enhanced-trophy/40 bg-enhanced-surface text-enhanced-trophy"
+            data-enhanced-career-overall=""
+          >
             <span className="text-xs font-bold leading-none text-enhanced-trophy">
               能力
             </span>
@@ -227,7 +242,10 @@ function CareerHeader({
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
+            <div
+              className="flex flex-wrap items-center gap-2"
+              data-enhanced-player-badges=""
+            >
               <span className="rounded-[6px] border border-enhanced-line bg-enhanced-surface px-[6px] py-[2px] text-xs font-bold text-enhanced-ink-2">
                 {header.countryFlag} {header.countryCode}
               </span>
@@ -255,15 +273,11 @@ function CareerHeader({
           </div>
 
           <dl className="hidden grid-cols-4 divide-x divide-enhanced-line lg:col-span-1 lg:grid">
-            {(
-              [
-                ["出场", totals.appearances],
-                ["进球", totals.goals],
-                ["助攻", totals.assists],
-                ["奖杯", totals.trophies],
-              ] as const
-            ).map(([label, value]) => (
-              <div className="px-2 text-center lg:min-w-20 lg:px-4" key={label}>
+            {summaryMetrics.map(({ label, value }) => (
+              <div
+                className="px-2 text-center lg:min-w-20 lg:px-4"
+                key={label}
+              >
                 <dt className="text-xs font-bold text-enhanced-supporting">
                   {label}
                 </dt>
@@ -278,13 +292,13 @@ function CareerHeader({
           className="mt-2 grid min-h-11 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] divide-x divide-enhanced-line rounded-[8px] border border-enhanced-line bg-enhanced-surface lg:grid-cols-3"
           data-enhanced-primary-career-facts=""
         >
-          <HeaderMetric
+          <EnhancedExactMoneyMetric
             currency={marketValue.currency}
             fullValue={marketValue.full}
             label="身价"
             value={marketValue.compact}
           />
-          <HeaderMetric
+          <EnhancedExactMoneyMetric
             {...(annualSalary === null
               ? {}
               : {
@@ -313,87 +327,39 @@ function CareerHeader({
               data-enhanced-secondary-career-panel=""
             >
               <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-                {(
-                  [
-                    ["出场", totals.appearances],
-                    ["进球", totals.goals],
-                    ["助攻", totals.assists],
-                    ["奖杯", totals.trophies],
-                    [
-                      "累计收入",
-                      view.economy === null
-                        ? "—"
-                        : totalIncome?.compact ?? "—",
-                    ],
-                  ] as const
-                ).map(([label, value]) => (
+                {summaryMetrics.map(({ label, value }) => (
                   <div key={label}>
                     <dt className="text-xs text-enhanced-supporting">
                       {label}
                     </dt>
-                    <dd
-                      aria-label={
-                        label === "累计收入" &&
-                        totalIncome !== null
-                          ? `累计收入：${totalIncome.full}`
-                          : undefined
-                      }
-                      className="mt-[2px] break-words text-sm font-bold leading-tight tabular-nums"
-                      data-currency={
-                        label === "累计收入"
-                          ? totalIncome?.currency
-                          : undefined
-                      }
-                      title={
-                        label === "累计收入"
-                          ? totalIncome?.full
-                          : undefined
-                      }
-                    >
+                    <dd className="mt-[2px] break-words text-sm font-bold leading-tight tabular-nums">
                       {value}
                     </dd>
                   </div>
                 ))}
+                <div>
+                  <dt className="text-xs text-enhanced-supporting">
+                    累计收入
+                  </dt>
+                  <dd className="mt-[2px] break-words text-sm font-bold leading-tight tabular-nums">
+                    <ExactMoneyDisclosure
+                      currency={totalIncome?.currency}
+                      fullValue={totalIncome?.full}
+                      label="累计收入"
+                      value={
+                        view.economy === null
+                          ? "—"
+                          : totalIncome?.compact ?? "—"
+                      }
+                    />
+                  </dd>
+                </div>
               </dl>
             </div>
           </details>
         </div>
       </div>
     </header>
-  );
-}
-
-function HeaderMetric({
-  className = "",
-  currency,
-  fullValue,
-  label,
-  value,
-}: {
-  readonly className?: string;
-  readonly currency?: CareerCurrencyPresentation["currency"];
-  readonly fullValue?: string;
-  readonly label: string;
-  readonly value: string;
-}) {
-  return (
-    <dl className={`min-w-0 px-2 py-[6px] text-center ${className}`}>
-      <dt className="text-xs font-bold text-enhanced-supporting">
-        {label}
-      </dt>
-      <dd
-        aria-label={
-          fullValue === undefined
-            ? undefined
-            : `${label}：${fullValue}`
-        }
-        className="mt-[2px] min-w-0 break-words text-xs font-bold leading-tight tabular-nums"
-        data-currency={currency}
-        title={fullValue}
-      >
-        {value}
-      </dd>
-    </dl>
   );
 }
 
@@ -405,28 +371,27 @@ function CareerTimeline({
   const recordedSeasons = view.timeline.filter(
     (row) => row.kind === "season",
   ).length;
-  const activeAge = [...view.timeline]
-    .reverse()
-    .find(
-      (row) => row.kind === "current" || row.kind === "season",
-    )?.age ?? null;
+  const activeAge = view.timeline.findLast(
+    (row) => row.kind === "current" || row.kind === "season",
+  )?.age ?? null;
   const timelineFollow = useTimelineFollow({
     activeAge,
     reducedMotion: useReducedMotion(),
   });
+  const nationalMetrics = getCareerMetricPresentation(
+    view.goalkeeper,
+    view.nationalTeam.stats,
+  );
 
   return (
     <section
       aria-labelledby="enhanced-timeline-heading"
-      className="min-h-0 overflow-y-auto overscroll-contain px-4 py-4 focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-enhanced-focus sm:px-6 lg:rounded-[16px] lg:border lg:border-enhanced-line lg:bg-enhanced-surface lg:p-5"
+      className="flex min-h-0 flex-col overflow-hidden px-4 py-4 sm:px-6 lg:rounded-[16px] lg:border lg:border-enhanced-line lg:bg-enhanced-surface lg:p-5"
       data-enhanced-timeline=""
-      onKeyDown={timelineFollow.onKeyDown}
-      onTouchStart={timelineFollow.onTouchStart}
-      onWheel={timelineFollow.onWheel}
-      ref={timelineFollow.containerRef}
-      tabIndex={0}
     >
-      <div className="mb-3 flex items-end justify-between gap-4">
+      <div
+        className="mb-3 flex shrink-0 items-end justify-between gap-4"
+      >
         <div>
           <p className="text-xs font-bold tracking-[0.10em] text-enhanced-pitch">
             SEASON ARCHIVE
@@ -459,40 +424,86 @@ function CareerTimeline({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-enhanced-line bg-enhanced-canvas/10">
-        <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 border-b border-enhanced-line px-3 py-2 text-xs font-bold text-enhanced-supporting">
+      <div
+        aria-label="生涯赛季数据"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-enhanced-line bg-enhanced-canvas/10"
+        role="table"
+      >
+        <div className="sr-only" role="row">
+          <span role="columnheader">年龄</span>
+          <span role="columnheader">俱乐部</span>
+          <span role="columnheader">能力</span>
+          {nationalMetrics.map(({ label }) => (
+            <span key={label} role="columnheader">
+              {label}
+            </span>
+          ))}
+        </div>
+        <div
+          aria-hidden="true"
+          className="enhanced-timeline-grid grid shrink-0 items-center gap-1 border-b border-enhanced-line px-3 py-2 text-xs font-bold text-enhanced-supporting"
+        >
           <span>岁</span>
           <span>俱乐部</span>
           <span className="text-center">能力</span>
-          <span className="text-right">场</span>
-          <span className="text-right">球</span>
-          <span className="text-right">助</span>
+          {nationalMetrics.map(({ label }) => (
+            <span className="text-right" key={label}>
+              {label}
+            </span>
+          ))}
         </div>
 
         <div
-          className="divide-y divide-enhanced-line-soft"
-          data-enhanced-timeline-rows=""
+          aria-label="生涯年份"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          data-scroll-region="career-timeline"
+          onKeyDown={timelineFollow.onKeyDown}
+          onPointerDown={timelineFollow.onPointerDown}
+          onTouchStart={timelineFollow.onTouchStart}
+          onWheel={timelineFollow.onWheel}
+          ref={timelineFollow.containerRef}
+          role="region"
+          tabIndex={0}
         >
-          {view.timeline.map((row) => (
-            <TimelineRow key={row.age} row={row} />
-          ))}
-          <div className="grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 bg-enhanced-surface px-3 py-2">
-            <span className="text-center text-sm">
-              {view.nationalTeam.countryFlag}
-            </span>
-            <span className="truncate text-xs font-bold text-enhanced-supporting">
-              {view.nationalTeam.name}
-            </span>
-            <span />
-            <TimelineNumber>
-              {view.nationalTeam.stats.appearances}
-            </TimelineNumber>
-            <TimelineNumber>
-              {view.nationalTeam.stats.goals}
-            </TimelineNumber>
-            <TimelineNumber>
-              {view.nationalTeam.stats.assists}
-            </TimelineNumber>
+          <div
+            className="divide-y divide-enhanced-line-soft"
+            data-enhanced-timeline-rows=""
+            role="rowgroup"
+          >
+            {view.timeline.map((row) => (
+              <TimelineRow
+                goalkeeper={view.goalkeeper}
+                key={row.age}
+                metrics={nationalMetrics}
+                row={row}
+              />
+            ))}
+            <CareerTimelineSemanticRow
+              club={view.nationalTeam.name}
+              metrics={nationalMetrics}
+              overall={null}
+            >
+              <div
+                aria-hidden="true"
+                className="enhanced-timeline-grid grid items-center gap-1 bg-enhanced-surface px-3 py-2"
+              >
+                <span className="text-center text-sm">
+                  {view.nationalTeam.countryFlag}
+                </span>
+                <span className="truncate text-xs font-bold text-enhanced-supporting">
+                  {view.nationalTeam.name}
+                </span>
+                <span />
+                {nationalMetrics.map(({ label, value }) => (
+                  <span
+                    className="text-right text-xs tabular-nums text-enhanced-supporting"
+                    key={label}
+                  >
+                    {value}
+                  </span>
+                ))}
+              </div>
+            </CareerTimelineSemanticRow>
           </div>
         </div>
       </div>
@@ -501,140 +512,187 @@ function CareerTimeline({
 }
 
 function TimelineRow({
+  goalkeeper,
+  metrics: emptyMetrics,
   row,
 }: {
+  readonly goalkeeper: boolean;
+  readonly metrics: readonly CareerMetricPresentation[];
   readonly row: CareerTimelineRowPresentation;
 }) {
   const gridClass =
-    "grid grid-cols-[32px_minmax(0,1fr)_42px_32px_32px_32px] items-center gap-1 px-3 py-2";
+    "enhanced-timeline-grid grid items-center gap-1 px-3 py-2";
 
   if (row.kind === "current") {
     return (
-      <div
-        aria-current="step"
-        className={`${gridClass} bg-enhanced-pitch/[0.06]`}
-        data-career-season-row={row.age}
-        data-enhanced-season-row="current"
+      <CareerTimelineSemanticRow
+        age={row.age}
+        club="决策中"
+        current="step"
+        metrics={emptyMetrics}
+        overall={null}
       >
-        <span className="text-xs font-black tabular-nums text-enhanced-pitch">
-          {row.age}
-        </span>
-        <span className="flex min-w-0 items-center gap-2 text-xs font-bold text-enhanced-pitch">
-          <span
-            aria-hidden="true"
-            className="h-1.5 w-1.5 shrink-0 rounded-full bg-enhanced-pitch"
-          />
-          决策中
-        </span>
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
+        <div
+          aria-hidden="true"
+          className={`${gridClass} min-h-11 bg-enhanced-pitch/[0.06]`}
+        >
+          <span className="text-xs font-black tabular-nums text-enhanced-pitch">
+            {row.age}
+          </span>
+          <span className="flex min-w-0 items-center gap-2 text-xs font-bold text-enhanced-pitch">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-enhanced-pitch" />
+            决策中
+          </span>
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      </CareerTimelineSemanticRow>
     );
   }
 
   if (row.kind === "empty") {
     return (
-      <div
-        className={gridClass}
-        data-career-season-row={row.age}
-        data-enhanced-season-row="empty"
+      <CareerTimelineSemanticRow
+        age={row.age}
+        club="待书写"
+        metrics={emptyMetrics}
+        overall={null}
       >
-        <span className="text-xs font-black tabular-nums text-enhanced-supporting">
-          {row.age}
-        </span>
-        <span className="text-xs text-enhanced-supporting">
-          待书写
-        </span>
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
+        <div aria-hidden="true" className={gridClass}>
+          <span className="text-xs font-black tabular-nums text-enhanced-supporting">
+            {row.age}
+          </span>
+          <span className="text-xs text-enhanced-supporting">
+            待书写
+          </span>
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      </CareerTimelineSemanticRow>
     );
   }
 
+  const metrics = getCareerMetricPresentation(
+    goalkeeper,
+    row.stats,
+  );
+
+  return (
+    <CareerTimelineSemanticRow
+      age={row.age}
+      club={row.club.shortName}
+      metrics={metrics}
+      overall={row.overall}
+    >
+      <details data-enhanced-season-row="season">
+        <summary aria-label={`${row.age} 岁赛季详情`}>
+          <span
+            aria-hidden="true"
+            className={`${gridClass} min-h-11`}
+          >
+            <span className="text-xs font-black tabular-nums text-enhanced-supporting">
+              {row.age}
+            </span>
+            <span className="flex min-w-0 items-center gap-2">
+              <ClubIdentity club={row.club} size={20} />
+              <span className="min-w-0">
+                <span className="block truncate text-[13px] font-bold">
+                  {row.club.shortName}
+                </span>
+                <span className="block truncate text-xs text-enhanced-supporting">
+                  {row.club.subtitle.replace(" · 次级联赛", "")}
+                </span>
+              </span>
+            </span>
+            <span className="text-center">
+              <span className="inline-block min-w-8 rounded-[6px] border border-enhanced-trophy/35 bg-enhanced-surface px-1 py-1 text-xs font-black tabular-nums text-enhanced-trophy">
+                {row.overall}
+              </span>
+            </span>
+            {metrics.map(({ label, value }) => (
+              <span
+                className="text-right text-xs tabular-nums text-enhanced-ink-2"
+                key={label}
+              >
+                {value}
+              </span>
+            ))}
+          </span>
+        </summary>
+        <div className="border-t border-enhanced-line-soft px-2 pb-2">
+          <CareerSeasonEconomy row={row} variant="enhanced" />
+        </div>
+      </details>
+    </CareerTimelineSemanticRow>
+  );
+}
+
+function CareerTimelineSemanticRow({
+  age,
+  children,
+  club,
+  current,
+  metrics,
+  overall,
+}: {
+  readonly age?: number;
+  readonly children: ReactNode;
+  readonly club: string;
+  readonly current?: "step";
+  readonly metrics: readonly CareerMetricPresentation[];
+  readonly overall: number | null;
+}) {
   return (
     <div
-      className={gridClass}
-      data-career-season-row={row.age}
-      data-enhanced-season-row="season"
+      aria-current={current}
+      data-career-season-row={age}
+      role="row"
     >
-      <span className="text-xs font-black tabular-nums text-enhanced-supporting">
-        {row.age}
+      <span className="sr-only" role="rowheader">
+        {age === undefined ? "国家队汇总" : `${age} 岁`}
       </span>
-      <span className="flex min-w-0 items-center gap-2">
-        <ClubIdentity club={row.club} size={20} />
-        <span className="min-w-0">
-          <span className="block truncate text-[13px] font-bold">
-            {row.club.shortName}
-          </span>
-          <span className="block truncate text-xs text-enhanced-supporting">
-            {row.club.subtitle.replace(" · 次级联赛", "")}
-          </span>
+      <div aria-label={club} role="cell">
+        {children}
+      </div>
+      <span className="sr-only" role="cell">
+        {overall ?? "—"}
+      </span>
+      {metrics.map(({ label, value }) => (
+        <span className="sr-only" key={label} role="cell">
+          {age !== undefined && overall === null ? "—" : value}
         </span>
-      </span>
-      <span className="text-center">
-        <span className="inline-block min-w-8 rounded-[6px] border border-enhanced-trophy/35 bg-enhanced-surface px-1 py-1 text-xs font-black tabular-nums text-enhanced-trophy">
-          {row.overall}
-        </span>
-      </span>
-      <SeasonNumber>{row.stats.appearances}</SeasonNumber>
-      <SeasonNumber>{row.stats.goals}</SeasonNumber>
-      <SeasonNumber>{row.stats.assists}</SeasonNumber>
-      <CareerSeasonEconomy row={row} variant="enhanced" />
+      ))}
     </div>
   );
 }
 
-function TimelineNumber({
-  children,
-}: {
-  readonly children: number;
-}) {
-  return (
-    <span className="text-right text-xs tabular-nums text-enhanced-supporting">
-      {children}
-    </span>
-  );
-}
-
-function SeasonNumber({
-  children,
-}: {
-  readonly children: number;
-}) {
-  return (
-    <span className="text-right text-xs tabular-nums text-enhanced-ink-2">
-      {children}
-    </span>
-  );
-}
-
 function DecisionRail({
-  challenge,
-  choiceReceipt,
-  onChoose,
+  confirm,
+  choose,
+  progress,
+  receipt,
   view,
 }: {
-  readonly challenge?: ChallengeSurface;
-  readonly choiceReceipt: ChoiceReceipt | null;
-  readonly onChoose: (
+  readonly confirm?: (() => void) | undefined;
+  readonly choose: (
     decisionId: string,
     option: CareerDecisionOptionPresentation,
   ) => void;
+  readonly progress: ChallengeSurface | undefined;
+  readonly receipt: ChoiceReceipt | null;
   readonly view: CareerPresentation;
 }) {
   const { panel } = view;
   const decisionFocusRef =
     useDecisionFocusRestore<HTMLElement>(
-      panel.kind === "decision" && choiceReceipt === null
+      panel.kind === "decision" && receipt === null
         ? panel.decisionId
         : null,
     );
-  const railClass =
-    "min-h-0 overflow-y-auto overscroll-contain border-t border-enhanced-line bg-enhanced-surface px-4 pb-[max(24px,env(safe-area-inset-bottom))] pt-3 sm:px-6 lg:h-full lg:max-h-none lg:w-[380px] lg:rounded-[16px] lg:border lg:p-5";
   const simulating = panel.kind === "simulating";
   const labelledBy =
     panel.kind === "event_result"
@@ -647,33 +705,38 @@ function DecisionRail({
     <aside
       aria-label={simulating ? "赛季状态" : undefined}
       aria-labelledby={labelledBy}
-      aria-busy={choiceReceipt === null ? undefined : true}
-      className={`${railClass}${
+      aria-busy={simulating || undefined}
+      className={`lg:w-[380px]${
         simulating
           ? " flex flex-col items-center justify-center"
           : ""
       }`}
       data-enhanced-decision-rail=""
+      data-scroll-region="decision-rail"
       ref={decisionFocusRef}
     >
-      {choiceReceipt ? (
-        <div
+      {receipt ? (
+        <p
           aria-atomic="true"
           aria-live="polite"
-          className="mb-3 border-l-2 border-enhanced-pitch bg-enhanced-pitch/[0.06] px-3 py-2 text-xs text-enhanced-strong"
+          className="sr-only"
           data-enhanced-choice-receipt=""
           id="enhanced-choice-receipt"
           role="status"
         >
-          <strong className="block text-enhanced-pitch">
-            已选择：{choiceReceipt.title}
-          </strong>
-          <span className="mt-1 block text-enhanced-supporting">
-            正在提交本次选择
-          </span>
+          已选择：{receipt.option.title}。正在提交本次选择
+        </p>
+      ) : null}
+      {receipt && panel.kind !== "decision" ? (
+        <div className="mb-3 w-full">
+          <DecisionOption
+            disabled
+            option={receipt.option}
+            selected
+          />
         </div>
       ) : null}
-      {challenge ? (
+      {progress ? (
         <>
           <details
             className="mb-3 lg:hidden"
@@ -683,12 +746,12 @@ function DecisionRail({
               挑战进度
               <span aria-hidden="true">＋</span>
             </summary>
-            <ChallengeProgressPanel {...challenge} />
+            <ChallengeProgressPanel {...progress} />
           </details>
           <div
             className={`${simulating ? "mb-4 w-full" : "mb-4"} hidden lg:block`}
           >
-            <ChallengeProgressPanel {...challenge} />
+            <ChallengeProgressPanel {...progress} />
           </div>
         </>
       ) : null}
@@ -709,6 +772,7 @@ function DecisionRail({
         <div className="enhanced-reveal-enter">
           <CareerEventResultNarrative
             headingId="enhanced-event-result-heading"
+            onContinue={confirm}
             panel={panel}
             variant="enhanced"
           />
@@ -748,16 +812,16 @@ function DecisionRail({
           >
             {panel.options.map((option) => (
               <DecisionOption
-                disabled={choiceReceipt !== null}
+                disabled={receipt !== null}
                 key={option.id}
                 onChoose={() =>
-                  onChoose(panel.decisionId, option)
+                  choose(panel.decisionId, option)
                 }
                 option={option}
                 selected={
-                  choiceReceipt?.decisionId ===
+                  receipt?.decisionId ===
                     panel.decisionId &&
-                  choiceReceipt.optionId === option.id
+                  receipt.option.id === option.id
                 }
               />
             ))}
@@ -791,7 +855,7 @@ function DecisionOption({
   selected,
 }: {
   readonly disabled: boolean;
-  readonly onChoose: () => void;
+  readonly onChoose?: () => void;
   readonly option: CareerDecisionOptionPresentation;
   readonly selected: boolean;
 }) {
@@ -818,7 +882,7 @@ function DecisionOption({
         onClick={onChoose}
         type="button"
       >
-        <span className="flex items-center gap-3">
+        <span className="flex items-start gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center">
             {option.club ? (
               <ClubIdentity club={option.club} size={34} />
@@ -842,19 +906,8 @@ function DecisionOption({
             >
               {option.subtitle}
             </span>
+            <CareerDecisionEssentials option={option} />
           </span>
-          {option.role ? (
-            <span className="shrink-0 text-right">
-              <span
-                className={`block text-xs font-bold ${roleToneClass(option.roleTone)}`}
-              >
-                {option.role}
-              </span>
-              <span className="block text-xs text-enhanced-supporting">
-                {option.stars}
-              </span>
-            </span>
-          ) : null}
           {selected ? (
             <span
               aria-hidden="true"
@@ -864,9 +917,6 @@ function DecisionOption({
             </span>
           ) : null}
         </span>
-        <span className="sr-only">
-          合同与完整故事可在本选项下方展开
-        </span>
       </button>
       <CareerDecisionEconomyDetails
         option={option}
@@ -874,19 +924,4 @@ function DecisionOption({
       />
     </div>
   );
-}
-
-function roleToneClass(
-  tone: CareerDecisionOptionPresentation["roleTone"],
-): string {
-  switch (tone) {
-    case "positive":
-      return "text-enhanced-success";
-    case "primary":
-      return "text-enhanced-pitch";
-    case "warning":
-      return "text-enhanced-trophy";
-    case "danger":
-      return "text-enhanced-alert";
-  }
 }

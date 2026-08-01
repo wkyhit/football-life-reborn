@@ -92,6 +92,64 @@ describe("CareerKeyEventDialog", () => {
 
     expect(continued).toHaveBeenCalledTimes(1);
   });
+
+  it("allows each consecutive season milestone to be acknowledged once", () => {
+    const continued = vi.fn();
+    const rendered = render(
+      <CareerKeyEventDialog
+        onContinue={continued}
+        panel={MILESTONE}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "继续" }),
+    ).toHaveFocus();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "继续" }),
+    );
+    rendered.rerender(
+      <CareerKeyEventDialog
+        onContinue={continued}
+        panel={{ ...MILESTONE, age: 22 }}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "继续" }),
+    ).toHaveFocus();
+    fireEvent.click(
+      screen.getByRole("button", { name: "继续" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "继续" }),
+    );
+
+    expect(continued).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses only Enhanced tokens for its backdrop, content, and primary action", () => {
+    render(
+      <CareerKeyEventDialog
+        onContinue={vi.fn()}
+        panel={MILESTONE}
+      />,
+    );
+    const dialog = screen.getByRole("dialog");
+    const classes = [
+      dialog,
+      ...dialog.querySelectorAll<HTMLElement>("[class]"),
+    ]
+      .map(({ className }) => className)
+      .join(" ");
+
+    expect(classes).not.toMatch(
+      /(?:^|\s)(?:text|bg|border|backdrop:bg|shadow)-(?:amber|cyan|emerald|rose|white|black)(?:-|\/|\[|\s|$)/,
+    );
+    expect(classes).not.toMatch(/(?:^|\s)shadow-/);
+    expect(
+      screen.getByRole("button", { name: "继续" }),
+    ).toHaveClass("text-enhanced-pitch-ink");
+  });
 });
 
 function DialogHarness({

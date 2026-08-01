@@ -23,6 +23,7 @@ import { formatYuan } from "../../domain/economy/economyPolicy";
 
 type RevealOptions = {
   readonly eventResultMs?: number;
+  readonly holdEventResults?: boolean;
   readonly holdMilestones?: boolean;
   readonly milestoneMs?: number;
   readonly reducedMotion?: boolean;
@@ -90,6 +91,8 @@ export function useSeasonReveal(
   options: RevealOptions = {},
 ): SeasonRevealController {
   const reducedMotion = options.reducedMotion ?? false;
+  const holdEventResults =
+    options.holdEventResults ?? false;
   const holdMilestones = options.holdMilestones ?? false;
   const seasonMs =
     options.seasonMs ?? DEFAULT_SEASON_REVEAL_MS;
@@ -97,7 +100,8 @@ export function useSeasonReveal(
     options.eventResultMs ?? DEFAULT_EVENT_RESULT_MS;
   const milestoneMs =
     options.milestoneMs ?? DEFAULT_MILESTONE_MS;
-  const acknowledgementGuardRef = useRef<string | null>(null);
+  const acknowledgementGuardRef =
+    useRef<SeasonRevealQueueItem | null>(null);
   const [state, setState] = useState<SeasonRevealState>(() => ({
     announcement: "",
     committedCareer: initialCareer,
@@ -136,7 +140,9 @@ export function useSeasonReveal(
           transition,
         });
         const immediate =
-          (reducedMotion && !holdMilestones) ||
+          (reducedMotion &&
+            !holdEventResults &&
+            !holdMilestones) ||
           queue.length === 1;
 
         return {
@@ -171,6 +177,7 @@ export function useSeasonReveal(
     },
     [
       eventResultMs,
+      holdEventResults,
       holdMilestones,
       milestoneMs,
       reducedMotion,
@@ -184,7 +191,11 @@ export function useSeasonReveal(
     if (
       !state.isRevealing ||
       activeItem === undefined ||
-      (holdMilestones && activeItem.kind === "milestone")
+      requiresAcknowledgement(
+        activeItem,
+        holdEventResults,
+        holdMilestones,
+      )
     ) {
       return;
     }
@@ -198,52 +209,39 @@ export function useSeasonReveal(
     return () => window.clearTimeout(timer);
   }, [
     reducedMotion,
+    holdEventResults,
     holdMilestones,
     state.isRevealing,
     state.revealQueue,
   ]);
 
   const activeItem = state.revealQueue[0] ?? null;
-  const activeMilestoneKey =
-    activeItem?.kind === "milestone"
-      ? `milestone:${activeItem.seasonIndex}`
-      : null;
-
-  useEffect(() => {
-    if (
-      acknowledgementGuardRef.current !==
-      activeMilestoneKey
-    ) {
-      acknowledgementGuardRef.current = null;
-    }
-  }, [activeMilestoneKey]);
 
   const acknowledgeActiveItem = useCallback(() => {
     if (
-      activeItem?.kind !== "milestone" ||
-      !holdMilestones ||
-      activeMilestoneKey === null ||
-      acknowledgementGuardRef.current !== null
+      activeItem === null ||
+      !requiresAcknowledgement(
+        activeItem,
+        holdEventResults,
+        holdMilestones,
+      ) ||
+      acknowledgementGuardRef.current === activeItem
     ) {
       return false;
     }
 
-    acknowledgementGuardRef.current = activeMilestoneKey;
+    acknowledgementGuardRef.current = activeItem;
     setState((current) => {
       const currentItem = current.revealQueue[0];
 
-      if (
-        currentItem?.kind !== "milestone" ||
-        `milestone:${currentItem.seasonIndex}` !==
-          activeMilestoneKey
-      ) {
+      if (currentItem !== activeItem) {
         return current;
       }
 
       return advanceRevealQueue(current);
     });
     return true;
-  }, [activeItem, activeMilestoneKey, holdMilestones]);
+  }, [activeItem, holdEventResults, holdMilestones]);
 
   return {
     ...state,
@@ -251,6 +249,17 @@ export function useSeasonReveal(
     activeItem,
     commitTransition,
   };
+}
+
+function requiresAcknowledgement(
+  item: SeasonRevealQueueItem | null | undefined,
+  holdEventResults: boolean,
+  holdMilestones: boolean,
+): boolean {
+  return (
+    (holdEventResults && item?.kind === "event_result") ||
+    (holdMilestones && item?.kind === "milestone")
+  );
 }
 
 export function createEventResultReveal(

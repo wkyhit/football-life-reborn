@@ -66,7 +66,7 @@ test("keeps the timeline and decision rail stable at every viewport", async ({
   ).toBeVisible();
   await expect(
     page.locator(
-      "[data-enhanced-season-row='current'][data-career-season-row='18']",
+      "[role='row'][aria-current='step'][data-career-season-row='18']",
     ),
   ).toHaveCount(1);
   await expect(

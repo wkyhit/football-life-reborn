@@ -28,6 +28,95 @@ type SeasonRow = Extract<
   { readonly kind: "season" }
 >;
 
+export function ExactMoneyDisclosure({
+  currency,
+  fullValue,
+  label,
+  value,
+}: {
+  readonly currency?:
+    | CareerCurrencyPresentation["currency"]
+    | undefined;
+  readonly fullValue?: string | undefined;
+  readonly label: string;
+  readonly value: string;
+}) {
+  const accessibleLabel =
+    fullValue === undefined
+      ? undefined
+      : `${label}：${fullValue}`;
+
+  if (fullValue === undefined || fullValue === value) {
+    return (
+      <span
+        aria-label={accessibleLabel}
+        data-currency={currency}
+        title={fullValue}
+      >
+        {value}
+      </span>
+    );
+  }
+
+  return (
+    <details
+      className="group min-w-0"
+      data-enhanced-exact-money={label}
+    >
+      <summary
+        aria-label={accessibleLabel}
+        className="-mt-5 inline-flex min-h-11 min-w-11 max-w-full cursor-pointer list-none items-center justify-center gap-1 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-enhanced-focus"
+        data-currency={currency}
+        title={fullValue}
+      >
+        <span className="min-w-0 break-words">{value}</span>
+        <span
+          aria-hidden="true"
+          className="shrink-0 text-xs leading-none text-enhanced-pitch transition-transform group-open:rotate-45 motion-reduce:transition-none"
+        >
+          ＋
+        </span>
+      </summary>
+      <span
+        className="mt-1 block break-words text-xs font-medium leading-tight text-enhanced-supporting"
+        data-enhanced-exact-money-value=""
+      >
+        {fullValue}
+      </span>
+    </details>
+  );
+}
+
+export function EnhancedExactMoneyMetric({
+  currency,
+  fullValue,
+  label,
+  value,
+}: {
+  readonly currency?:
+    | CareerCurrencyPresentation["currency"]
+    | undefined;
+  readonly fullValue?: string | undefined;
+  readonly label: string;
+  readonly value: string;
+}) {
+  return (
+    <dl className="min-w-0 px-2 py-[2px] text-center">
+      <dt className="text-xs font-bold text-enhanced-supporting">
+        {label}
+      </dt>
+      <dd className="mt-[2px] min-w-0 break-words text-xs font-bold leading-tight tabular-nums">
+        <ExactMoneyDisclosure
+          currency={currency}
+          fullValue={fullValue}
+          label={label}
+          value={value}
+        />
+      </dd>
+    </dl>
+  );
+}
+
 export function CareerEconomySummary({
   economy,
   marketValue,
@@ -176,6 +265,33 @@ export function CareerSeasonEconomy({
                 variant="enhanced"
               />
             </dl>
+            {row.story ? (
+              <section
+                className="mt-2 border-t border-enhanced-line pt-2 text-xs"
+                data-enhanced-season-choice-story=""
+              >
+                <strong className="text-enhanced-pitch">
+                  年度选择
+                </strong>
+                <p className="mt-1 text-enhanced-strong">
+                  {row.story.decisionTitle} · {row.story.choiceLabel}
+                </p>
+                {row.story.outcome ? (
+                  <p
+                    className="mt-1 text-enhanced-strong"
+                    data-semantic-tone={row.story.outcome.tone}
+                  >
+                    结果：{row.story.outcome.title} ·{" "}
+                    {row.story.outcome.summary}
+                  </p>
+                ) : null}
+                {row.story.contractSummary ? (
+                  <p className="mt-1 font-bold text-enhanced-supporting">
+                    {row.story.contractSummary}
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
             <CareerSeasonNarrative
               contained
               row={row}
@@ -267,7 +383,7 @@ function EconomyMetric({
         className={
           compact
             ? enhanced
-              ? "text-[9px] font-bold text-enhanced-supporting"
+              ? "text-xs font-bold text-enhanced-supporting"
               : "text-[9px] font-medium text-zinc-500"
             : enhanced
               ? "text-xs font-bold text-enhanced-supporting"
@@ -278,7 +394,7 @@ function EconomyMetric({
       </dt>
       <dd
         aria-label={
-          fullValue === undefined
+          enhanced || fullValue === undefined
             ? undefined
             : `${label}：${fullValue}`
         }
@@ -289,18 +405,99 @@ function EconomyMetric({
         } ${
           compact
             ? enhanced
-              ? "text-[9px] text-enhanced-ink-2"
+              ? "text-xs text-enhanced-ink-2"
               : "text-[9px] text-zinc-300"
             : enhanced
               ? "mt-0.5 text-xs text-enhanced-strong"
               : "mt-0.5 text-[11px] text-zinc-200"
         }`}
-        data-currency={currency}
-        title={fullValue}
+        data-currency={enhanced ? undefined : currency}
+        title={enhanced ? undefined : fullValue}
       >
-        {value}
+        {enhanced ? (
+          <ExactMoneyDisclosure
+            currency={currency}
+            fullValue={fullValue}
+            label={label}
+            value={value}
+          />
+        ) : (
+          value
+        )}
       </dd>
     </div>
+  );
+}
+
+export function CareerDecisionEssentials({
+  option,
+}: {
+  readonly option: CareerDecisionOptionPresentation;
+}) {
+  const primaryRisk =
+    option.consequences.find(
+      ({ tone }) => tone === "negative",
+    ) ??
+    option.consequences.find(
+      ({ tone }) => tone === "warning",
+    );
+
+  if (!option.contract && !option.role && !primaryRisk) {
+    return null;
+  }
+
+  return (
+    <span
+      className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-enhanced-line pt-2 text-xs font-bold"
+      data-enhanced-decision-essentials=""
+    >
+      {option.contract ? (
+        <span
+          className={contractToneClass(
+            option.contract.tone,
+            "enhanced",
+          )}
+          data-semantic-tone={option.contract.tone}
+        >
+          {option.contract.label}
+        </span>
+      ) : null}
+      {option.role ? (
+        <span
+          className={roleToneClass(option.roleTone)}
+          data-enhanced-decision-role=""
+        >
+          预计角色 · {option.role}
+          {option.roleTone === "primary" ? " · 核心" : ""}
+        </span>
+      ) : null}
+      {option.stars ? (
+        <span
+          aria-label={`俱乐部星级：${option.stars === "—" ? 0 : option.stars.length} 星`}
+          className="text-enhanced-trophy"
+          data-enhanced-decision-stars=""
+          role="img"
+        >
+          {option.stars}
+        </span>
+      ) : null}
+      {primaryRisk ? (
+        <span
+          className={consequenceToneClass(
+            primaryRisk.tone,
+            "enhanced",
+          )}
+          data-enhanced-decision-primary-risk=""
+          data-semantic-tone={primaryRisk.tone}
+        >
+          {`${primaryRisk.semanticLabel}${
+            primaryRisk.probabilityLabel === null
+              ? ""
+              : ` · ${primaryRisk.probabilityLabel}`
+          } · ${primaryRisk.text}`}
+        </span>
+      ) : null}
+    </span>
   );
 }
 
@@ -436,7 +633,7 @@ export function CareerMilestoneNarrative({
               enhanced ? "gap-2" : "gap-1.5"
             } border ${
               enhanced
-                ? "border-amber-400/25 bg-amber-400/10 px-2.5 py-2 text-xs font-bold text-amber-100"
+                ? "border-enhanced-trophy px-2.5 py-2 text-xs font-bold text-enhanced-trophy"
                 : "border-amber-500/30 bg-amber-500/10 px-2.5 py-2 text-xs font-bold text-amber-200"
             }`}
             key={`honor-${index}-${honor.label}`}
@@ -453,7 +650,7 @@ export function CareerMilestoneNarrative({
         <li
           className={`${radius} border ${
             enhanced
-              ? "border-cyan-400/25 bg-cyan-400/10 px-2.5 py-2 text-xs font-bold text-cyan-100"
+              ? "border-enhanced-pitch px-2.5 py-2 text-xs font-bold text-enhanced-pitch"
               : "border-sky-500/30 bg-sky-500/10 px-2.5 py-2 text-xs font-bold text-sky-200"
           }`}
           key={`national-${index}-${label}`}
@@ -554,11 +751,11 @@ export function CareerSeasonNarrative({
           className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] font-bold ${
             item.kind === "honor"
               ? enhanced
-                ? "rounded-[5px] border border-amber-400/25 bg-amber-400/10 text-amber-200"
+                ? "rounded-[5px] border border-enhanced-trophy text-enhanced-trophy"
                 : "rounded border border-amber-500/30 bg-amber-500/10 text-amber-300"
               : item.kind === "national"
                 ? enhanced
-                  ? "rounded-[5px] border border-cyan-400/25 bg-cyan-400/10 text-cyan-200"
+                  ? "rounded-[5px] border border-enhanced-pitch text-enhanced-pitch"
                   : "rounded border border-sky-500/30 bg-sky-500/10 text-sky-300"
                 : seasonToneClass(item.tone, variant)
           }`}
@@ -577,10 +774,12 @@ export function CareerSeasonNarrative({
 
 export function CareerEventResultNarrative({
   headingId,
+  onContinue,
   panel,
   variant,
 }: {
   readonly headingId?: string;
+  readonly onContinue?: (() => void) | undefined;
   readonly panel: EventResultPanel;
   readonly variant: "classic" | "enhanced";
 }) {
@@ -591,7 +790,7 @@ export function CareerEventResultNarrative({
       <p
         className={
           enhanced
-            ? "text-[10px] font-bold tracking-[0.12em] text-emerald-400"
+            ? "text-[10px] font-bold tracking-[0.10em] text-enhanced-pitch"
             : "text-[10px] font-bold tracking-wide text-emerald-500"
         }
       >
@@ -637,6 +836,16 @@ export function CareerEventResultNarrative({
         >
           {panel.contractSummary}
         </p>
+      ) : null}
+      {enhanced && onContinue ? (
+        <button
+          autoFocus
+          className="mt-4 min-h-11 w-full rounded-[var(--radius-input)] bg-enhanced-pitch px-4 py-3 text-sm font-bold text-enhanced-pitch-ink"
+          onClick={onContinue}
+          type="button"
+        >
+          确认结果
+        </button>
       ) : null}
     </>
   );
@@ -709,6 +918,21 @@ function consequenceToneClass(
   }
 }
 
+function roleToneClass(
+  tone: CareerDecisionOptionPresentation["roleTone"],
+): string {
+  switch (tone) {
+    case "positive":
+      return "text-enhanced-success";
+    case "primary":
+      return "text-enhanced-pitch";
+    case "warning":
+      return "text-enhanced-trophy";
+    case "danger":
+      return "text-enhanced-alert";
+  }
+}
+
 type SemanticTone =
   | "negative"
   | "neutral"
@@ -770,13 +994,13 @@ function milestoneToneClass(
 
   switch (tone) {
     case "positive":
-      return "border-emerald-400/25 bg-emerald-400/10 text-emerald-100";
+      return "border-enhanced-success text-enhanced-success";
     case "negative":
-      return "border-rose-400/25 bg-rose-400/10 text-rose-100";
+      return "border-enhanced-alert bg-enhanced-surface text-enhanced-alert";
     case "warning":
-      return "border-amber-400/25 bg-amber-400/10 text-amber-100";
+      return "border-enhanced-trophy text-enhanced-trophy";
     case "neutral":
-      return "border-white/10 bg-white/[0.04] text-zinc-300";
+      return "border-enhanced-line text-enhanced-supporting";
   }
 }
 
@@ -793,16 +1017,7 @@ function resultToneClass(
   variant: "classic" | "enhanced",
 ): string {
   if (variant === "enhanced") {
-    switch (tone) {
-      case "positive":
-        return "border-emerald-400/25 bg-emerald-400/10 text-emerald-100";
-      case "negative":
-        return "border-rose-400/25 bg-rose-400/10 text-rose-100";
-      case "warning":
-        return "border-amber-400/25 bg-amber-400/10 text-amber-100";
-      case "neutral":
-        return "border-white/10 bg-white/[0.04] text-zinc-300";
-    }
+    return milestoneToneClass(tone, variant);
   }
 
   switch (tone) {

@@ -750,6 +750,7 @@ function CareerExperience({
 }: CareerExperienceProps) {
   const reducedMotion = useReducedMotion();
   const reveal = useSeasonReveal(initialCareer, {
+    holdEventResults: uiMode === "enhanced",
     holdMilestones: uiMode === "enhanced",
     reducedMotion,
   });

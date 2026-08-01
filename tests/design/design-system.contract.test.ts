@@ -21,6 +21,7 @@ const ENHANCED_PRESENTATION_FILES = [
   "src/features/challenges/ChallengeProgressPanel.tsx",
   "src/features/replay/ReplayRouteScreen.tsx",
   "src/ui/enhanced/EnhancedOnboarding.tsx",
+  "src/ui/enhanced/career/CareerKeyEventDialog.tsx",
   "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
   "src/ui/enhanced/onboarding/EnhancedLandingScreen.tsx",
   "src/ui/enhanced/onboarding/EnhancedNationalityScreen.tsx",

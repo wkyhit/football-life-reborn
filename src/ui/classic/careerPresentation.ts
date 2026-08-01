@@ -1,9 +1,11 @@
-import type {
-  ClassicCareerSeason,
-  ClassicCareerState,
-  ClassicDecision,
-  ClassicDecisionOption,
-  ClassicDecisionResult,
+import {
+  applyClassicChoiceWithResult,
+  startClassicCareer,
+  type ClassicCareerSeason,
+  type ClassicCareerState,
+  type ClassicDecision,
+  type ClassicDecisionOption,
+  type ClassicDecisionResult,
 } from "../../domain/classicEngine";
 import type { PersonalAward } from "../../domain/awards";
 import {
@@ -170,6 +172,31 @@ export type CareerCurrencyPresentation = {
   readonly full: string;
 };
 
+export type CareerStatPresentation = Pick<
+  ClassicSeasonStats,
+  | "appearances"
+  | "assists"
+  | "cleanSheets"
+  | "goals"
+  | "goalsConceded"
+>;
+
+export type CareerMetricPresentation = {
+  readonly label: "出场" | "助攻" | "失球" | "进球" | "零封";
+  readonly value: number;
+};
+
+export type CareerSeasonStoryPresentation = {
+  readonly choiceLabel: string;
+  readonly contractSummary: string | null;
+  readonly decisionTitle: string;
+  readonly outcome: {
+    readonly summary: string;
+    readonly title: string;
+    readonly tone: CareerEventPreviewTone;
+  } | null;
+};
+
 export type CareerTimelineRowPresentation =
   | {
       readonly age: number;
@@ -192,10 +219,8 @@ export type CareerTimelineRowPresentation =
       readonly marketValue: number;
       readonly nationalTournaments: readonly CareerNationalTournamentPresentation[];
       readonly overall: number;
-      readonly stats: Pick<
-        ClassicSeasonStats,
-        "appearances" | "assists" | "goals"
-      >;
+      readonly stats: CareerStatPresentation;
+      readonly story: CareerSeasonStoryPresentation | null;
       readonly statuses: readonly CareerSeasonStatusPresentation[];
       readonly tierChange: CareerTierChangePresentation | null;
     };
@@ -215,13 +240,11 @@ export type CareerPresentation = {
     readonly overall: number;
     readonly position: string;
   };
+  readonly goalkeeper: boolean;
   readonly nationalTeam: {
     readonly countryFlag: string;
     readonly name: string;
-    readonly stats: Pick<
-      ClassicSeasonStats,
-      "appearances" | "assists" | "goals"
-    >;
+    readonly stats: CareerStatPresentation;
   };
   readonly panel: CareerDecisionPanelPresentation;
   readonly recentEventResult: ClassicEventResultReveal | null;
@@ -229,7 +252,9 @@ export type CareerPresentation = {
   readonly totals: {
     readonly appearances: number;
     readonly assists: number;
+    readonly cleanSheets: number;
     readonly goals: number;
+    readonly goalsConceded: number;
     readonly trophies: number;
   };
 };
@@ -362,6 +387,11 @@ export function createCareerPresentation({
       salary,
     ]),
   );
+  const storyBySeasonIndex = createVisibleSeasonStories({
+    career,
+    salaryBySeasonIndex,
+    visibleSeasonCount: safeVisibleCount,
+  });
   const latestVisibleSalary = visibleSeasonSalaries.at(-1);
   const headerSeason = isRevealing
     ? latestVisibleSeason
@@ -416,6 +446,7 @@ export function createCareerPresentation({
         season,
         seasonsByAge.get(age - 1),
         salaryBySeasonIndex.get(season.index) ?? null,
+        storyBySeasonIndex.get(season.index) ?? null,
       );
     }
 
@@ -460,6 +491,7 @@ export function createCareerPresentation({
         career.overall,
       position: positionLabel(career.identity.position),
     },
+    goalkeeper: career.identity.position === "GK",
     nationalTeam: {
       countryFlag: countryFlag(country),
       name: `${country.nameZh}国家队`,
@@ -482,13 +514,32 @@ export function createCareerPresentation({
     totals: {
       appearances: totals.appearances,
       assists: totals.assists,
+      cleanSheets: totals.cleanSheets,
       goals: totals.goals,
+      goalsConceded: totals.goalsConceded,
       trophies: visibleSeasons.reduce(
         (sum, season) => sum + season.trophies.length,
         0,
       ),
     },
   };
+}
+
+export function getCareerMetricPresentation(
+  goalkeeper: boolean,
+  stats: CareerStatPresentation,
+): readonly CareerMetricPresentation[] {
+  return goalkeeper
+    ? [
+        { label: "出场", value: stats.appearances },
+        { label: "零封", value: stats.cleanSheets },
+        { label: "失球", value: stats.goalsConceded },
+      ]
+    : [
+        { label: "出场", value: stats.appearances },
+        { label: "进球", value: stats.goals },
+        { label: "助攻", value: stats.assists },
+      ];
 }
 
 function createTimelineAgeRange(input: {
@@ -547,6 +598,7 @@ function revealPanelPresentation(input: {
     const presentation = seasonPresentation(
       season,
       input.career.seasons[item.seasonIndex - 1],
+      null,
       null,
     );
 
@@ -850,6 +902,122 @@ function tryCreateEconomyProjection(
   }
 }
 
+function createVisibleSeasonStories(input: {
+  readonly career: ClassicCareerState;
+  readonly salaryBySeasonIndex: ReadonlyMap<
+    number,
+    CareerSeasonSalary
+  >;
+  readonly visibleSeasonCount: number;
+}): ReadonlyMap<number, CareerSeasonStoryPresentation> {
+  const stories = new Map<
+    number,
+    CareerSeasonStoryPresentation
+  >();
+
+  try {
+    let replayed = startClassicCareer({
+      contentVersion: input.career.contentVersion,
+      identity: input.career.identity,
+      mode: input.career.mode,
+      seed: input.career.seed,
+    });
+
+    for (const choice of input.career.choiceLog) {
+      const firstSeasonIndex = replayed.seasons.length;
+
+      if (firstSeasonIndex >= input.visibleSeasonCount) {
+        break;
+      }
+
+      const panel = decisionPresentation(replayed, null);
+      const decision = replayed.currentDecision;
+
+      if (panel.kind !== "decision" || decision === null) {
+        throw new RangeError(
+          "Career story replay reached a missing decision",
+        );
+      }
+
+      const selected = panel.options.find(
+        (option) => option.id === choice.optionId,
+      );
+      const transition = applyClassicChoiceWithResult(
+        replayed,
+        choice,
+      );
+      const firstSeason =
+        transition.career.seasons[firstSeasonIndex];
+
+      if (selected === undefined) {
+        throw new RangeError(
+          `Career story is missing option ${choice.optionId}`,
+        );
+      }
+
+      if (firstSeason !== undefined) {
+        const result = createEventResultReveal(
+          transition.result,
+        );
+
+        stories.set(firstSeason.index, {
+          choiceLabel: selected.title,
+          contractSummary: seasonContractSummary(
+            decision,
+            transition.result.option,
+            input.salaryBySeasonIndex.get(
+              firstSeason.index,
+            ) ?? null,
+          ),
+          decisionTitle: panel.title,
+          outcome:
+            result === null
+              ? null
+              : {
+                  summary: result.summary,
+                  title: result.title,
+                  tone: result.tone,
+                },
+        });
+      }
+
+      replayed = transition.career;
+    }
+  } catch (error) {
+    if (!(error instanceof RangeError)) {
+      throw error;
+    }
+
+    return new Map();
+  }
+
+  return stories;
+}
+
+function seasonContractSummary(
+  decision: ClassicDecision,
+  option: ClassicDecisionOption,
+  salary: CareerSeasonSalary | null,
+): string | null {
+  if (salary === null) {
+    return null;
+  }
+
+  const loan =
+    option.clubId !== undefined &&
+    (decision.type === "loan_offer" ||
+      (decision.type === "post_loan_not_retained" &&
+        option.id.startsWith("loan:")));
+  const status = loan
+    ? "母队合同不变"
+    : option.kind === "stay" ||
+        option.clubId === undefined
+      ? "合同不变"
+      : "新合同生效";
+
+  return `实际合同：${status} · 年薪 ${formatYuan(salary.annualSalary)}`;
+}
+
 export function formatMarketValue(
   valueEuro: number,
 ): string {
@@ -967,6 +1135,7 @@ function seasonPresentation(
   season: ClassicCareerSeason,
   previousSeason: ClassicCareerSeason | undefined,
   salary: CareerSeasonSalary | null,
+  story: CareerSeasonStoryPresentation | null,
 ): Extract<
   CareerTimelineRowPresentation,
   { readonly kind: "season" }
@@ -1024,8 +1193,11 @@ function seasonPresentation(
     stats: {
       appearances: season.stats.appearances,
       assists: season.stats.assists,
+      cleanSheets: season.stats.cleanSheets,
       goals: season.stats.goals,
+      goalsConceded: season.stats.goalsConceded,
     },
+    story,
     statuses: [
       ...(season.suspended
         ? [
