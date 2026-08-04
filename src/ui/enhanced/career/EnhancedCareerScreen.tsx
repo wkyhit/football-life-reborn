@@ -794,7 +794,10 @@ function DecisionRail({
               variant="enhanced"
             />
           ) : null}
-          <p className="text-xs font-bold tracking-[0.10em] text-enhanced-pitch">
+          <p
+            className="text-xs font-bold tracking-[0.10em] text-enhanced-pitch"
+            data-enhanced-decision-eyebrow=""
+          >
             DECISION RAIL · {panel.age} 岁
           </p>
           <h2
@@ -806,6 +809,7 @@ function DecisionRail({
           <p className="mt-2 text-[13px] leading-[1.7] text-enhanced-supporting">
             {panel.description}
           </p>
+          <DecisionComparison options={panel.options} />
           <div
             className="mt-3 space-y-3"
             data-enhanced-decision-options=""
@@ -829,6 +833,31 @@ function DecisionRail({
         </>
       )}
     </aside>
+  );
+}
+
+function DecisionComparison({
+  options,
+}: {
+  readonly options: readonly CareerDecisionOptionPresentation[];
+}) {
+  return (
+    <ul
+      aria-label="选项首屏比较"
+      data-enhanced-mobile-decision-comparison=""
+    >
+      {options.map((option) => (
+        <li
+          data-enhanced-decision-comparison-option=""
+          key={option.id}
+        >
+          <strong className="min-w-0 truncate text-xs">
+            {option.club?.name ?? option.title}
+          </strong>
+          <CareerDecisionEssentials option={option} />
+        </li>
+      ))}
+    </ul>
   );
 }
 

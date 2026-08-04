@@ -73,6 +73,10 @@ test("keeps the timeline and decision rail stable at every viewport", async ({
     rail.getByRole("button", { name: /^租借去/ }),
   ).toHaveCount(3);
 
+  if (viewport!.width === 390 && viewport!.height === 667) {
+    await expectMobileComparisonAtInitialRailPosition(rail);
+  }
+
   // Baselines come from the required ego-browser runner; geometry
   // assertions above protect layout while this allows rasterizer drift.
   await expect(page).toHaveScreenshot(
@@ -80,6 +84,66 @@ test("keeps the timeline and decision rail stable at every viewport", async ({
     { maxDiffPixelRatio: 0.03 },
   );
 });
+
+async function expectMobileComparisonAtInitialRailPosition(
+  rail: import("@playwright/test").Locator,
+) {
+  const railBox = await rail.boundingBox();
+  const buttons = rail.getByRole("button", { name: /^租借去/ });
+  const comparison = rail.getByRole("list", {
+    name: "选项首屏比较",
+  });
+  const comparisonOptions = comparison.getByRole("listitem");
+  const expectedFacts = [
+    [
+      "梅州客家",
+      "沿用年薪 ¥20,000",
+      "绝对主力 · 核心",
+      "★",
+      "风险 · 20% · 降级风险",
+    ],
+    [
+      "无锡吴钩",
+      "沿用年薪 ¥20,000",
+      "绝对主力 · 核心",
+      "★★",
+      "风险 · 30% · 轮换风险",
+    ],
+    [
+      "湖北青年星",
+      "沿用年薪 ¥20,000",
+      "绝对主力 · 核心",
+      "★★★",
+      "风险 · 10% · 适应风险",
+    ],
+  ] as const;
+
+  expect(railBox).not.toBeNull();
+  expect(await rail.evaluate((element) => element.scrollTop)).toBe(
+    0,
+  );
+  await expect(comparisonOptions).toHaveCount(3);
+
+  for (const [index, facts] of expectedFacts.entries()) {
+    const button = buttons.nth(index);
+    const comparisonOption = comparisonOptions.nth(index);
+    const comparisonBox = await comparisonOption.boundingBox();
+
+    await expect(button).toBeEnabled();
+    for (const fact of facts) {
+      await expect(comparisonOption).toContainText(fact);
+    }
+    expect(comparisonBox).not.toBeNull();
+    expect(comparisonBox!.y).toBeGreaterThanOrEqual(
+      railBox!.y,
+    );
+    expect(
+      comparisonBox!.y + comparisonBox!.height,
+    ).toBeLessThanOrEqual(
+      railBox!.y + railBox!.height,
+    );
+  }
+}
 
 async function waitForCrests(
   page: import("@playwright/test").Page,

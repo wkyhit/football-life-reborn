@@ -213,9 +213,27 @@ function createFixture(name: string | null): VisualFixture {
           currentAge: 18,
           marketValue: 540_000,
           options: [
-            clubOption(MEIZHOU, "loan:meizhou-hakka", "绝对主力", "primary", "—", "租借去"),
-            clubOption(WUXI, "loan:wuxi-wugou", "绝对主力", "primary", "—", "租借去"),
-            clubOption(HUBEI, "loan:hubei-istar", "绝对主力", "primary", "—", "租借去"),
+            comparisonLoanOption(
+              MEIZHOU,
+              "loan:meizhou-hakka",
+              "★",
+              "降级风险",
+              0.2,
+            ),
+            comparisonLoanOption(
+              WUXI,
+              "loan:wuxi-wugou",
+              "★★",
+              "轮换风险",
+              0.3,
+            ),
+            comparisonLoanOption(
+              HUBEI,
+              "loan:hubei-istar",
+              "★★★",
+              "适应风险",
+              0.1,
+            ),
           ],
           overall: 57,
           panel: "loan",
@@ -483,6 +501,41 @@ function clubOption(
     stars,
     subtitle: club.subtitle,
     title: `${action} ${club.name}`,
+  };
+}
+
+function comparisonLoanOption(
+  club: CareerClubPresentation,
+  id: string,
+  stars: string,
+  risk: string,
+  riskProbability: number,
+): CareerDecisionOptionPresentation {
+  return {
+    ...clubOption(
+      club,
+      id,
+      "绝对主力",
+      "primary",
+      stars,
+      "租借去",
+    ),
+    consequences: [
+      {
+        probability: riskProbability,
+        probabilityLabel: `${Math.round(riskProbability * 100)}%`,
+        semanticLabel: "风险",
+        text: risk,
+        tone: "negative",
+      },
+    ],
+    contract: {
+      annualSalary: 20_000,
+      kind: "contract_unchanged",
+      label: "沿用年薪 ¥20,000",
+      reason: "loan",
+      tone: "neutral",
+    },
   };
 }
 
