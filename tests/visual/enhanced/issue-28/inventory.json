@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "issue": 28,
+  "capturedAt": "2026-08-04T03:03:57Z",
+  "scope": "issue-specific",
+  "status": "approved",
+  "runner": {
+    "name": "ego-browser",
+    "taskSpaceId": 56
+  },
+  "source": {
+    "branch": "codex/issue-28-enhanced-ux",
+    "commit": "36afc2b1e580560e1f3e200ef058b96d5e3a6a79",
+    "deploymentId": 5737051144,
+    "url": "https://football-life-reborn-ikkrjc6es-enity.vercel.app"
+  },
+  "entries": [
+    {
+      "id": "ordinary-replay-exit",
+      "viewport": {
+        "width": 390,
+        "height": 667
+      },
+      "acceptance": {
+        "heading": "普通回放",
+        "exitLabel": "返回入口",
+        "restartLabelPresent": false,
+        "localStorageEntries": 0,
+        "sessionStorageEntries": 0
+      },
+      "evidence": [
+        {
+          "file": "tests/visual/enhanced/issue-28/ordinary-replay-exit-390x667.png",
+          "sha256": "d8ea53d2d04761f2abaf5491c077cff090c7acf14c0f396762bd3f72e0857a7c"
+        }
+      ]
+    },
+    {
+      "id": "challenge-replay-exit",
+      "viewport": {
+        "width": 390,
+        "height": 667
+      },
+      "acceptance": {
+        "heading": "挑战回放",
+        "challenge": "一人一城",
+        "exitLabel": "返回入口",
+        "restartLabelPresent": false,
+        "localStorageEntries": 0,
+        "sessionStorageEntries": 0
+      },
+      "evidence": [
+        {
+          "file": "tests/visual/enhanced/issue-28/challenge-replay-exit-390x667.png",
+          "sha256": "df5c3d2b18fc648c8360d23621ecc7276a8e6ed175a7c2eb67256796e2fcc7ca"
+        }
+      ]
+    },
+    {
+      "id": "mobile-comparison",
+      "viewport": {
+        "width": 390,
+        "height": 667
+      },
+      "acceptance": {
+        "decisionRailHeightPx": 224,
+        "initialScrollTopPx": 0,
+        "comparisonRowBoundsPx": [
+          [491.5, 535.5],
+          [539.5, 583.5],
+          [587.5, 631.5]
+        ],
+        "comparisonRowHeightPx": 44,
+        "optionCount": 3
+      },
+      "evidence": [
+        {
+          "file": "tests/visual/enhanced/issue-28/mobile-comparison-390x667.png",
+          "sha256": "8bd04a07ce8844d536db5246b4201f02a95585462285e4ab41b55f7edc40b0fb"
+        }
+      ]
+    },
+    {
+      "id": "reflow-200",
+      "viewport": {
+        "width": 195,
+        "height": 415
+      },
+      "acceptance": {
+        "documentHorizontalOverflowPx": 0,
+        "timelineHeightPx": 129.1171875,
+        "decisionRailHeightPx": 105.6328125
+      },
+      "evidence": [
+        {
+          "file": "tests/visual/enhanced/issue-28/reflow-200-195x415.png",
+          "sha256": "8fbfad664df568371d8f14b2733d60ae47a5e924771e887fe6acf4f7944ebd45"
+        }
+      ]
+    },
+    {
+      "id": "short-landscape",
+      "viewport": {
+        "width": 568,
+        "height": 320
+      },
+      "acceptance": {
+        "documentHorizontalOverflowPx": 0,
+        "timelineWidthPx": 312,
+        "decisionRailWidthPx": 256,
+        "sideBySide": true
+      },
+      "evidence": [
+        {
+          "file": "tests/visual/enhanced/issue-28/short-landscape-568x320.png",
+          "sha256": "ced11f0ea5a873504646d932126cd219cf2d843d90474bdb0045f49be0750a86"
+        }
+      ]
+    },
+    {
+      "id": "desktop-rail",
+      "viewport": {
+        "width": 1280,
+        "height": 830
+      },
+      "acceptance": {
+        "documentHorizontalOverflowPx": 0,
+        "decisionRailWidthPx": 380,
+        "decisionRailHeightPx": 569.75
+      },
+      "evidence": [
+        {
+          "file": "tests/visual/enhanced/issue-28/desktop-rail-1280x830.png",
+          "sha256": "782617be8d3fc317b482c02f91cfbf2ac84caf735ca96736456d78db4a799832"
+        }
+      ]
+    }
+  ],
+  "interaction": {
+    "choiceLogDelta": 1,
+    "focusRestoredToNextDecision": true,
+    "touchRailScrollTopPx": 161,
+    "touchDocumentScrollYPx": 0,
+    "disclosureFocusedAndOpened": true,
+    "reducedMotion": {
+      "transitionProperty": "opacity",
+      "transitionMilliseconds": 150,
+      "transform": "none"
+    }
+  },
+  "validation": {
+    "axeSeriousOrCritical": 0,
+    "classicReferenceDiff": false,
+    "classicSourceDiff": false,
+    "consoleErrors": 0,
+    "documentHorizontalOverflowPx": 0,
+    "minimumInteractiveTargetPx": 44
+  },
+  "productionFiles": [
+    {
+      "file": "src/app/App.tsx",
+      "sha256": "274d49cf1bdab497b6dd9ca0aea60554fcf3c242d26d023f45d2d624371b259e"
+    },
+    {
+      "file": "src/features/replay/ReplayRouteScreen.tsx",
+      "sha256": "cbc3bc5333100cd76ee921ee9fabe76540de128cead52c42d5e920645e72971d"
+    },
+    {
+      "file": "src/styles.css",
+      "sha256": "2dce5e15900083314012f1167f3d1ef25b634ac101c5a03e4d1c3eb78da1aa9b"
+    },
+    {
+      "file": "src/ui/classic/components/ClubIdentity.tsx",
+      "sha256": "99b31a920d82178a7baf8cdd30081e797a81e7fd12071c1c6cc2eb1ca7cf55e1"
+    },
+    {
+      "file": "src/ui/enhanced/career/EnhancedCareerScreen.tsx",
+      "sha256": "17f0bf1b05b9568aa20263e476d6ad45833245fe3deff8d4c700cc9df23f3249"
+    },
+    {
+      "file": "src/ui/enhanced/summary/EnhancedSummaryScreen.tsx",
+      "sha256": "f2cfda45b5a73d951b52b4bd165c7fcee05dbf38dd75d1ffb74c3ee38d2c265e"
+    },
+    {
+      "file": "src/ui/shared/CareerMilestoneNarrative.tsx",
+      "sha256": "0b2a9842d53774d40935ef86056c63fe5d8be1b21e35925e30032558cc13cabe"
+    },
+    {
+      "file": "tokens.css",
+      "sha256": "221fe9d00b93fe309544a8a470c558080be671bf10c4534bd7053377f57b9589"
+    }
+  ]
+}
