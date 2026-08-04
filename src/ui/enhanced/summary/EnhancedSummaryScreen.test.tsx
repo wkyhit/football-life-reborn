@@ -75,6 +75,29 @@ describe("EnhancedSummaryScreen", () => {
       screen.getByRole("button", { name: "复制本局回放" }),
     ).toBeInTheDocument();
   });
+
+  it("lets a caller name the primary footer action without changing its callback", async () => {
+    const onRestart = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <EnhancedSummaryScreen
+        onRestart={onRestart}
+        onShare={vi.fn()}
+        restartLabel="返回入口"
+        view={summaryView()}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "返回入口" }),
+    );
+
+    expect(onRestart).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByRole("button", { name: "再来一局" }),
+    ).not.toBeInTheDocument();
+  });
 });
 
 function summaryView(): SummaryPresentation {

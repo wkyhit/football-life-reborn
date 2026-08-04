@@ -28,6 +28,7 @@ type EnhancedSummaryScreenProps = {
   readonly onStartNewCareer?: () => void;
   readonly replayCopyMessage?: string | null;
   readonly replayUrl?: string;
+  readonly restartLabel?: string;
   readonly view: SummaryPresentation;
 };
 
@@ -42,6 +43,7 @@ export function EnhancedSummaryScreen({
   onStartNewCareer,
   replayCopyMessage,
   replayUrl,
+  restartLabel,
   view,
 }: EnhancedSummaryScreenProps) {
   const replayCopySucceeded =
@@ -349,7 +351,8 @@ export function EnhancedSummaryScreen({
             className="min-h-12 w-full"
             onClick={onRestart}
           >
-            {onStartNewCareer ? "同 Seed 重开" : "再来一局"}
+            {restartLabel ??
+              (onStartNewCareer ? "同 Seed 重开" : "再来一局")}
           </EnhancedAction>
           {onStartNewCareer ? (
             <EnhancedAction
