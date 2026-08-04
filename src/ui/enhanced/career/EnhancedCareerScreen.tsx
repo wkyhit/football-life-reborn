@@ -455,56 +455,51 @@ function CareerTimeline({
 
         <div
           aria-label="生涯年份"
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          className="min-h-0 flex-1 divide-y divide-enhanced-line-soft overflow-y-auto overscroll-contain"
+          data-enhanced-timeline-rows=""
           data-scroll-region="career-timeline"
           onKeyDown={timelineFollow.onKeyDown}
           onPointerDown={timelineFollow.onPointerDown}
           onTouchStart={timelineFollow.onTouchStart}
           onWheel={timelineFollow.onWheel}
           ref={timelineFollow.containerRef}
-          role="region"
+          role="rowgroup"
           tabIndex={0}
         >
-          <div
-            className="divide-y divide-enhanced-line-soft"
-            data-enhanced-timeline-rows=""
-            role="rowgroup"
-          >
-            {view.timeline.map((row) => (
-              <TimelineRow
-                goalkeeper={view.goalkeeper}
-                key={row.age}
-                metrics={nationalMetrics}
-                row={row}
-              />
-            ))}
-            <CareerTimelineSemanticRow
-              club={view.nationalTeam.name}
+          {view.timeline.map((row) => (
+            <TimelineRow
+              goalkeeper={view.goalkeeper}
+              key={row.age}
               metrics={nationalMetrics}
-              overall={null}
+              row={row}
+            />
+          ))}
+          <CareerTimelineSemanticRow
+            club={view.nationalTeam.name}
+            metrics={nationalMetrics}
+            overall={null}
+          >
+            <div
+              aria-hidden="true"
+              className="enhanced-timeline-grid grid items-center gap-1 bg-enhanced-surface px-3 py-2"
             >
-              <div
-                aria-hidden="true"
-                className="enhanced-timeline-grid grid items-center gap-1 bg-enhanced-surface px-3 py-2"
-              >
-                <span className="text-center text-sm">
-                  {view.nationalTeam.countryFlag}
+              <span className="text-center text-sm">
+                {view.nationalTeam.countryFlag}
+              </span>
+              <span className="truncate text-xs font-bold text-enhanced-supporting">
+                {view.nationalTeam.name}
+              </span>
+              <span />
+              {nationalMetrics.map(({ label, value }) => (
+                <span
+                  className="text-right text-xs tabular-nums text-enhanced-supporting"
+                  key={label}
+                >
+                  {value}
                 </span>
-                <span className="truncate text-xs font-bold text-enhanced-supporting">
-                  {view.nationalTeam.name}
-                </span>
-                <span />
-                {nationalMetrics.map(({ label, value }) => (
-                  <span
-                    className="text-right text-xs tabular-nums text-enhanced-supporting"
-                    key={label}
-                  >
-                    {value}
-                  </span>
-                ))}
-              </div>
-            </CareerTimelineSemanticRow>
-          </div>
+              ))}
+            </div>
+          </CareerTimelineSemanticRow>
         </div>
       </div>
     </section>

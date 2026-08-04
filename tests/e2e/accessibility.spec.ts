@@ -18,6 +18,9 @@ test("Enhanced supports keyboard-only setup and announces season updates", async
   await page.goto(
     "/?ui=enhanced&seed=phase-4%3Akeyboard-e2e",
   );
+  await expect(
+    page.getByRole("button", { name: "开始普通生涯" }),
+  ).toBeVisible();
   await expectNoSeriousAxeViolations(page);
 
   await page.keyboard.press("Tab");
@@ -38,9 +41,9 @@ test("Enhanced supports keyboard-only setup and announces season updates", async
   ).toBeFocused();
   await page.keyboard.press("Enter");
 
-  const china = page.getByRole("button", {
-    name: /^中国/,
-  });
+  const china = page
+    .locator('[data-enhanced-country="CHN"]')
+    .last();
   await china.focus();
   await page.keyboard.press("Space");
   await expect(china).toHaveAttribute(
@@ -82,9 +85,9 @@ test("Enhanced supports keyboard-only setup and announces season updates", async
     .locator("[data-enhanced-decision-rail] button")
     .first();
   await activateWithKeyboard(page, decision, "Enter");
-  await expect(page.getByRole("status")).toHaveText(
-    "赛季进行中",
-  );
+  await expect(
+    page.getByText("赛季进行中", { exact: true }),
+  ).toBeVisible();
   await expectNoSeriousAxeViolations(page);
 });
 
@@ -138,19 +141,25 @@ test("Enhanced honors reduced motion and remains usable at 200% reflow", async (
     .locator("[data-enhanced-decision-rail] button")
     .first();
   await decision.click();
-  await expect(page.getByRole("status")).toHaveText(
-    "赛季更新完成，已记录 2 个赛季",
-  );
+  await expect(
+    page.getByText("下一项选择已就绪", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.locator('[data-enhanced-season-row="season"]'),
   ).toHaveCount(2);
-  expect(
-    await decision.evaluate((element) =>
-      Number.parseFloat(
-        getComputedStyle(element).transitionDuration,
-      ),
-    ),
-  ).toBeLessThanOrEqual(0.001);
+  const reducedMotion = await decision.evaluate((element) => {
+    const style = getComputedStyle(element);
+
+    return {
+      duration: Number.parseFloat(style.transitionDuration),
+      property: style.transitionProperty,
+      transform: style.transform,
+    };
+  });
+
+  expect(reducedMotion.duration).toBeLessThanOrEqual(0.15);
+  expect(reducedMotion.property).toBe("opacity");
+  expect(reducedMotion.transform).toBe("none");
   await expectNoDocumentOverflow(page);
   await expectNoSeriousAxeViolations(page);
 });

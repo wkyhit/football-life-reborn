@@ -1,8 +1,10 @@
 import { defineConfig } from "@playwright/test";
 
 const viewports = [
+  { height: 415, width: 195 },
   { height: 667, width: 390 },
   { height: 844, width: 390 },
+  { height: 320, width: 568 },
   { height: 1024, width: 768 },
   { height: 830, width: 1280 },
   { height: 900, width: 1440 },

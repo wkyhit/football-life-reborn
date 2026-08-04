@@ -34,6 +34,10 @@ test("keeps the timeline and decision rail stable at every viewport", async ({
 
   const timelineBox = await timeline.boundingBox();
   const railBox = await rail.boundingBox();
+  const shortLandscape =
+    viewport!.width < 1024 &&
+    viewport!.height <= 500 &&
+    viewport!.width > viewport!.height;
 
   expect(timelineBox).not.toBeNull();
   expect(railBox).not.toBeNull();
@@ -46,6 +50,17 @@ test("keeps the timeline and decision rail stable at every viewport", async ({
     await expect(layout).toHaveCSS(
       "grid-template-columns",
       /.+ 380px/,
+    );
+  } else if (shortLandscape) {
+    expect(railBox!.x).toBeGreaterThanOrEqual(
+      timelineBox!.x + timelineBox!.width,
+    );
+    expect(Math.round(railBox!.y)).toBe(
+      Math.round(timelineBox!.y),
+    );
+    await expect(layout).toHaveCSS(
+      "grid-template-columns",
+      /.+ .+/,
     );
   } else {
     expect(railBox!.y).toBeGreaterThanOrEqual(
@@ -73,6 +88,12 @@ test("keeps the timeline and decision rail stable at every viewport", async ({
     rail.getByRole("button", { name: /^租借去/ }),
   ).toHaveCount(3);
 
+  await expectResponsiveRailBoundaries({
+    rail,
+    timeline,
+    viewport: viewport!,
+  });
+
   if (viewport!.width === 390 && viewport!.height === 667) {
     await expectMobileComparisonAtInitialRailPosition(rail);
   }
@@ -84,6 +105,69 @@ test("keeps the timeline and decision rail stable at every viewport", async ({
     { maxDiffPixelRatio: 0.03 },
   );
 });
+
+async function expectResponsiveRailBoundaries({
+  rail,
+  timeline,
+  viewport,
+}: {
+  readonly rail: import("@playwright/test").Locator;
+  readonly timeline: import("@playwright/test").Locator;
+  readonly viewport: { readonly height: number; readonly width: number };
+}) {
+  const comparison = rail.getByRole("list", {
+    name: "选项首屏比较",
+  });
+  const comparisonExpected =
+    viewport.width >= 375 &&
+    viewport.width <= 479 &&
+    viewport.height >= 501 &&
+    viewport.height > viewport.width;
+  const targets = rail.locator("button, summary");
+  const targetBoxes = await targets.evaluateAll((elements) =>
+    elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { height: rect.height, width: rect.width };
+    }),
+  );
+  const scrollState = await rail.evaluate((element) => {
+    const documentY = window.scrollY;
+    const maximum = element.scrollHeight - element.clientHeight;
+
+    element.scrollTop = Math.min(100, maximum);
+    const result = {
+      documentY,
+      documentYAfter: window.scrollY,
+      maximum,
+      overflowY: getComputedStyle(element).overflowY,
+      railY: element.scrollTop,
+    };
+    element.scrollTop = 0;
+    return result;
+  });
+
+  if (comparisonExpected) {
+    await expect(comparison).toBeVisible();
+  } else {
+    await expect(comparison).toBeHidden();
+  }
+  expect(targetBoxes.length).toBeGreaterThanOrEqual(6);
+  for (const target of targetBoxes) {
+    expect(target.height).toBeGreaterThanOrEqual(44);
+    expect(target.width).toBeGreaterThanOrEqual(44);
+  }
+  expect(scrollState.overflowY).toBe("auto");
+  expect(scrollState.documentYAfter).toBe(scrollState.documentY);
+  if (scrollState.maximum > 0) {
+    expect(scrollState.railY).toBeGreaterThan(0);
+  }
+  expect(
+    await timeline.evaluate((element) => element.clientHeight),
+  ).toBeGreaterThan(0);
+  expect(
+    await rail.evaluate((element) => element.clientHeight),
+  ).toBeGreaterThan(0);
+}
 
 async function expectMobileComparisonAtInitialRailPosition(
   rail: import("@playwright/test").Locator,
