@@ -8,6 +8,25 @@ const viewports = [
   { height: 900, width: 1440 },
 ] as const;
 
+const enhancedBoundaryViewports = [
+  { height: 415, width: 195 },
+  { height: 320, width: 568 },
+] as const;
+
+function visualProject(
+  viewport: (typeof viewports)[number] |
+    (typeof enhancedBoundaryViewports)[number],
+) {
+  return {
+    name: `chromium-${viewport.width}x${viewport.height}`,
+    use: {
+      browserName: "chromium" as const,
+      deviceScaleFactor: 1,
+      viewport,
+    },
+  };
+}
+
 export default defineConfig({
   expect: {
     toHaveScreenshot: {
@@ -19,14 +38,13 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   fullyParallel: false,
   outputDir: "output/playwright/visual-results",
-  projects: viewports.map((viewport) => ({
-    name: `chromium-${viewport.width}x${viewport.height}`,
-    use: {
-      browserName: "chromium" as const,
-      deviceScaleFactor: 1,
-      viewport,
-    },
-  })),
+  projects: [
+    ...viewports.map(visualProject),
+    ...enhancedBoundaryViewports.map((viewport) => ({
+      ...visualProject(viewport),
+      testMatch: /enhanced\/layout\.spec\.ts/,
+    })),
+  ],
   reporter: [["list"]],
   retries: 0,
   snapshotPathTemplate:

@@ -91,6 +91,12 @@ describe("App replay route", () => {
     expect(
       document.querySelector("[data-replay-route='ready']"),
     ).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "返回入口" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "再来一局" }),
+    ).not.toBeInTheDocument();
     expect(storageSpies.every((spy) => spy.mock.calls.length === 0)).toBe(
       true,
     );
@@ -134,6 +140,12 @@ describe("App replay route", () => {
     expect(
       screen.getByRole("button", { name: "复制本局回放" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "返回入口" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "再来一局" }),
+    ).not.toBeInTheDocument();
     expect(storageSpies.every((spy) => spy.mock.calls.length === 0)).toBe(
       true,
     );

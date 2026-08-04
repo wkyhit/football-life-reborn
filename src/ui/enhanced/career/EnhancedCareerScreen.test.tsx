@@ -142,7 +142,7 @@ describe("EnhancedCareerScreen", () => {
       </div>,
     );
 
-    const scroller = screen.getByRole("region", {
+    const scroller = screen.getByRole("rowgroup", {
       name: "生涯年份",
     });
     const heading = screen.getByRole("heading", {
@@ -178,7 +178,7 @@ describe("EnhancedCareerScreen", () => {
         </div>,
       );
 
-      const scroller = screen.getByRole("region", {
+      const scroller = screen.getByRole("rowgroup", {
         name: "生涯年份",
       });
 

@@ -103,6 +103,7 @@ function ReadyReplayScreen({
         onRestart={returnToEntry}
         onShare={() => setShareOpen(true)}
         replayCopyMessage={copyMessage}
+        restartLabel="返回入口"
         view={view}
       />
       {shareOpen ? (
